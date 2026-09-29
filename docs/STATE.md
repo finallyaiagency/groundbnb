@@ -15,7 +15,7 @@ Project Control Center read-only foundation deployed and browser checked at revi
 
 ## Environment identity
 
-Client confirmed human project name **Groundbnb** and database name **groundbnb**. Console shows the `groundbnb` project. Its `production` branch contains only default `neondb` with 0 public tables. A schema-only `preview` branch (`br-plain-grass-b8xotge6`) and named `groundbnb` database now exist, with no copied data and no auto-delete. No schema, auth, or connection secret is configured yet.
+Client confirmed human project name **Groundbnb** and database name **groundbnb**. Console shows the `groundbnb` project. Its `production` branch contains only default `neondb` with 0 public tables. A schema-only `preview` branch (`br-plain-grass-b8xotge6`) and named `groundbnb` database exist, with no copied data and no auto-delete. A pre-migration snapshot was saved. The preview `groundbnb` database now has PCC event-store migration `0001`; no Auth, runtime role, or app connection secret is configured.
 
 ## Verification and defects
 
@@ -24,10 +24,11 @@ Client confirmed human project name **Groundbnb** and database name **groundbnb*
 - Browser checked overview, search submission, no console errors, and responsive geometry at 390, 768, and 1440 pixels. Exact evidence: `docs/qa/2026-09-29-control-center.md`.
 - Earlier Vercel deployment attempts failed during initial package-policy and framework setup; both were corrected. A full accessibility audit remains unverified.
 - No Groundbnb product requirement was marked Verified by these Control Center checks.
+- PCC event-store migration and rollback smoke check passed on isolated Neon preview; the synthetic fixture left zero rows. See `docs/qa/2026-09-29-pcc-store.md`.
 
 ## Blockers and decisions
 
-- No Neon connection secret, schema, or auth configured. Production still has no `groundbnb` database; only the isolated preview branch has the requested name.
+- Neon Auth, least-privilege runtime role, sponsor enrollment, and app connection remain unconfigured. The PCC event-store migration and fail-closed authorization contract are in place on the isolated preview database, but no live submission route is enabled. Automatic approval review rejected Auth activation because the user's “Ok go” did not identify the exact security change; a specific approval request is pending. Production still has no `groundbnb` database.
 - The Control Center's Q&A, decision, and change-request screens are read-only projections. PCC-02 must add authenticated, durable submissions and audit history before those workflows can be accepted.
 - Client collaboration persistence and access control need a verified server-side store before accepting live client submissions.
 - See `docs/OPEN-DECISIONS.md` and `docs/integrations.md`.
