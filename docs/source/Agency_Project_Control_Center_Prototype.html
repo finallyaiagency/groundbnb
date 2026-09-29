@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agency Project Control Center</title>
+<style>
+:root{--bg:#0b0d10;--panel:#14181d;--panel2:#1b2027;--text:#eef2f6;--muted:#98a4b3;--line:#2b333d;--accent:#e6b94f;--ok:#36b37e;--bad:#ff6b6b;--block:#f59e0b;--info:#56a3f5}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,Segoe UI,Arial}
+header{padding:28px 34px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#11161b,#0b0d10)}
+.eyebrow{text-transform:uppercase;letter-spacing:.14em;color:var(--accent);font-size:11px;font-weight:700} h1{margin:6px 0 4px;font-size:30px}.sub{color:var(--muted)}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}nav a{color:#dce5ee;text-decoration:none;background:var(--panel);border:1px solid var(--line);padding:8px 11px;border-radius:9px}
+main{padding:26px 34px;max-width:1480px;margin:auto}.grid{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}.metric{font-size:29px;font-weight:750;margin-top:5px}.label{color:var(--muted);font-size:12px}
+section{margin:24px 0}h2{font-size:18px;margin:0 0 12px}h3{font-size:15px;margin:0 0 10px}table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:12px}.not{color:var(--muted)}.next{color:var(--accent)}.ok{color:var(--ok)}.warn{color:var(--block)}
+.bar{height:8px;background:#242a31;border-radius:999px;overflow:hidden;margin-top:9px}.bar>i{display:block;height:100%;background:var(--info)}
+.two{display:grid;grid-template-columns:2fr 1fr;gap:14px}.note{color:var(--muted);font-size:13px}code{color:#d7e7f5}
+.forecast-layout{display:grid;grid-template-columns:minmax(340px,1fr) minmax(420px,1.5fr);gap:14px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}.field input,.field select{width:100%;background:#0e1216;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font:inherit}.field small{display:block;color:var(--muted);margin-top:4px;line-height:1.3}.forecast-grid{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:12px}.forecast-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}.forecast-card .metric{font-size:23px}.formula{background:#0e1216;border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin-top:12px}.source-link{color:#a9cff8}.statusline{margin-top:10px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:#0e1216}.mini{font-size:12px}.sep{height:1px;background:var(--line);margin:14px 0}
+@media(max-width:1000px){.forecast-layout{grid-template-columns:1fr}.grid,.two{grid-template-columns:1fr 1fr}}@media(max-width:620px){.grid,.two,.form-grid,.forecast-grid{grid-template-columns:1fr}header,main{padding-left:18px;padding-right:18px}}
+</style></head><body>
+<header><div class="eyebrow">Agency Delivery Portal · Prototype</div><h1>Groundbnb Route Planner</h1><div class="sub">v1 Public Launch · evidence-driven implementation and verification tracking</div>
+<nav><a href="#overview">Overview</a><a href="#milestones">Milestones</a><a href="#requirements">Requirements</a><a href="#usage">Usage</a><a href="#forecast">Prediction</a><a href="#handoff">Handoff</a></nav></header>
+<main>
+<section id="overview"><div class="grid">
+<div class="card"><div class="label">Binding requirement rows</div><div class="metric">249</div><div class="note">Parsed from v2.5</div></div>
+<div class="card"><div class="label">Implemented</div><div class="metric">0%</div><div class="bar"><i style="width:0%"></i></div></div>
+<div class="card"><div class="label">Verified</div><div class="metric">0%</div><div class="bar"><i style="width:0%"></i></div></div>
+<div class="card"><div class="label">Deterministic fixtures</div><div class="metric">47</div><div class="note">F-01 through F-48, with numbering gaps in source</div></div>
+</div></section>
+<section class="two"><div class="card"><div class="label">Current execution state</div><h2>M0 — Repo and environment</h2><p>Freeze specification/hash, generate traceable task views and ledger, establish CI, isolated Neon/Vercel environments, recovery configuration, and provider-data architecture.</p><span class="badge next">Next gate</span> <span class="badge not">Not started</span></div>
+<div class="card"><div class="label">Requirement tiers</div><p>v1: <b>205</b></p><p>v1.1: <b>28</b></p><p>v1→v1.1: <b>10</b></p><p>v1→v2: <b>1</b></p><p>v2: <b>5</b></p></div></section>
+<section id="milestones"><h2>Milestones</h2><table><thead><tr><th>Milestone</th><th>Purpose</th><th>Status</th><th>Gate</th></tr></thead><tbody>
+<tr><td>M0</td><td>Repo and environment</td><td><span class="badge next">Next</span></td><td>Preview + isolated environment + bounded live test</td></tr>
+<tr><td>M1</td><td>Foundation</td><td><span class="badge not">Not started</span></td><td>Auth, profile, controls, diagnostics</td></tr>
+<tr><td>M2</td><td>Saved manual trip</td><td><span class="badge not">Not started</span></td><td>Persistent revisioned trip editing</td></tr>
+<tr><td>M2A</td><td>Core experience proof</td><td><span class="badge not">Not started</span></td><td>Live 3-stop slice + AI edit + undo + reload</td></tr>
+<tr><td>M3</td><td>Maps and modes</td><td><span class="badge not">Not started</span></td><td>Full routing/map scope</td></tr>
+<tr><td>M4</td><td>AI actions</td><td><span class="badge not">Not started</span></td><td>Validated Gemini actions + outcome suite</td></tr>
+<tr><td>M5</td><td>Calendar and schedule</td><td><span class="badge not">Not started</span></td><td>Hierarchy, anchors, zones, totals</td></tr>
+<tr><td>M6</td><td>Tour and files</td><td><span class="badge not">Not started</span></td><td>Tour + exports + portability</td></tr>
+<tr><td>M7</td><td>Admin and usage</td><td><span class="badge not">Not started</span></td><td>Admin, diagnostics, runtime usage</td></tr>
+<tr><td>M8</td><td>Launch hardening</td><td><span class="badge not">Not started</span></td><td>v1 public-launch gate</td></tr>
+<tr><td>M9</td><td>v1.1</td><td><span class="badge not">Deferred</span></td><td>Begins only after M8</td></tr>
+</tbody></table></section>
+<section id="requirements"><h2>Requirements control</h2><div class="card"><p>This prototype intentionally separates <b>Implemented</b> from <b>Verified</b>. Production version should load <code>docs/ledger.csv</code> and make every metric drill down to the exact requirement IDs and evidence.</p></div></section>
+<section id="usage"><h2>Implementation usage</h2><div class="grid"><div class="card"><div class="label">Measured credits</div><div class="metric">—</div><div class="note">Platform-reported when available</div></div><div class="card"><div class="label">API tokens</div><div class="metric">—</div><div class="note">Exact when captured from API responses</div></div><div class="card"><div class="label">Credits / Verified req.</div><div class="metric">—</div><div class="note">Derived only after attribution</div></div><div class="card"><div class="label">Measurement coverage</div><div class="metric">Unknown</div><div class="note">Never infer zero from missing data</div></div></div>
+<p class="note">Do not combine development/Codex usage with the product's own runtime Gemini/provider usage dashboard.</p></section>
+
+<section id="forecast"><h2>Completion prediction</h2>
+<div class="forecast-layout">
+<div class="card"><h3>Forecast inputs</h3><p class="note">Assumption: this is the only Work/Codex project consuming the allowance. Values are saved locally in this browser. Included plan limits vary by account, so the model uses empirical <b>credit-equivalent capacity</b> rather than pretending the plan publishes a fixed number of credits per window.</p>
+<div class="form-grid">
+<div class="field"><label for="forecastBasis">Future-credit basis</label><select id="forecastBasis"><option value="observed">Observed credits / verified requirement</option><option value="manual">Manual remaining-credit estimate</option></select><small>Observed mode becomes useful after real verified work and measured credits exist.</small></div>
+<div class="field"><label for="manualRemaining">Manual remaining credits</label><input id="manualRemaining" type="number" min="0" step="1" placeholder="e.g. 1800"><small>Used only in Manual mode.</small></div>
+<div class="field"><label for="totalReq">Applicable requirements</label><input id="totalReq" type="number" min="1" step="1" value="249"></div>
+<div class="field"><label for="verifiedReq">Verified requirements</label><input id="verifiedReq" type="number" min="0" step="1" value="0"></div>
+<div class="field"><label for="measuredCredits">Measured credits to date</label><input id="measuredCredits" type="number" min="0" step="0.01" placeholder="platform-reported / attributed"></div>
+<div class="field"><label for="coverage">Measurement coverage %</label><input id="coverage" type="number" min="0" max="100" step="1" value="0"><small>Percent of implementation sessions with usable credit attribution.</small></div>
+<div class="field"><label for="fiveHourCap">5-hour capacity, credit-equivalent</label><input id="fiveHourCap" type="number" min="0" step="0.01" placeholder="empirical full-window capacity"></div>
+<div class="field"><label for="weeklyCap">Weekly capacity, credit-equivalent</label><input id="weeklyCap" type="number" min="0" step="0.01" placeholder="empirical full-week capacity"></div>
+<div class="field"><label for="dwellHours">Observed extra dwell after reset</label><input id="dwellHours" type="number" min="0" step="0.25" value="0"><small>Median hours from becoming eligible again to starting the next project session.</small></div>
+<div class="field"><label for="initialWait">Current mandatory wait</label><input id="initialWait" type="number" min="0" step="0.25" value="0"><small>Hours until work can resume if a current 5-hour or weekly limit is already exhausted; otherwise 0.</small></div>
+</div>
+<div class="statusline mini" id="forecastStatus">Enter measured history or a manual remaining-credit estimate, plus the 5-hour and weekly capacity calibration.</div>
+</div>
+<div class="card"><h3>Projected completion</h3>
+<div class="forecast-grid">
+<div class="forecast-card"><div class="label">Estimated future credits</div><div class="metric" id="futureCredits">—</div><div class="note" id="creditBasis">Waiting for data</div></div>
+<div class="forecast-card"><div class="label">Forecast confidence</div><div class="metric" id="confidence">—</div><div class="note" id="confidenceNote">Based on measurement coverage and sample size</div></div>
+<div class="forecast-card"><div class="label">Minimum-dwell completion</div><div class="metric" id="minDate">—</div><div class="note" id="minDays">Uses allowance immediately whenever eligible</div></div>
+<div class="forecast-card"><div class="label">Consistent-dwell completion</div><div class="metric" id="observedDate">—</div><div class="note" id="observedDays">Uses observed dwell between eligible windows</div></div>
+<div class="forecast-card"><div class="label">Minimum-dwell capacity</div><div class="metric" id="minCapacity">—</div><div class="note">credit-equivalent / week</div></div>
+<div class="forecast-card"><div class="label">Consistent-dwell capacity</div><div class="metric" id="obsCapacity">—</div><div class="note">credit-equivalent / week</div></div>
+<div class="forecast-card"><div class="label">Primary limiting factor</div><div class="metric" id="limiter">—</div><div class="note" id="limiterNote">Compares 5-hour throughput with weekly ceiling</div></div>
+<div class="forecast-card"><div class="label">Approx. full 5-hour windows needed</div><div class="metric" id="windowsNeeded">—</div><div class="note">Before weekly waits; rounded up</div></div>
+</div>
+<div class="formula"><b>Model.</b> Five-hour-limited weekly throughput = <code>5h capacity × 168 ÷ (5 + dwell hours)</code>. Effective throughput = the lower of that value and the weekly capacity. Minimum dwell sets dwell to zero. Consistent dwell uses the observed median. The current mandatory wait is then added once to the ETA.</div>
+<div class="sep"></div>
+<p class="note"><b>Interpretation:</b> this is an allowance-constrained calendar forecast, not a promise about engineering effort. It becomes meaningful only after the project has enough measured sessions to estimate remaining credits and empirical capacity. If the weekly ceiling is the bottleneck, reducing dwell below that point will not make the project finish faster.</p>
+<p class="note">OpenAI currently states that Work/Codex may be limited by both a five-hour window and a weekly window, and allowance must remain in both; limits vary by plan. <a class="source-link" href="https://help.openai.com/en/articles/20001516-managing-usage-with-gpt-6-astra-in-work-and-codex" target="_blank" rel="noreferrer">Usage-limit reference</a>.</p>
+</div></div></section>
+
+<section id="handoff"><h2>Handoff readiness</h2><div class="card"><p>Final portal should link the deployed revision, requirement ledger, runbooks, test evidence, provider verification dates, known limitations, approved deviations, and release artifacts.</p></div></section>
+</main>
+<script>
+const ids=['forecastBasis','manualRemaining','totalReq','verifiedReq','measuredCredits','coverage','fiveHourCap','weeklyCap','dwellHours','initialWait'];
+const $=id=>document.getElementById(id);
+const n=id=>Number($(id).value||0);
+const fmtNum=v=>Number.isFinite(v)?new Intl.NumberFormat(undefined,{maximumFractionDigits:1}).format(v):'—';
+const fmtDate=d=>new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'numeric'}).format(d);
+function save(){const x={};ids.forEach(id=>x[id]=$(id).value);localStorage.setItem('agency-forecast-v1',JSON.stringify(x));}
+function load(){try{const x=JSON.parse(localStorage.getItem('agency-forecast-v1')||'{}');ids.forEach(id=>{if(x[id]!==undefined)$(id).value=x[id]});}catch{}}
+function confidence(verified,coverage,basis){
+  if(basis==='manual') return coverage>=80?'Medium':'Low';
+  if(verified>=30&&coverage>=80)return'High';
+  if(verified>=10&&coverage>=60)return'Medium';
+  return'Low';
+}
+function recalc(){
+  const basis=$('forecastBasis').value,total=n('totalReq'),verified=n('verifiedReq'),used=n('measuredCredits'),manual=n('manualRemaining'),coverage=n('coverage'),cap5=n('fiveHourCap'),capW=n('weeklyCap'),dwell=n('dwellHours'),initial=n('initialWait');
+  let remaining=0,basisText='';
+  if(basis==='manual'){
+    remaining=manual;
+    basisText=remaining>0?'Manual project estimate':'Enter a manual remaining-credit estimate';
+  }else if(verified>0&&used>0&&total>=verified){
+    const per=used/verified;
+    remaining=per*(total-verified);
+    basisText=`${fmtNum(per)} measured credits / verified requirement`;
+  }else{
+    basisText='Need measured credits and at least one verified requirement';
+  }
+  $('futureCredits').textContent=remaining>0?fmtNum(remaining):'—'; $('creditBasis').textContent=basisText;
+  const conf=confidence(verified,coverage,basis); $('confidence').textContent=remaining>0?conf:'—';
+  $('confidenceNote').textContent=basis==='manual'?'Manual basis; confidence reflects measurement coverage only':`${verified} verified requirements · ${fmtNum(coverage)}% measured coverage`;
+  if(!(remaining>0&&cap5>0&&capW>0)){
+    ['minDate','observedDate','minCapacity','obsCapacity','limiter','windowsNeeded'].forEach(id=>$(id).textContent='—');
+    $('minDays').textContent='Needs remaining credits + both capacity calibrations'; $('observedDays').textContent='Needs remaining credits + both capacity calibrations';
+    $('limiterNote').textContent='Compares 5-hour throughput with weekly ceiling';
+    $('forecastStatus').textContent='Forecast incomplete: provide a future-credit estimate and empirical credit-equivalent capacity for both the 5-hour and weekly limits.';
+    save(); return;
+  }
+  const weeklyFrom5Min=cap5*(168/5);
+  const weeklyFrom5Obs=cap5*(168/(5+dwell));
+  const effMin=Math.min(capW,weeklyFrom5Min),effObs=Math.min(capW,weeklyFrom5Obs);
+  const daysMin=(remaining/effMin)*7+(initial/24),daysObs=(remaining/effObs)*7+(initial/24);
+  const now=Date.now(), dateMin=new Date(now+daysMin*86400000),dateObs=new Date(now+daysObs*86400000);
+  $('minDate').textContent=fmtDate(dateMin); $('observedDate').textContent=fmtDate(dateObs);
+  $('minDays').textContent=`≈ ${fmtNum(daysMin)} calendar days`; $('observedDays').textContent=`≈ ${fmtNum(daysObs)} calendar days`;
+  $('minCapacity').textContent=fmtNum(effMin); $('obsCapacity').textContent=fmtNum(effObs);
+  $('windowsNeeded').textContent=Math.ceil(remaining/cap5).toLocaleString();
+  const limiterMin=capW<=weeklyFrom5Min?'Weekly':'5-hour'; const limiterObs=capW<=weeklyFrom5Obs?'Weekly':'5-hour + dwell';
+  $('limiter').textContent=limiterMin===limiterObs?limiterMin:`${limiterMin} → ${limiterObs}`;
+  $('limiterNote').textContent=`5h theoretical: ${fmtNum(weeklyFrom5Min)}/wk minimum dwell, ${fmtNum(weeklyFrom5Obs)}/wk observed dwell; weekly ceiling: ${fmtNum(capW)}/wk`;
+  const gap=Math.max(0,daysObs-daysMin);
+  $('forecastStatus').innerHTML=`Using <b>${basis==='manual'?'manual':'observed'}</b> remaining-credit basis. Consistent dwell adds approximately <b>${fmtNum(gap)} calendar days</b> versus minimum dwell under the current calibration.`;
+  save();
+}
+load();ids.forEach(id=>$(id).addEventListener('input',recalc));recalc();
+</script></body></html>

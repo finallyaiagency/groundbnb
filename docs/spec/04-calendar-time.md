@@ -1,0 +1,49 @@
+<!-- Generated from docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md; SHA-256 E1EA8F9B85E294F81960646DF3DE73F0CD7C4C5A8105781909984DE6D19F775F; 2026-09-29. Do not edit directly. -->
+
+## 5. Calendar, scheduling, and calculations
+
+### 5.1 Itinerary hierarchy
+
+| ID | Requirement and pass condition |
+| --- | --- |
+| CAL-01 **[v1]** | The profile owns an annual master calendar. It can contain seasons, months, weeks, days, trips, and custom dated segments, each with a stable ID, parent ID, revision, status, dates, vehicle/mode, region, activities, and child IDs. **Pass:** a broad year outline can be refined into a spring week without replacing the annual plan. |
+| CAL-02 **[v1]** | Support mixed seasonal plans, such as winter RV stays, spring/fall van travel, summer boating, and day trips under a season. The active segment is selectable from Profile, Chat, or Itinerary; its name and date window appear in the chat header. **Pass:** switching to Summer changes the agent’s edit scope and visible cards but retains Winter data. |
+| CAL-03 **[v1]** | Provide Full year, Season, Month, Week, Day, Trip, and Custom range views. Broad views display summary cards and hidden-child counts; closer views reveal child cards. Date filtering changes visible totals and map focus, not stored data. **Pass:** filtering one week and returning to Full year restores all cards and totals. |
+| CAL-04 **[v1]** | Search stops; collapse/expand phases and regions; show a bounded number of detailed cards at once with accessible “show more.” Retain all stop identities and segment edit history. **Pass:** a full-year plan remains scrollable without silently dropping later stops. |
+| CAL-05 **[v1]** | Candidate lodging, route options, and dates are proposals. Templates and unbooked plans are separate from confirmed reservations. Show a before/after diff and request explicit user confirmation before changing the master calendar or a confirmed booking. **Pass:** asking “What if I stayed a week longer?” does not change saved dates. |
+| CAL-06 **[v1]** | Detect conflicting confirmed commitments, incompatible time anchors, unavailable vehicle locations, and profile constraints. Overlapping trip windows or alternative proposals are allowed and are not themselves execution conflicts. Show affected confirmed activities and suggested resolutions when the same traveler or vehicle is committed incompatibly; preserve both trip drafts. **Pass:** overlapping draft trips save normally; confirming simultaneous use of one RV in distant segments raises a conflict before the conflicting calendar confirmation. |
+
+### 5.2 Time, stays, and totals
+
+| ID | Requirement and pass condition |
+| --- | --- |
+| TIME-01 **[v1]** | Routes may remain undated. Where a date is required for a calculation, offer tomorrow in the traveler’s time zone as an editable default; do not convert a flexible date window into a booking date. **Pass:** an undated route can be saved and reopened without acquiring a fabricated fixed date. |
+| TIME-02 **[v1]** | Allow arrival or departure anchors at multiple stops. Recalculate earlier and later flexible times around them; keep all cards visible; detect impossible anchors and explain the conflict without discarding the last valid schedule. **Pass:** adding a second incompatible anchor shows a warning and preserves both entered constraints for editing. |
+| TIME-03 **[v1]** | Display each stop in its destination’s local time zone, including daylight-saving changes, overnight legs, and cross-zone travel. Store instants plus IANA zone IDs. **Pass:** a route crossing Eastern to Central time shows different local clocks while elapsed travel time remains correct. |
+| TIME-04 **[v1]** | A stop’s stay accepts minutes, hours, or days. Durations beyond 24 hours display in days and hours; multi-day stays derive nights from date boundaries where lodging is billed nightly. **Pass:** four nights at $120/night produce $480 lodging, not $120 or five nights. |
+| TIME-05 **[v1]** | Total distance/time is the sum of included legs; trip elapsed duration includes stops, transfers, and waits. Fuel uses driving miles ÷ vehicle MPG × fuel price per gallon. Ferry/transit fares remain separate from fuel. Round trips include return legs once. **Pass:** switching one driving leg to walking removes only that leg’s fuel. |
+| TIME-06 **[v1]** | Distinguish known, provisional, and unknown components. Show a known subtotal and list excluded unknowns; retain original currency per fare and never silently convert or double count it. **Pass:** an unknown lodging rate prevents a false “complete total,” while known fuel and USD fares still sum. |
+| TIME-07 **[v1]** | Travelers can enter vehicle-specific MPG and fuel price. If requested, the agent may look up a vehicle MPG or current regional fuel-price estimate and show source/date; an RV or camping rig never inherits a generic small-car value without disclosure. **Pass:** changing MPG updates fuel only, not fare or lodging. |
+| TIME-08 **[v1]** | Show realistic daily driving limits and overnight recommendations. A time anchor, stay edit, route recalculation, or date filter invalidates dependent provisional recommendations and recomputes them or marks them stale. **Pass:** a late arrival that breaks a campground opening window raises a warning. |
+
+---
+
+### 11.6 Scheduling, filtering, and money (CAL, TIME)
+
+**Time arithmetic.** Store scheduled instants as UTC timestamps plus the destination IANA zone and retain user-entered local date/time. A nonexistent daylight-saving local time is a validation error; for a repeated time show both offsets and require a choice. Never silently use the machine's zone for every stop.
+
+For each stop, departure = arrival + stay + explicit waiting. For each following stop, arrival = previous departure + all leg component durations. Boarding, walking access, breaks, and unloading are components and must not be counted again in the stop stay. With no anchors or start, retain relative elapsed times and an Undated label. A suggested tomorrow date becomes persistent only when accepted. An explicit timestamp can anchor either arrival or departure; both at one stop must agree with its minimum stay.
+
+Between two anchors, calculate the minimum elapsed duration. If it exceeds the available interval, show the amount of conflict and preserve the saved schedule; keep the proposed anchors in an editable conflict draft. If there is spare time, place explicit waiting immediately before the later anchor, visible in its stop card. Do not silently stretch lodging stays or invent activities to consume the gap. An unknown component duration leaves dependent arrival times unknown until another explicit anchor establishes a new starting point. Zero minutes is a valid explicit value, never a replacement for unknown.
+
+Elapsed “days” in a duration are 24-hour periods; calendar nights are local check-in/check-out date differences. Label these separately. Lodging requires rate basis (per night/per stay), amount, currency, and either explicit night count or local check-in/check-out dates. Four nights × 120.00 USD = 480.00 USD. An explicit per-stay total is charged once and is not also multiplied by nights.
+
+**Range behavior.** Display date inputs as inclusive From/To dates; internally the interval ends at the next local midnight after To in the calendar zone. ISO weeks begin Monday. Use Jan–Dec calendar months; season grouping defaults Winter Jan–Feb and Dec, Spring Mar–May, Summer Jun–Aug, Fall Sep–Nov within the selected year. These are presentation bins; user-named seasonal segments retain their explicit dates and can differ.
+
+Show activities that overlap the range, plus dimmed boundary stops for orientation. Whole-leg distance, fare, fuel, and travel duration are assigned once to the leg's departure date; label filtered totals “Travel departing in this range.” A crossing leg that departed earlier appears as context and is excluded from those totals. Nightly lodging is assigned by each property's local night date; per-stay charges use check-in date. Never charge every night merely because its stop overlaps one selected day. Undated items appear in a separate Undated group and are not assigned to a date by filtering.
+
+“Activity days only” means days with at least one non-travel activity (stay, event, work, maintenance, provisioning, storage, or handoff). Hide travel-only days from that view; retain their data and show an excluded-day count. Filters for vehicle, mode, and activity status use the same derived view. Back restores prior scale, range, selected card, and scroll position. Filtering itself never saves new schedule or itinerary content.
+
+**Money.** Use decimal amounts and ISO currency codes; avoid binary rounding in displayed totals. USD is only the default unit for a new money input, not evidence that every external price is USD. Preserve original currency and display separate currency subtotals. Do not add unlike currencies. Rounding occurs per displayed charge to the currency's minor unit; total the rounded charges. Fuel for a road leg is miles ÷ positive MPG × nonnegative USD-per-US-gallon price. If a fuel price uses another currency, its result remains in that currency. Zero price is accepted only if entered explicitly.
+
+Show three groups: Known subtotal, Estimated additional costs, and Unknown costs. Estimated values never silently enter the known subtotal. A separate “Known + estimates” total is allowed when labeled and separated by currency. Ferry fare already covering its vehicle does not also become road fuel. User-entered marine fuel is distinct from road fuel. Display transit fares as per-person or party-total with a traveler count; multiply only the per-person basis. Explicit budget timeframes are normalized using the selected trip duration, never a guessed month length.

@@ -1,0 +1,12 @@
+{
+  "id": "D-001",
+  "questionId": "Q-001",
+  "source": "Client",
+  "decision": "Use Groundbnb as the human Neon project name and groundbnb as the database name for the supplied console project, subject to verifying the actual console identity before changes.",
+  "rationale": "Explicit client answer on 2026-09-29.",
+  "alternatives": [],
+  "impact": "Records intended infrastructure identity; no schema or branch changes authorized by identity alone.",
+  "date": "2026-09-29",
+  "implementationStatus": "Pending console verification",
+  "supersedes": null
+}
