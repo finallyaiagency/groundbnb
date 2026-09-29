@@ -8,4 +8,10 @@ The app now has a server-only Neon Auth proxy and session adapter. Configuration
 
 The three Auth settings (provider URL, expected host, generated cookie secret) were added through Vercel CLI to **Preview (`preview/control-center`) only**. `vercel env ls preview` displayed each at that exact Git branch scope with encrypted values. The secret was generated locally and not committed. No production or other preview environment variable was added.
 
-Local checks on the checkpoint contents: `pnpm typecheck`, `pnpm lint`, `pnpm test` (7/7), `pnpm state:check` (249 IDs), and `pnpm build` passed with the policy-controlled dependency install. Exact live sign-in, session verification, trusted domain, email configuration, and hosted endpoint test remain open until recorded separately. No database migration was run in this step.
+Local checks on the checkpoint contents: `pnpm typecheck`, `pnpm lint`, `pnpm test` (7/7), `pnpm state:check` (249 IDs), and `pnpm build` passed with the policy-controlled dependency install. Exact live sign-in, session verification, trusted domain, and email configuration remain open. No database migration was run in this step.
+
+## Hosted verification of `131c9cc`
+
+- GitHub Verify [run `36567662429`](https://github.com/finallyaiagency/groundbnb/actions/runs/36567662429) passed on `preview/control-center`, including frozen install, source-state check, tests, typecheck, lint, and build.
+- Vercel preview deployment `dpl_EFH2eHe5BdYsZxMp9dV5sukg1dN8` for that exact revision reached Ready at `https://groundbnb-6akeizkic-finally-ais-projects.vercel.app`.
+- An authenticated Vercel CLI request to `/api/auth/get-session` on that deployment returned `null` for an anonymous requester. This confirms the hosted proxy responds and does not fabricate a session. It does not prove login, verified identity, or sponsor authorization.
