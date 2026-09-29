@@ -6,12 +6,12 @@ Updated: 2026-09-29
 
 - Frozen product authority: `docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md`; SHA-256 `E1EA8F9B85E294F81960646DF3DE73F0CD7C4C5A8105781909984DE6D19F775F`.
 - Control Center authority: `docs/source/Agency_Project_Control_Center_Spec_v1.1.md`.
-- GitHub: `finallyaiagency/groundbnb`, default branch `main`; last verified code checkpoint `4966335` was published on `main` and `preview/control-center`.
+- GitHub: `finallyaiagency/groundbnb`, default branch `main`; checkpoint `c8ec462` was published on `main` and `preview/control-center` and passed hosted Verify on both branches.
 - Derived views and 249-row ledger generated mechanically from the frozen source. All requirement statuses initially Not started.
 
 ## Current milestone
 
-Project Control Center read-only foundation deployed and browser checked. PCC-02 event-store foundation is published at `4966335`; durable client workflows remain. Groundbnb M0 follows the Control Center gate. M0 exit gate is not met. No Groundbnb product release is claimed.
+Project Control Center read-only foundation deployed and browser checked. PCC-02 event-store foundation and preview Auth provisioning are published; durable client workflows remain. Groundbnb M0 follows the Control Center gate. M0 exit gate is not met. No Groundbnb product release is claimed.
 
 ## Environment identity
 
@@ -20,7 +20,7 @@ Client confirmed human project name **Groundbnb** and database name **groundbnb*
 ## Verification and defects
 
 - Source hash and requirement extraction: 249 unique requirement IDs; no duplicates.
-- Local source, unit, static, and build checks passed. GitHub Verify runs passed on `main` and `preview/control-center` at `38a31c9` (runs `36531719539` and `36531738218`). The latest Vercel Next.js preview is Ready at `https://groundbnb-iimjro6wu-finally-ais-projects.vercel.app` for `38a31c9`; its overview and QA page loaded with no browser console errors.
+- Local source, unit, static, and build checks passed. GitHub Verify runs passed on `main` and `preview/control-center` at `c8ec462` (runs `36563665349` and `36563665715`). The Vercel Next.js preview is Ready at `https://groundbnb-juvzbulm2-finally-ais-projects.vercel.app` for `c8ec462`; its QA page loaded with 12 revision-linked runs, including the resolved Auth activation history.
 - Browser checked overview, search submission, no console errors, and responsive geometry at 390, 768, and 1440 pixels. Exact evidence: `docs/qa/2026-09-29-control-center.md`.
 - Earlier Vercel deployment attempts failed during initial package-policy and framework setup; both were corrected. A full accessibility audit remains unverified.
 - No Groundbnb product requirement was marked Verified by these Control Center checks.
