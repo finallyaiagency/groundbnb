@@ -43,3 +43,7 @@ Then verify Git branch/revision and inspect only the relevant app/data files. Do
 ## Execution configuration
 
 Recommended model: GPT-5.6 Sol High. Reason: this establishes the first security-sensitive auth, persistence, and concurrency pattern. Escalate only for a concrete unresolved architectural failure. Subagents: no. Complexity: Medium; intended for one normal context. Relative credit demand: moderate. Live provider cost should be limited to preview infrastructure and a bounded smoke check.
+
+## Current task status — 2026-09-29
+
+Event-store migration, rollback smoke test, server-side adapter, and fail-closed authorization contract are complete on preview. Auth activation was specifically approved, then failed with `permission denied for database groundbnb`; the proposed `CREATE` grant to `neon_service` was rejected by automatic approval review and was not executed. See `docs/qa/2026-09-29-pcc-auth.md`. Exit criteria 1–5 remain open as a whole; no live submission route or product requirement is Verified by this work.
