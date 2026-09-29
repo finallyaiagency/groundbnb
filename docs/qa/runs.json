@@ -9,5 +9,6 @@
   {"id":"QA-008","category":"End-to-end","result":"Passed","revision":"38a31c9","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/blob/main/docs/qa/2026-09-29-control-center.md"},
   {"id":"QA-009","category":"Live provider","result":"Passed","revision":"482e411","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/blob/main/docs/qa/2026-09-29-pcc-store.md"},
   {"id":"QA-010","category":"Unit","result":"Passed","revision":"482e411","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/blob/main/docs/qa/2026-09-29-pcc-store.md"},
-  {"id":"QA-011","category":"Live provider","result":"Failed","revision":"4966335","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/blob/main/docs/qa/2026-09-29-pcc-auth.md"}
+  {"id":"QA-011","category":"Live provider","result":"Failed","revision":"4966335","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/blob/main/docs/qa/2026-09-29-pcc-auth.md"},
+  {"id":"QA-012","category":"Live provider","result":"Passed","revision":"052b020","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/blob/main/docs/qa/2026-09-29-pcc-auth.md"}
 ]

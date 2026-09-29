@@ -17,7 +17,7 @@ Then verify Git branch/revision and inspect only the relevant app/data files. Do
 - In scope: identity choice, preview-only Control Center store schema/migrations, server-side authorization checks, stable submission/audit IDs, local deterministic tests, environment boundary, documented recovery and secret handling.
 - Product requirement IDs in scope: none; this packet implements Control Center governance infrastructure. Preserve all 249 Groundbnb requirement statuses.
 - Out of scope: Groundbnb product data schemas and requirements, public product launch, full Q&A/decision UI, change-request UI, automated critical decision resolution, production Neon database changes.
-- Dependency: PCC-01 is deployed; `preview/control-center` is Ready at the URL in `docs/STATE.md`. Neon `preview` branch `br-plain-grass-b8xotge6` has database `groundbnb`, with no tables or Auth configured. Production branch has only `neondb`.
+- Dependency: PCC-01 is deployed; `preview/control-center` is Ready at the URL in `docs/STATE.md`. Neon `preview` branch `br-plain-grass-b8xotge6` has database `groundbnb`, PCC event tables, and active Better Auth. Production branch has only `neondb` and Auth is disabled.
 
 ## Contract to establish
 
@@ -46,4 +46,4 @@ Recommended model: GPT-5.6 Sol High. Reason: this establishes the first security
 
 ## Current task status — 2026-09-29
 
-Event-store migration, rollback smoke test, server-side adapter, and fail-closed authorization contract are complete on preview. Auth activation was specifically approved, then failed with `permission denied for database groundbnb`; the proposed `CREATE` grant to `neon_service` was rejected by automatic approval review and was not executed. See `docs/qa/2026-09-29-pcc-auth.md`. Exit criteria 1–5 remain open as a whole; no live submission route or product requirement is Verified by this work.
+Event-store migration, rollback smoke test, server-side adapter, and fail-closed authorization contract are complete on preview. Auth activation initially failed with `permission denied for database groundbnb`; after specific client approval, the preview-only `CREATE` grant to `neon_service` succeeded and Better Auth activated with nine `neon_auth` tables. See `docs/qa/2026-09-29-pcc-auth.md`. Sponsor enrollment, safe preview signup/email configuration, server-side session verification, a least-privilege runtime role, and app connection remain. Exit criteria 1–5 remain open as a whole; no live submission route or product requirement is Verified by this work.
