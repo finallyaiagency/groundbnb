@@ -4,5 +4,7 @@
   {"id":"QA-003","category":"Static","result":"Passed","revision":"30657f7","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/blob/main/docs/qa/2026-09-29-control-center.md"},
   {"id":"QA-004","category":"Build","result":"Passed","revision":"30657f7","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/blob/main/docs/qa/2026-09-29-control-center.md"},
   {"id":"QA-005","category":"End-to-end","result":"Passed","revision":"30657f7","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/blob/main/docs/qa/2026-09-29-control-center.md"},
-  {"id":"QA-006","category":"Visual","result":"Passed","revision":"30657f7","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/blob/main/docs/qa/2026-09-29-control-center.md"}
+  {"id":"QA-006","category":"Visual","result":"Passed","revision":"30657f7","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/blob/main/docs/qa/2026-09-29-control-center.md"},
+  {"id":"QA-007","category":"Build","result":"Passed","revision":"38a31c9","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/actions/runs/36531719539"},
+  {"id":"QA-008","category":"End-to-end","result":"Passed","revision":"38a31c9","date":"2026-09-29","evidence":"https://github.com/finallyaiagency/groundbnb/blob/main/docs/qa/2026-09-29-control-center.md"}
 ]

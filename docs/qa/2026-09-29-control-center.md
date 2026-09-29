@@ -12,3 +12,12 @@ Application revision: `30657f7e85f5c46b5b73f025b50209233700adc0`. Preview deploy
 | QA-006 | Responsive layout at 390×844, 768×1024, 1440×900 | Passed | Browser DOM widths stayed within viewport (scroll width 390, 753, 1425 respectively); main content and cards reflowed. In-app browser viewport screenshots used an internal scaling crop, so visual judgment was based on default-size screenshot plus DOM geometry at the three breakpoints. This is a layout smoke check, not a full accessibility audit. |
 
 No durable client submission, Neon schema, live provider call, production release, or Groundbnb product acceptance was verified. GitHub Actions status is tracked separately from these local and preview checks.
+
+## Subsequent checkpoint — `38a31c9`
+
+| Run | Check | Result | Evidence / limit |
+| --- | --- | --- | --- |
+| QA-007 | Hosted GitHub Verify workflow | Passed | [Main run 36531719539](https://github.com/finallyaiagency/groundbnb/actions/runs/36531719539) and [preview branch run 36531738218](https://github.com/finallyaiagency/groundbnb/actions/runs/36531738218) both completed successfully for `38a31c9`. |
+| QA-008 | Updated Vercel preview smoke | Passed | [Preview](https://groundbnb-iimjro6wu-finally-ais-projects.vercel.app) was Ready. Overview showed `38a31c94`, 249 IDs, 0 product requirements verified, and six earlier QA records. `/tests` displayed each QA category and linked evidence; browser console showed no errors on the checked pages. |
+
+The subsequent checkpoint still has no durable submission workflow or live product integration evidence.
