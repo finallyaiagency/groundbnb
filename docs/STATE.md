@@ -6,12 +6,12 @@ Updated: 2026-09-29
 
 - Frozen product authority: `docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md`; SHA-256 `E1EA8F9B85E294F81960646DF3DE73F0CD7C4C5A8105781909984DE6D19F775F`.
 - Control Center authority: `docs/source/Agency_Project_Control_Center_Spec_v1.1.md`.
-- GitHub: `finallyaiagency/groundbnb`, default branch `main`; current published checkpoint `38a31c9` on `main` and `preview/control-center`.
+- GitHub: `finallyaiagency/groundbnb`, default branch `main`; last verified code checkpoint `482e411` was published on `main` and `preview/control-center`.
 - Derived views and 249-row ledger generated mechanically from the frozen source. All requirement statuses initially Not started.
 
 ## Current milestone
 
-Project Control Center read-only foundation deployed and browser checked at revision `38a31c9`; PCC-02 durable client workflows remain. Groundbnb M0 follows the Control Center gate. M0 exit gate is not met. No Groundbnb product release is claimed.
+Project Control Center read-only foundation deployed and browser checked. PCC-02 event-store foundation is published at `482e411`; durable client workflows remain. Groundbnb M0 follows the Control Center gate. M0 exit gate is not met. No Groundbnb product release is claimed.
 
 ## Environment identity
 
@@ -24,7 +24,7 @@ Client confirmed human project name **Groundbnb** and database name **groundbnb*
 - Browser checked overview, search submission, no console errors, and responsive geometry at 390, 768, and 1440 pixels. Exact evidence: `docs/qa/2026-09-29-control-center.md`.
 - Earlier Vercel deployment attempts failed during initial package-policy and framework setup; both were corrected. A full accessibility audit remains unverified.
 - No Groundbnb product requirement was marked Verified by these Control Center checks.
-- PCC event-store migration and rollback smoke check passed on isolated Neon preview; the synthetic fixture left zero rows. See `docs/qa/2026-09-29-pcc-store.md`.
+- PCC event-store migration and rollback smoke check passed on isolated Neon preview; the synthetic fixture left zero rows. Checkpoint `482e411` passed hosted CI on both branches and its Vercel preview was Ready and browser checked. See `docs/qa/2026-09-29-pcc-store.md`.
 
 ## Blockers and decisions
 
