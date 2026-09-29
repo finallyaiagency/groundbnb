@@ -15,3 +15,7 @@ Local checks on the checkpoint contents: `pnpm typecheck`, `pnpm lint`, `pnpm te
 - GitHub Verify [run `36567662429`](https://github.com/finallyaiagency/groundbnb/actions/runs/36567662429) passed on `preview/control-center`, including frozen install, source-state check, tests, typecheck, lint, and build.
 - Vercel preview deployment `dpl_EFH2eHe5BdYsZxMp9dV5sukg1dN8` for that exact revision reached Ready at `https://groundbnb-6akeizkic-finally-ais-projects.vercel.app`.
 - An authenticated Vercel CLI request to `/api/auth/get-session` on that deployment returned `null` for an anonymous requester. This confirms the hosted proxy responds and does not fabricate a session. It does not prove login, verified identity, or sponsor authorization.
+
+## Preview sign-in screen, pending hosted test
+
+An explicit `/preview-sign-in` route was added after `852d833`. It returns 404 outside the named Control Center preview deployment. On preview it offers Google sign-in through the first-party Neon Auth proxy and reports only whether the provider email is verified. No identifier or credential is rendered or committed. The screen has no submission controls or write permission. Local typecheck and build passed; the route has not yet been deployed or exercised with a real user session. Neon currently has no trusted redirect domain; adding the exact stable preview alias requires client approval under the computer-use policy. Google account selection and credential entry must be performed by the inbox owner.

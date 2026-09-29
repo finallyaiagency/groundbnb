@@ -11,7 +11,7 @@ Updated: 2026-09-29
 
 ## Current milestone
 
-Project Control Center read-only foundation deployed and browser checked. PCC-02 event-store foundation, preview Auth provisioning, and preview-only Auth proxy/session adapter are published. Durable client workflows remain closed. Groundbnb M0 follows the Control Center gate. M0 exit gate is not met. No Groundbnb product release is claimed.
+Project Control Center read-only foundation deployed and browser checked. PCC-02 event-store foundation, preview Auth provisioning, and preview-only Auth proxy/session adapter are published. A preview sign-in screen is implemented locally; trusted redirect approval and real sign-in remain. Durable client workflows remain closed. Groundbnb M0 follows the Control Center gate. M0 exit gate is not met. No Groundbnb product release is claimed.
 
 ## Environment identity
 
