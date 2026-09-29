@@ -6,7 +6,7 @@ Goal: Deliver a responsive read-only client portal that projects repository evid
 
 Binding sources: `docs/source/Agency_Project_Control_Center_Spec_v1.1.md`; Groundbnb Section 0, Section 12, and Section 11.22 in `docs/spec/00-overview.md`, `docs/spec/14-fixtures.md`, `docs/spec/15-shared-safeguards.md`.
 
-Dependencies: frozen spec hash and 249-row ledger generated; GitHub initial commit and Vercel project not yet complete.
+Dependencies satisfied: frozen spec hash and 249-row ledger generated; GitHub initial commits pushed; Vercel project and checked read-only preview exist. See `docs/qa/2026-09-29-control-center.md`.
 
 Likely files: `app/**`, `lib/**`, `docs/ledger.csv`, `docs/STATE.md`, `docs/qa/**`.
 
