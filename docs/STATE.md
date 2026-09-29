@@ -6,12 +6,12 @@ Updated: 2026-09-29
 
 - Frozen product authority: `docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md`; SHA-256 `E1EA8F9B85E294F81960646DF3DE73F0CD7C4C5A8105781909984DE6D19F775F`.
 - Control Center authority: `docs/source/Agency_Project_Control_Center_Spec_v1.1.md`.
-- GitHub: `finallyaiagency/groundbnb`, default branch `main`; `f46e08c` is published on `main`, while preview Auth foundation `131c9cc` is published only on `preview/control-center` and passed hosted Verify.
+- GitHub: `finallyaiagency/groundbnb`, default branch `main`; `f46e08c` is published on `main`, while preview Auth sign-in screen `8b9ed6e` is published only on `preview/control-center` and passed hosted Verify.
 - Derived views and 249-row ledger generated mechanically from the frozen source. All requirement statuses initially Not started.
 
 ## Current milestone
 
-Project Control Center read-only foundation deployed and browser checked. PCC-02 event-store foundation, preview Auth provisioning, and preview-only Auth proxy/session adapter are published. A preview sign-in screen is implemented locally; trusted redirect approval and real sign-in remain. Durable client workflows remain closed. Groundbnb M0 follows the Control Center gate. M0 exit gate is not met. No Groundbnb product release is claimed.
+Project Control Center read-only foundation deployed and browser checked. PCC-02 event-store foundation, preview Auth provisioning, preview-only Auth proxy/session adapter, and Google sign-in screen are published. Trusted redirect approval and real sign-in remain. Durable client workflows remain closed. Groundbnb M0 follows the Control Center gate. M0 exit gate is not met. No Groundbnb product release is claimed.
 
 ## Environment identity
 
@@ -28,6 +28,7 @@ Client confirmed human project name **Groundbnb** and database name **groundbnb*
 - An initial Neon Auth activation failed with a database permission error (QA-011). The client then approved the exact preview-only grant. Neon reported the grant succeeded, a SQL privilege check returned true, Auth activated, and a SQL query found nine `neon_auth` tables on `groundbnb` (QA-012). Production Auth remains disabled. See `docs/qa/2026-09-29-pcc-auth.md`.
 - The client designated a test-only preview inbox and a separate future live sponsor inbox. One user with a synthetic name was created in preview Neon Auth; its email is unverified and no credential was issued. Neither address nor the provider user ID is in Git. Preview Auth routing and session verification code are present, with production and other preview branches denied. This is not an authenticated sign-in or live integration pass; see `docs/qa/2026-09-29-pcc-auth-connection.md`.
 - Preview checkpoint `131c9cc` passed GitHub Verify run `36567662429`; Vercel deployment `dpl_EFH2eHe5BdYsZxMp9dV5sukg1dN8` was Ready. Its anonymous Auth session endpoint returned `null`, as expected. No sign-in or sponsor session has been verified.
+- Sign-in checkpoint `8b9ed6e` passed GitHub Verify run `36569000908`; Vercel deployment `dpl_AWHiFPjH1UbpmWpXoW2zPXAdfivW` was Ready and its sign-in page rendered the Google control. A real session remains unverified.
 
 ## Blockers and decisions
 
