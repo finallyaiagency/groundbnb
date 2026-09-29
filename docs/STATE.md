@@ -11,7 +11,7 @@ Updated: 2026-09-29
 
 ## Current milestone
 
-Project Control Center read-only foundation deployed and browser checked. PCC-02 event-store foundation and preview Auth provisioning are published; durable client workflows remain. Groundbnb M0 follows the Control Center gate. M0 exit gate is not met. No Groundbnb product release is claimed.
+Project Control Center read-only foundation deployed and browser checked. PCC-02 event-store foundation and preview Auth provisioning are published; a preview-only Auth proxy and session adapter are being added. Durable client workflows remain closed. Groundbnb M0 follows the Control Center gate. M0 exit gate is not met. No Groundbnb product release is claimed.
 
 ## Environment identity
 
@@ -26,10 +26,11 @@ Client confirmed human project name **Groundbnb** and database name **groundbnb*
 - No Groundbnb product requirement was marked Verified by these Control Center checks.
 - PCC event-store migration and rollback smoke check passed on isolated Neon preview; the synthetic fixture left zero rows. Checkpoint `482e411` passed hosted CI on both branches and its Vercel preview was Ready and browser checked. See `docs/qa/2026-09-29-pcc-store.md`.
 - An initial Neon Auth activation failed with a database permission error (QA-011). The client then approved the exact preview-only grant. Neon reported the grant succeeded, a SQL privilege check returned true, Auth activated, and a SQL query found nine `neon_auth` tables on `groundbnb` (QA-012). Production Auth remains disabled. See `docs/qa/2026-09-29-pcc-auth.md`.
+- The client designated a test-only preview inbox and a separate future live sponsor inbox. One user with a synthetic name was created in preview Neon Auth; its email is unverified and no credential was issued. Neither address nor the provider user ID is in Git. Preview Auth routing and session verification code are present, with production and other preview branches denied. This is not an authenticated sign-in or live integration pass; see `docs/qa/2026-09-29-pcc-auth-connection.md`.
 
 ## Blockers and decisions
 
-- Neon Auth is active only on isolated preview. Its defaults currently show open email signup, email verification off, Google shared-key OAuth, shared email sender, and localhost allowed. No auth connection is published in the app; no sponsor subject, runtime role, or live submission route is configured. Require synthetic preview identities and a server-side sponsor allowlist before opening any client workflow. Production still has no `groundbnb` database or Auth.
+- Neon Auth is active only on isolated preview. Its defaults currently show open email signup, email verification off, Google shared-key OAuth, shared email sender, and localhost allowed. A preview-only Auth proxy is implemented and its three settings are scoped to Vercel `preview/control-center`, but sign-in is unverified; no sponsor subject, runtime role, or live submission route is configured. Require a verified synthetic preview identity and a server-side sponsor allowlist before opening any client workflow. Production still has no `groundbnb` database or Auth.
 - The Control Center's Q&A, decision, and change-request screens are read-only projections. PCC-02 must add authenticated, durable submissions and audit history before those workflows can be accepted.
 - Client collaboration persistence and access control need a verified server-side store before accepting live client submissions.
 - See `docs/OPEN-DECISIONS.md` and `docs/integrations.md`.
