@@ -6,6 +6,8 @@ The client designated one test-only preview inbox and a different future live sp
 
 After the client approved removal of the disposable preview user, it was deleted from the Neon Auth Users console on the isolated preview branch. A reload showed “Waiting for users to sign up to your app” and no user row. Production was not selected or changed.
 
+The client then completed Google sign-in with the designated preview inbox. Neon Auth showed one newly created user with `EMAIL VERIFIED true` and role `user`; the provider subject was read in the console and was not written to Git. The subject was added as an encrypted `PCC_SPONSOR_SUBJECTS` variable scoped only to Vercel `Preview (preview/control-center)`. Production and other environments remain unchanged. A new deployment is required before server authorization can observe the variable.
+
 The app now has a server-only Neon Auth proxy and session adapter. Configuration rejects production, non-Control Center preview branches, missing/short cookie secrets, unexpected Auth hosts, and unexpected database paths. The proxy returns 404 for app-proxied sign-up and outside the named preview deployment. This is an app-route control, not a claim that Neon's public Auth endpoint prevents direct signup. The separate server-side sponsor allowlist remains empty, and there is no client write route.
 
 The three Auth settings (provider URL, expected host, generated cookie secret) were added through Vercel CLI to **Preview (`preview/control-center`) only**. `vercel env ls preview` displayed each at that exact Git branch scope with encrypted values. The secret was generated locally and not committed. No production or other preview environment variable was added.
