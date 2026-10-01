@@ -10,5 +10,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  return getPreviewAuth().middleware()(request);
+  const response = await getPreviewAuth().middleware()(request);
+  // This page is the preview's own sign-in screen; do not redirect it to the
+  // package default /auth/sign-in route, which is intentionally not mounted.
+  if (response.headers.get('location')?.endsWith('/auth/sign-in')) {
+    return NextResponse.next();
+  }
+  return response;
 }
