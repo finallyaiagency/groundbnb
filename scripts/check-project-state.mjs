@@ -15,7 +15,7 @@ const rows = source.toString('utf8').split(/\r?\n/).flatMap((line, index) => {
 });
 const ledger = readFileSync('docs/ledger.csv', 'utf8').trim().split(/\r?\n/).slice(1).map(line => {
   const cells = [...line.matchAll(/"((?:[^"]|"")*)"(?:,|$)/g)].map(x => x[1].replaceAll('""','"'));
-  return { id: cells[0], tier: cells[2], status: cells[5], evidence: cells[6], sourceLine: Number(cells[12]) };
+  return { id: cells[0], tier: cells[2], milestone: cells[3], dependsOn: cells[4], status: cells[5], evidence: cells[6], sourceLine: Number(cells[12]) };
 });
 if (rows.length !== 249 || ledger.length !== rows.length) errors.push(`Requirement count mismatch: source ${rows.length}, ledger ${ledger.length}`);
 const sourceIds = new Set(rows.map(x => x.id));
@@ -27,5 +27,22 @@ for (const row of rows) {
   if (!['Not started','Implemented','Verified','Failed','Blocked'].includes(item.status)) errors.push(`Invalid status ${row.id}`);
   if (item.status === 'Verified' && !item.evidence) errors.push(`Verified without evidence ${row.id}`);
 }
+const tiers = new Map(ledger.map(x => [x.id, x.tier]));
+for (const item of ledger) {
+  for (const dependency of item.dependsOn.split(/[;|\s]+/).filter(Boolean)) {
+    if (!tiers.has(dependency)) errors.push(`Unknown dependency ${item.id} -> ${dependency}`);
+    if (item.tier.startsWith('v1') && item.milestone !== 'M9' && item.milestone !== 'v2' &&
+        (tiers.get(dependency) === 'v1.1' || tiers.get(dependency) === 'v2' || tiers.get(dependency)?.startsWith('v1.1→'))) {
+      errors.push(`Future-tier dependency ${item.id} -> ${dependency}`);
+    }
+  }
+}
+const task = readFileSync('docs/tasks/M0-01-repo-environments.md', 'utf8');
+const binding = task.match(/Binding requirements: ([^.]+)\./)?.[1].match(/[A-Z]+-\d+/g) ?? [];
+const fingerprint = task.match(/Source rows SHA-256[^`]*`([A-F0-9]{64})`/)?.[1];
+const sourceLines = source.toString('utf8').split(/\r?\n/);
+if (!binding.length || binding.some(id => !sourceIds.has(id))) errors.push('M0 task has missing or unknown binding IDs');
+const currentFingerprint = createHash('sha256').update(binding.map(id => sourceLines.find(line => line.startsWith(`| ${id} **`)) ?? '').join('\n')).digest('hex').toUpperCase();
+if (fingerprint !== currentFingerprint) errors.push('M0 task source-row fingerprint is stale');
 if (errors.length) { console.error(errors.join('\n')); process.exit(1); }
 console.log(`Project state valid: ${rows.length} IDs, source SHA-256 ${hash}`);
