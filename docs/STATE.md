@@ -15,14 +15,14 @@ M0 — repository and isolated product environments. The M0-01 local environment
 
 ## Groundbnb environments
 
-- Vercel project `finally-ais-projects/groundbnb` serves the clean product holding page. CI passed and the live `/preview-sign-in` route returned 404. The former Control Center preview secrets, Git branch, and 25 old Vercel deployments were removed; only the new production deployment remains.
+- Vercel project `finally-ais-projects/groundbnb` serves the clean product holding page in production at `885f7d2`. A protected draft-PR preview for `11a1299` is ready; `/api/health` reports its revision and HTTP 503 because product environment variables are absent. The former Control Center preview secrets, Git branch, and 25 old deployments were removed.
 - Neon project `groundbnb` (`divine-resonance-05443204`) is retained for the product. Its only branch is production (`br-small-meadow-b8lh69jr`), with a named `groundbnb` database and 0 tables in `public`; Auth is disabled. The former Control Center preview branch `br-plain-grass-b8xotge6` was deleted after explicit client confirmation.
 - Independent product Auth, sanitized preview, local, and recovery controls are still M0 work. No metered product dispatch is enabled. Environment values now have a fail-closed contract and a versioned baseline SQL script, but no new Neon branch or auth instance was provisioned.
 
 ## Verification and decisions
 
 - Cleanup evidence and exact checks: `docs/qa/2026-10-02-separation-cleanup.md`.
-- M0-01 local evidence, blocked live checks, and defects: `docs/qa/2026-10-02-M0-01-environments.md`. `pnpm lint`, `pnpm typecheck`, `pnpm test` (8 tests), `pnpm build`, documentation/source scan, and high-severity dependency audit passed after installing locked dependencies. Local health returned HTTP 503 without configuration. CI and live preview remain unverified.
+- M0-01 evidence and blocked live checks: `docs/qa/2026-10-02-M0-01-environments.md`. Local lint, typecheck, 8 tests, build, documentation/source scan, and dependency audit passed. CI passed for `11a1299`; the protected Vercel preview reports that revision and fails closed (HTTP 503) without configuration. Neon branch/auth isolation and migration/restore evidence remain open.
 - Client explicitly requested a separate reusable Control Center and a clean Groundbnb repository, hosted project, and database. The frozen product specification and requirement IDs were not amended.
 - Product integration status and open decisions are in `docs/integrations.md` and `docs/OPEN-DECISIONS.md`.
 - Task-level Codex credit usage is unavailable; `implementation-usage.csv` contains no invented values.
