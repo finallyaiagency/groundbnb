@@ -15,8 +15,8 @@ M0 — repository and isolated product environments. This cleanup removes the fo
 
 ## Groundbnb environments
 
-- Vercel project `finally-ais-projects/groundbnb` now serves the clean product holding page from `91f24f3`. CI passed and the live `/preview-sign-in` route returned 404. The former Control Center preview secrets, Git branch, and 25 old Vercel deployments were removed; only the new production deployment remains.
-- Neon project `groundbnb` (`divine-resonance-05443204`) is retained for the product. Its production branch `br-small-meadow-b8lh69jr` now has a named `groundbnb` database with 0 tables in `public`; Auth is disabled. The former Control Center preview branch `br-plain-grass-b8xotge6` must be removed before M0 creates fresh product branches.
+- Vercel project `finally-ais-projects/groundbnb` serves the clean product holding page. CI passed and the live `/preview-sign-in` route returned 404. The former Control Center preview secrets, Git branch, and 25 old Vercel deployments were removed; only the new production deployment remains.
+- Neon project `groundbnb` (`divine-resonance-05443204`) is retained for the product. Its only branch is production (`br-small-meadow-b8lh69jr`), with a named `groundbnb` database and 0 tables in `public`; Auth is disabled. The former Control Center preview branch `br-plain-grass-b8xotge6` was deleted after explicit client confirmation.
 - Independent product Auth, sanitized preview, local, and recovery controls are M0 work. No metered product dispatch is enabled.
 
 ## Verification and decisions
