@@ -1,5 +1,4 @@
 [
-  {"id":"PCC","name":"Project Control Center","tier":"Agency","status":"In progress","gate":"Evidence portal, collaboration workflows, market intelligence, and preview verified","source":"docs/source/Agency_Project_Control_Center_Spec_v1.1.md"},
   {"id":"M0","name":"Repository & environments","tier":"v1","status":"Not started","gate":"Isolated preview revision, schema, CI, recovery controls, bounded live test","source":"docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md#L1237"},
   {"id":"M1","name":"Foundation","tier":"v1","status":"Not started","gate":"Auth, profile, safeguards, membership and cost reservations","source":"docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md#L1238"},
   {"id":"M2","name":"Saved manual trip","tier":"v1","status":"Not started","gate":"Revisioned trips, stops, legs, undo and reload","source":"docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md#L1239"},

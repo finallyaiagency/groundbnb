@@ -1,48 +1,27 @@
 # Groundbnb execution state
 
-Updated: 2026-09-29
+Updated: 2026-10-02
 
-## Authority and repository
+## Authority
 
-- Frozen product authority: `docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md`; SHA-256 `E1EA8F9B85E294F81960646DF3DE73F0CD7C4C5A8105781909984DE6D19F775F`.
-- Control Center authority: `docs/source/Agency_Project_Control_Center_Spec_v1.1.md`.
-- GitHub: `finallyaiagency/groundbnb`, default branch `main`; `f46e08c` is published on `main`, while preview Auth sign-in screen `8b9ed6e` is published only on `preview/control-center` and passed hosted Verify.
-- Derived views and 249-row ledger generated mechanically from the frozen source. All requirement statuses initially Not started.
+- Frozen product specification: `docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md` (SHA-256 in `docs/spec/SOURCE-HASH.txt`).
+- `docs/ledger.csv` contains 249 product requirements; all remain Not started. No Control Center check verifies a Groundbnb requirement.
+- GitHub product repository: `finallyaiagency/groundbnb`. Preserve its history and frozen source.
+- Project Control Center now has its own GitHub repository, Vercel project, and Neon project. Its app code, migrations, authentication adapter, tests, and current QA are maintained there.
 
 ## Current milestone
 
-Project Control Center read-only foundation deployed and browser checked. PCC-02 event-store foundation, preview Auth provisioning, preview-only Auth proxy/session adapter, and Google sign-in screen are published. Trusted redirect approval and real sign-in remain. Durable client workflows remain closed. Groundbnb M0 follows the Control Center gate. M0 exit gate is not met. No Groundbnb product release is claimed.
+M0 — repository and isolated product environments. This cleanup removes the former Control Center app from the Groundbnb checkout and leaves a simple product holding page. M0 exit is not met. Read `docs/tasks/M0-01-repo-environments.md` before product implementation.
 
-## Environment identity
+## Groundbnb environments
 
-Client confirmed human project name **Groundbnb** and database name **groundbnb**. Console shows the `groundbnb` project. Its `production` branch contains only default `neondb` with 0 public tables. A schema-only `preview` branch (`br-plain-grass-b8xotge6`) and named `groundbnb` database exist, with no copied data and no auto-delete. A pre-migration snapshot was saved. The preview `groundbnb` database has PCC event-store migration `0001`. After specific client approval, `neon_service` received `CREATE` on the preview `groundbnb` database and Neon Auth was enabled there; `neon_auth` contains nine tables. No runtime role or app connection secret is configured. Production Auth still shows disabled.
+- Vercel project `finally-ais-projects/groundbnb` is retained for the product. The former Control Center preview secrets were removed on 2026-10-02. Verify the clean deployment before treating it as a new product baseline.
+- Neon project `groundbnb` (`divine-resonance-05443204`) is retained for the product. Its production branch `br-small-meadow-b8lh69jr` had only default `neondb`, no public tables, and Auth disabled before this cleanup. The former Control Center preview branch `br-plain-grass-b8xotge6` must be removed before M0 creates fresh product branches.
+- The named product database `groundbnb`, independent product Auth, sanitized preview, local, and recovery controls are M0 work. No metered product dispatch is enabled.
 
-## Verification and defects
+## Verification and decisions
 
-- Source hash and requirement extraction: 249 unique requirement IDs; no duplicates.
-- Local source, unit, static, and build checks passed. GitHub Verify runs passed on `main` and `preview/control-center` at `c8ec462` (runs `36563665349` and `36563665715`). The Vercel Next.js preview is Ready at `https://groundbnb-juvzbulm2-finally-ais-projects.vercel.app` for `c8ec462`; its QA page loaded with 12 revision-linked runs, including the resolved Auth activation history.
-- Browser checked overview, search submission, no console errors, and responsive geometry at 390, 768, and 1440 pixels. Exact evidence: `docs/qa/2026-09-29-control-center.md`.
-- Earlier Vercel deployment attempts failed during initial package-policy and framework setup; both were corrected. A full accessibility audit remains unverified.
-- No Groundbnb product requirement was marked Verified by these Control Center checks.
-- PCC event-store migration and rollback smoke check passed on isolated Neon preview; the synthetic fixture left zero rows. Checkpoint `482e411` passed hosted CI on both branches and its Vercel preview was Ready and browser checked. See `docs/qa/2026-09-29-pcc-store.md`.
-- An initial Neon Auth activation failed with a database permission error (QA-011). The client then approved the exact preview-only grant. Neon reported the grant succeeded, a SQL privilege check returned true, Auth activated, and a SQL query found nine `neon_auth` tables on `groundbnb` (QA-012). Production Auth remains disabled. See `docs/qa/2026-09-29-pcc-auth.md`.
-- The client designated a test-only preview inbox and a separate future live sponsor inbox. The initially manual preview user was deleted, then the client completed Google sign-in and Neon Auth showed a verified preview user. Its provider subject is stored only as an encrypted Vercel `PCC_SPONSOR_SUBJECTS` variable scoped to `Preview (preview/control-center)`; neither address nor subject is in Git. A new deployment is required before server authorization can observe the variable. Production and other preview branches remain denied; see `docs/qa/2026-09-29-pcc-auth-connection.md`.
-- Preview checkpoint `131c9cc` passed GitHub Verify run `36567662429`; Vercel deployment `dpl_EFH2eHe5BdYsZxMp9dV5sukg1dN8` was Ready. Its anonymous Auth session endpoint returned `null`, as expected. No sign-in or sponsor session has been verified.
-- Sign-in checkpoint `8b9ed6e` passed GitHub Verify run `36569000908`; Vercel deployment `dpl_AWHiFPjH1UbpmWpXoW2zPXAdfivW` was Ready and its sign-in page rendered the Google control. A real session remains unverified.
-
-## Blockers and decisions
-
-- Neon Auth is active only on isolated preview. Its defaults currently show open email signup, email verification off, Google shared-key OAuth, shared email sender, and localhost allowed. A preview-only Auth proxy is implemented and its three settings are scoped to Vercel `preview/control-center`, but sign-in is unverified; no sponsor subject, runtime role, or live submission route is configured. Require a verified synthetic preview identity and a server-side sponsor allowlist before opening any client workflow. Production still has no `groundbnb` database or Auth.
-- The Control Center's Q&A, decision, and change-request screens are read-only projections. PCC-02 must add authenticated, durable submissions and audit history before those workflows can be accepted.
-- Client collaboration persistence and access control need a verified server-side store before accepting live client submissions.
-- See `docs/OPEN-DECISIONS.md` and `docs/integrations.md`.
-
-## Next dependency-ordered tasks
-
-1. PCC-02A: establish the isolated server-side store, client identity, and write authorization contract for Control Center submissions.
-2. PCC-02B: implement durable Q&A and append-only decision workflows against that contract.
-3. PCC-02C: implement change-request submission, triage, and impact history; then continue Groundbnb M0.
-
-## Usage
-
-No platform-reported task-level credit measurement is available yet; see `implementation-usage.csv`. Do not forecast a completion date from missing data.
+- Cleanup evidence and exact checks: `docs/qa/2026-10-02-separation-cleanup.md`.
+- Client explicitly requested a separate reusable Control Center and a clean Groundbnb repository, hosted project, and database. The frozen product specification and requirement IDs were not amended.
+- Product integration status and open decisions are in `docs/integrations.md` and `docs/OPEN-DECISIONS.md`.
+- Task-level Codex credit usage is unavailable; `implementation-usage.csv` contains no invented values.

@@ -1,5 +1,5 @@
 {
-  "name": "groundbnb-control-center",
+  "name": "groundbnb",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,13 +10,11 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --test tests/*.test.ts",
+    "test": "node --test",
     "state:generate": "node scripts/generate-project-state.mjs",
     "state:check": "node scripts/check-project-state.mjs"
   },
   "dependencies": {
-    "@neondatabase/auth": "0.5.0-beta",
-    "@neondatabase/serverless": "^1.1.0",
     "next": "^16.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

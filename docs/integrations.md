@@ -1,11 +1,13 @@
-# Integration register
+# Groundbnb integration register
 
-Checked: 2026-09-29. No provider integration is verified live unless marked so below.
+Checked: 2026-10-02. No Groundbnb product integration is verified live.
 
-| Provider | Identity/source | State | Boundary / next check |
+| Provider | Identity/source | State | Next check |
 | --- | --- | --- | --- |
-| GitHub | `finallyaiagency/groundbnb` | `f46e08c` is on `main`; preview-only sign-in checkpoint `8b9ed6e` is on `preview/control-center` and passed hosted Verify run `36569000908`. | Continue checking CI on every checkpoint. |
-| Neon | Project `groundbnb`, ID `divine-resonance-05443204`; requested database `groundbnb` | `production` (`br-small-meadow-b8lh69jr`) has only default `neondb`, 0 public tables, and Auth disabled. Schema-only `preview` branch (`br-plain-grass-b8xotge6`) has database `groundbnb`, PCC migration `0001`, and active Better Auth. After specific client approval, `GRANT CREATE ON DATABASE groundbnb TO neon_service` succeeded on preview; SQL verified the privilege and nine `neon_auth` tables. One client-designated test-only user was created in preview with a synthetic display name; email is unverified and no credential was issued. | Preview Auth URL is branch-specific and ends `/groundbnb/auth`; keep its exact value in environment configuration, not Git. Current console defaults: public email signup on, verification off, Google shared-key OAuth, shared email sender, localhost allowed. A preview-only server proxy is coded; sign-in, sponsor enrollment, runtime role, and live submission are unverified. The future live sponsor inbox is not enrolled in preview. [Neon Auth overview](https://neon.com/blog/neon-auth-branchable-identity-in-your-database). |
-| Vercel | Team `finally-ais-projects`, project `groundbnb`, ID `prj_r5Vk1uNMNvS28qWX1UHo63t2S4ry` | GitHub connected; Next.js preset saved. Preview `8b9ed6e` at `https://groundbnb-92c1dtd5b-finally-ais-projects.vercel.app` was Ready and its sign-in page rendered the Google control. The designated preview Google identity is verified in Neon; its subject is an encrypted `PCC_SPONSOR_SUBJECTS` variable scoped only to `Preview (preview/control-center)`, alongside the Auth URL, host, and cookie secret. Production remains at `f46e08c`. | Redeploy the preview branch, then verify server session authorization before opening any write route. |
-| Codex/Work allowance | Platform usage | Unknown | Record only platform-reported measurements or labeled estimates. No fixed plan allowance assumed. |
-| Google Maps, Gemini | Official terms and credentials | Not configured | Check current official API terms, permitted data uses, pricing, and preview restrictions before design/live calls. |
+| GitHub | `finallyaiagency/groundbnb` | Product repository retained with frozen specification, ledger, and history. Control Center code moved to `finallyaiagency/project-control-center`. | Check CI on every M0 checkpoint. |
+| Vercel | Team `finally-ais-projects`, project `groundbnb`, ID `prj_r5Vk1uNMNvS28qWX1UHo63t2S4ry` | Existing product project retained. Old Control Center preview variables removed. | Verify clean holding page on production and no active Control Center preview branch. |
+| Neon | Project `groundbnb`, ID `divine-resonance-05443204` | Product production branch `br-small-meadow-b8lh69jr` has only default `neondb`, no public tables, and Auth disabled. Control Center data was confined to separate preview branch `br-plain-grass-b8xotge6`; clean that branch before M0. | Create the named `groundbnb` database and fresh isolated product branches in M0; never clone customer identities into preview. |
+| Codex/Work allowance | Platform usage | Task-level credits unavailable. | Record only platform-reported measurements or labeled estimates. |
+| Google Maps, Gemini | Official terms and credentials | Not configured for Groundbnb. | Verify current official API terms, permitted data uses, pricing, and preview restrictions before dependent design or live calls. |
+
+Project Control Center provider settings and verification evidence are maintained in its separate repository. Production, preview, local, and recovery credentials must be distinct.

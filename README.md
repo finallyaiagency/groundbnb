@@ -1,6 +1,8 @@
 # Groundbnb
 
-Greenfield Groundbnb rebuild. The first deliverable is the Project Control Center, a read-only dashboard backed by versioned project evidence. Groundbnb product implementation begins at M0 after the Control Center gate.
+Greenfield Groundbnb route planner. The current site is a holding page while the product implementation starts at M0.
+
+The Project Control Center is maintained separately at [finallyaiagency/project-control-center](https://github.com/finallyaiagency/project-control-center).
 
 ## Start
 
@@ -11,7 +13,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-The dashboard runs at `http://localhost:3000`.
+The holding page runs at `http://localhost:3000`.
 
 ## Checks
 
@@ -23,4 +25,4 @@ pnpm lint
 pnpm build
 ```
 
-Start with [docs/STATE.md](docs/STATE.md) for the current milestone and blockers. The frozen source specification is in `docs/source/`; `docs/ledger.csv` is the requirement status authority. `docs/tasks/` contains bounded execution packets. Do not treat a build or mock as proof of a live product requirement.
+Start with [docs/STATE.md](docs/STATE.md) for the current milestone and blockers. The frozen product specification is in `docs/source/`; `docs/ledger.csv` is the requirement status authority. No Groundbnb product requirement has been verified yet.
