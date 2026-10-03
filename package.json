@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "test": "node --test",
     "state:generate": "node scripts/generate-project-state.mjs",
-    "state:check": "node scripts/check-project-state.mjs"
+    "state:check": "node scripts/check-project-state.mjs",
+    "secrets:check": "node scripts/check-secrets.mjs"
   },
   "dependencies": {
     "next": "^16.0.0",
