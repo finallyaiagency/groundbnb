@@ -1,16 +1,20 @@
 # Groundbnb integration register
 
-Checked: 2026-10-02. No Groundbnb product integration is verified live.
+Checked: 2026-10-03. No Groundbnb product integration is verified live.
 
 | Provider | Identity/source | State | Next check |
 | --- | --- | --- | --- |
 | GitHub | `finallyaiagency/groundbnb` | Product repository retained with frozen specification, ledger, and history. Control Center code moved to `finallyaiagency/project-control-center`. | Check CI on every M0 checkpoint. |
 | Vercel | Team `finally-ais-projects`, project `groundbnb`, ID `prj_r5Vk1uNMNvS28qWX1UHo63t2S4ry` | Production remains on the clean holding page at `885f7d2`; draft-PR preview for `290b792` is Ready, protected, and returns revisioned HTTP 503 without configuration. Old Control Center variables and deployments were removed. | Provision branch-scoped product variables and prove preview connectivity/identity before live use. |
-| Neon | Project `groundbnb`, ID `divine-resonance-05443204` | Production, schema-only template, preview, local, and recovery-control branches exist; IDs and SQL checks are in `docs/qa/2026-10-02-M0-01-environments.md`. Production baseline migration and seed refusal verified. Auth disabled; Free plan history retention 6 hours. Old Control Center preview branch was removed. | Isolate auth/credentials and recovery access; resolve seven-day retention, then drill restore. Never clone customer identities into preview. |
+| Neon | Project `groundbnb`, ID `divine-resonance-05443204` | Production, schema-only template, preview, local, and recovery-control branches exist. Baseline migration and seed refusal verified; disposable down migration passed 2026-10-03. Auth disabled; Free plan history retention 6 hours. Details in the dated M0 QA files. | Isolate auth/credentials and recovery access; seven-day launch retention remains unmet per D-002. Never clone customer identities into preview. |
 | Codex/Work allowance | Platform usage | Task-level credits unavailable. | Record only platform-reported measurements or labeled estimates. |
 | Google Maps, Gemini | Official terms and credentials | Not configured for Groundbnb. Dated map-policy review below; no provider payload is persisted or exported yet. | Complete field-by-field API policy, Gemini-context, pricing, and credential review before dependent design or live calls. |
 
 Project Control Center provider settings and verification evidence are maintained in its separate repository. Production, preview, local, and recovery credentials must be distinct.
+
+## Neon Free retention check — 2026-10-03
+
+The project console showed Free plan and 6-hour history retention. Neon's [Free-plan announcement](https://neon.com/blog/neon-free-plan-1-gb-per-project), published 2026-10-02, also states a 6-hour instant-restore window. The client chose to keep Free (D-002). This provides only a six-hour provider recovery horizon; it does not satisfy the frozen seven-day launch requirement in Section 11.16 or replace a restore drill. No paid upgrade or independent seven-day backup was configured.
 
 ## M0 provider-data policy review — 2026-10-02
 

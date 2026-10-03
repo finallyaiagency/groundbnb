@@ -1,0 +1,14 @@
+{
+  "id": "D-003",
+  "questionId": "Q-003",
+  "source": "Client",
+  "decision": "Approve running DROP SCHEMA groundbnb CASCADE as the down-migration check on a fresh disposable synthetic Neon branch, never on production or retained branches.",
+  "rationale": "Client replied '2 I approve' on 2026-10-03 to the explicit rollback approval request.",
+  "alternatives": [],
+  "impact": "Authorizes the destructive test only within the named disposable rollback workflow. Production schema and data are outside this authorization.",
+  "requirementIds": ["SYS-09"],
+  "taskId": "M0-01",
+  "date": "2026-10-03",
+  "implementationStatus": "Executed on br-wispy-shape-b8evbmn9; schema absence and production isolation verified in docs/qa/2026-10-03-M0-01-rollback.md.",
+  "supersedes": null
+}
