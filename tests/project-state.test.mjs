@@ -11,7 +11,7 @@ const checker = join(project, 'scripts/check-project-state.mjs');
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), 'groundbnb-state-'));
   mkdirSync(join(root, 'docs'), { recursive: true });
-  for (const path of ['spec', 'tasks', 'source']) cpSync(join(project, 'docs', path), join(root, 'docs', path), { recursive: true });
+  for (const path of ['spec', 'tasks', 'source', 'changes']) cpSync(join(project, 'docs', path), join(root, 'docs', path), { recursive: true });
   cpSync(join(project, 'docs/ledger.csv'), join(root, 'docs/ledger.csv'));
   return root;
 }
@@ -32,5 +32,33 @@ test('documentation gate detects stale task references and future-tier dependenc
     assert.notEqual(altered, ledger);
     writeFileSync(ledgerPath, altered);
     assert.match(check(root).stderr, /Future-tier dependency SYS-01 -> SCL-02/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('approved amendment regeneration preserves ledger and rejects stale launch views', () => {
+  const root = fixture();
+  try {
+    const source = readFileSync(join(root, 'docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md'));
+    const ledger = readFileSync(join(root, 'docs/ledger.csv'));
+    const generated = spawnSync(process.execPath, [join(project, 'scripts/generate-project-state.mjs'), '--views-only'], { cwd: root, encoding: 'utf8' });
+    assert.equal(generated.status, 0, generated.stderr);
+    assert.deepEqual(readFileSync(join(root, 'docs/ledger.csv')), ledger);
+    assert.deepEqual(readFileSync(join(root, 'docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md')), source);
+    assert.equal(check(root).status, 0);
+    const viewPath = join(root, 'docs/spec/13-launch.md');
+    const view = readFileSync(viewPath, 'utf8');
+    assert.match(view, /Approved client amendments: A-001/);
+    assert.match(view, /recovery window of at least six hours/);
+    writeFileSync(viewPath, view.replace('recovery window of at least six hours', 'recovery window of at least seven days'));
+    assert.match(check(root).stderr, /Stale amended view/);
+    writeFileSync(viewPath, view);
+    const amendmentPath = join(root, 'docs/changes/A-001-recovery-window.json');
+    const amendment = readFileSync(amendmentPath, 'utf8');
+    writeFileSync(amendmentPath, amendment.replaceAll('\r\n', '\n').replaceAll('\n', '\r\n'));
+    assert.equal(check(root).status, 0, 'amendment fingerprint must survive Windows/Linux checkout');
+    writeFileSync(amendmentPath, amendment.replace('"status": "Approved"', '"status": "Proposed"'));
+    assert.match(check(root).stderr, /Stale amendment notice/);
+    writeFileSync(amendmentPath, amendment.replace('"sourceSha256": "E1', '"sourceSha256": "00'));
+    assert.match(check(root).stderr, /Invalid approved amendment/);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });

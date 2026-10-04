@@ -1,13 +1,34 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { loadAmendments, amendmentsForView, amendmentNotice } from './spec-amendments.mjs';
 
 const source = readFileSync('docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md');
 const hash = createHash('sha256').update(source).digest('hex').toUpperCase();
 const expected = readFileSync('docs/spec/SOURCE-HASH.txt', 'utf8').split(' ')[0];
 const errors = [];
 if (hash !== expected) errors.push('Frozen source hash changed');
+let amendments = [];
+try { amendments = loadAmendments(process.cwd(), source.toString('utf8'), hash); }
+catch (error) { errors.push(error.message); }
 for (const file of readdirSync('docs/spec').filter(x => x.endsWith('.md'))) {
-  if (!readFileSync(`docs/spec/${file}`, 'utf8').includes(`SHA-256 ${hash}`)) errors.push(`Stale derived view ${file}`);
+  const view = readFileSync(`docs/spec/${file}`, 'utf8');
+  if (!view.includes(`SHA-256 ${hash}`)) errors.push(`Stale derived view ${file}`);
+  const active = amendmentsForView(amendments, file.replace(/\.md$/, ''));
+  const notice = amendmentNotice(active).trim();
+  const actualNotice = view.match(/<!-- Approved client amendments: .*? -->/)?.[0] ?? '';
+  if (actualNotice !== notice) errors.push(`Stale amendment notice ${file}`);
+  for (const amendment of active) {
+    for (const replacement of amendment.replacements.filter(x => x.views.includes(file.replace(/\.md$/, '')))) {
+      if (view.includes(replacement.before) || view.split(replacement.after).length !== 2) errors.push(`Stale amended view ${file}: ${amendment.id}`);
+    }
+  }
+}
+for (const amendment of amendments) {
+  for (const replacement of amendment.replacements) {
+    for (const name of replacement.views) {
+      if (!readdirSync('docs/spec').includes(`${name}.md`)) errors.push(`Unknown amended view ${name}`);
+    }
+  }
 }
 const rows = source.toString('utf8').split(/\r?\n/).flatMap((line, index) => {
   const match = line.match(/^\| ([A-Z]+-\d+) \*\*\[([^\]]+)\]\*\* \|/);

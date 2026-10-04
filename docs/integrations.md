@@ -5,8 +5,8 @@ Checked: 2026-10-03. No Groundbnb product integration is verified live.
 | Provider | Identity/source | State | Next check |
 | --- | --- | --- | --- |
 | GitHub | `finallyaiagency/groundbnb` | Product repository retained with frozen specification, ledger, and history. Control Center code moved to `finallyaiagency/project-control-center`. | Check CI on every M0 checkpoint. |
-| Vercel | Team `finally-ais-projects`, project `groundbnb`, ID `prj_r5Vk1uNMNvS28qWX1UHo63t2S4ry` | Production remains on the clean holding page at `885f7d2`; draft-PR preview for `290b792` is Ready, protected, and returns revisioned HTTP 503 without configuration. Old Control Center variables and deployments were removed. | Provision branch-scoped product variables and prove preview connectivity/identity before live use. |
-| Neon | Project `groundbnb`, ID `divine-resonance-05443204` | Production, schema-only template, preview, local, and recovery-control branches exist. Baseline migration and seed refusal verified; disposable down migration passed 2026-10-03. Auth disabled; Free plan history retention 6 hours. Details in the dated M0 QA files. | Isolate auth/credentials and recovery access; seven-day launch retention remains unmet per D-002. Never clone customer identities into preview. |
+| Vercel | Team `finally-ais-projects`, project `groundbnb`, ID `prj_r5Vk1uNMNvS28qWX1UHo63t2S4ry` | Production remains on the clean holding page at `885f7d2`; draft-PR preview for `dda6418` is Ready, protected, and returns revisioned HTTP 503 without configuration. Old Control Center variables and deployments were removed. | Provision branch-scoped product variables and prove preview connectivity/identity before live use. |
+| Neon | Project `groundbnb`, ID `divine-resonance-05443204` | Production, schema-only template, preview, local, and recovery-control branches exist. Baseline migration and seed refusal verified; disposable down migration passed 2026-10-03. Auth disabled; Free plan history setting 6 hours. Details in the dated M0 QA files. | Isolate auth/credentials and recovery access; verify A-001's effective six-hour horizon and restore drill. Never clone customer identities into preview. |
 | Codex/Work allowance | Platform usage | Task-level credits unavailable. | Record only platform-reported measurements or labeled estimates. |
 | Google Maps, Gemini | Official terms and credentials | Not configured for Groundbnb. Dated map-policy review below; no provider payload is persisted or exported yet. | Complete field-by-field API policy, Gemini-context, pricing, and credential review before dependent design or live calls. |
 
@@ -14,7 +14,9 @@ Project Control Center provider settings and verification evidence are maintaine
 
 ## Neon Free retention check — 2026-10-03
 
-The project console showed Free plan and 6-hour history retention. Neon's [Free-plan announcement](https://neon.com/blog/neon-free-plan-1-gb-per-project), published 2026-10-02, also states a 6-hour instant-restore window. The client chose to keep Free (D-002). This provides only a six-hour provider recovery horizon; it does not satisfy the frozen seven-day launch requirement in Section 11.16 or replace a restore drill. No paid upgrade or independent seven-day backup was configured.
+The project console showed Free plan and a 6-hour history setting. Neon's [Free-plan announcement](https://neon.com/blog/neon-free-plan-1-gb-per-project), published 2026-10-02, also states a 6-hour instant-restore window. Current [official plan documentation](https://github.com/neondatabase/website/blob/main/content/docs/introduction/plans.md) caps Free change history at 1 GB. The available horizon can therefore be shorter; record the actual oldest recoverable time under representative write volume rather than assuming six hours from the setting.
+
+D-004 and approved A-001 now set the effective Section 11.16/LEG-10 launch minimum to six hours, superseding D-002's interim interpretation. The source remains frozen. Errors discovered later may be unrecoverable. The four-hour recovery-time target, truthful privacy disclosure, and non-production LEG-12 replay drill still apply; none is verified by the plan choice. No paid upgrade or independent backup was configured.
 
 ## M0 provider-data policy review — 2026-10-02
 
