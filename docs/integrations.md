@@ -6,11 +6,19 @@ Checked: 2026-10-04. No Groundbnb product integration is verified live.
 | --- | --- | --- | --- |
 | GitHub | `finallyaiagency/groundbnb` | Product repository retained with frozen specification, ledger, and history. Control Center code moved to `finallyaiagency/project-control-center`. | Check CI on every M0 checkpoint. |
 | Vercel | Team `finally-ais-projects`, project `groundbnb`, ID `prj_r5Vk1uNMNvS28qWX1UHo63t2S4ry` | Production remains on the clean holding page at `885f7d2`; last checked draft-PR preview for `51aa557` is Ready, protected, and returns revisioned HTTP 503 without configuration. GitHub CI passed every step for that revision. Old Control Center variables and deployments were removed. | Provision branch-scoped product variables and prove preview connectivity/identity before live use. |
-| Neon | Project `groundbnb`, ID `divine-resonance-05443204` | Production, schema-only template, preview, local, and recovery-control branches exist. Baseline migration and seed refusal verified; disposable down migration passed 2026-10-03. Empty production Auth enabled with email signup/localhost off; preview Auth initialization failed on missing provider CREATE permission (Q-004). Free history setting 6 hours. | Obtain exact Q-004 approval, finish isolated auth/credentials and recovery access; verify A-001's actual six-hour horizon and restore drill. Never clone customer identities into preview. |
+| Neon | Project `groundbnb`, ID `divine-resonance-05443204` | Production, schema-only template, preview, local, and recovery-control branches exist. Baseline migration and seed refusal verified; disposable down migration passed 2026-10-03. Q-004/D-005 grants committed on preview/local; both Auth services initialized with zero users/sessions/accounts and issuers distinct from production. Free history UI observed six hours; old nonexpiring manual snapshot discovered, contents unknown. | Q-005 limited role approval and client password handoff; finish email/session isolation, recovery access, actual capped horizon and quarantined restore drill. Never clone customer identities or unknown snapshots into preview. |
 | Codex/Work allowance | Platform usage | Task-level credits unavailable. | Record only platform-reported measurements or labeled estimates. |
 | Google Maps, Gemini | Official terms and credentials | Not configured for Groundbnb. Dated map-policy review below; no provider payload is persisted or exported yet. | Complete field-by-field API policy, Gemini-context, pricing, and credential review before dependent design or live calls. |
 
 Project Control Center provider settings and verification evidence are maintained in its separate repository. Production, preview, local, and recovery credentials must be distinct.
+
+## Neon Auth/access check — 2026-10-04
+
+The [official role documentation](https://github.com/neondatabase/website/blob/main/content/docs/manage/roles.md) identifies `neon_service` as an internal provider-managed role; do not use its credentials or change its attributes. Live metadata showed LOGIN=true, superuser=false. Approved database CREATE grants on the exact synthetic preview/local branches enabled Auth initialization. Provider provisioning does not prove app session isolation.
+
+Console/API-created roles receive broad neon_superuser membership. Proposed M0 credentials therefore use SQL-created NOLOGIN roles with explicit metadata-only read grants and a separate recovery reader; see Q-005 and `db/operations/prepare-m0-readonly-roles.sql`. This proposal is unexecuted. Actual effective permissions need live denial checks before deployment. New password entry requires client handoff under browser confirmation policy.
+
+Auth email settings offer Shared delivery or Custom SMTP. No capture configuration exists yet; public email signup is off during setup. The old nonexpiring snapshot observed in Restore is unreviewed and excluded from preview/local cloning. Exact observations and remaining gaps: `docs/qa/2026-10-04-M0-auth-grant.md`.
 
 ## Neon Free retention check — 2026-10-03
 

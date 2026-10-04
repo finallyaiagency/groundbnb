@@ -18,7 +18,7 @@ Recommended model: GPT-5.6 Sol High, due to environment isolation, provider righ
 
 ## Remaining work in order
 
-1. Resolve the high-severity lint dependency advisory without weakening the audit gate; rerun CI.
-2. Provision distinct production/preview/local auth and credentials plus restricted recovery access. Bind only synthetic preview credentials to the draft-PR branch, keep email captured and metered dispatch off, and prove the protected preview's revision, database identity, and auth isolation.
+1. CI dependency repair completed at `51aa557`; high-severity audit and Linux CI passed with the original gate retained.
+2. Distinct production/preview/local managed Auth services now exist with empty users. Q-004 is closed by D-005 and live grant evidence. Obtain Q-005 approval for the prepared restricted read-only roles, then hand off new password entry to the client. Finish email capture or verified test-recipient restrictions before app auth use. Bind only synthetic preview credentials to the draft-PR branch, keep metered dispatch off, and prove the protected preview's revision, database identity, and real auth isolation.
 3. Record actual six-hour recovery availability and a timed quarantined baseline restore. Keep the complete deleted-account/revoked-credential replay drill as the LEG-12/M8 launch gate when account controls exist.
 4. Once M0 exit checks pass, start the prepared M1-01 account/profile foundation packet. No M9 before M8.
