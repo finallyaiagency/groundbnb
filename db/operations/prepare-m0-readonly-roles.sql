@@ -1,4 +1,4 @@
--- PROPOSAL: requires specific client approval before execution.
+-- Approved by client 2026-10-04 (D-006/Q-005); credential activation is a client handoff.
 -- Run separately on each pinned branch using the operator account.
 -- Creates NOLOGIN roles without passwords. Client activates each credential manually.
 -- SQL creation avoids the neon_superuser membership added by Console/API creation.

@@ -1,0 +1,13 @@
+{
+  "id": "D-006",
+  "questionId": "Q-005",
+  "source": "Client",
+  "decision": "Approve four SQL-created, passwordless NOLOGIN roles: production/preview/local metadata probes and a separate recovery-control reader, using the prepared branch-pinned SQL.",
+  "rationale": "Client replied I approve to the four read-only database roles and acknowledged the subsequent manual credential handoff.",
+  "alternatives": ["Leave the proposed roles uncreated and M0 connectivity blocked"],
+  "impact": "Probe roles may read environment identity/migration metadata; the recovery reader may also read recovery-control events. No writes, auth-table grants, admin membership, future-table grants, paid services, or metered calls are authorized. New password entry and login activation remain the client handoff.",
+  "requirementIds": ["SYS-11", "LEG-12"],
+  "taskId": "M0-01",
+  "date": "2026-10-04",
+  "implementationStatus": "All four branch-pinned NOLOGIN roles created and catalog permissions checked. No credentials set. Client password/login activation and direct credential tests remain pending; no complete isolation requirement is Verified."
+}

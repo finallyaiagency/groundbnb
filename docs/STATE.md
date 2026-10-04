@@ -1,18 +1,18 @@
 # Groundbnb execution state
 
-Updated: 2026-10-04 (approved auth grants executed; restricted credential handoff pending)
+Updated: 2026-10-04 (four approved read-only roles created; client credential activation pending)
 
 ## Authority
 
 - Frozen product specification: `docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md` (SHA-256 in `docs/spec/SOURCE-HASH.txt`).
 - Approved client amendment A-001 (D-004, LEG-10) overlays Section 11.16: six-hour production recovery-history minimum at launch. Frozen source and stable IDs remain unchanged. Four-hour recovery time and LEG-12 replay remain required.
-- `docs/ledger.csv` contains 249 product requirements. SYS-14 is Verified by the repository gate, mutation tests, and revisioned CI. The LEG-09 dependency audit blocker is removed; the full security baseline remains Not started. SYS-11 is Blocked on Q-005's restricted role approval and credential handoff; Q-004 is closed. All other requirements remain Not started pending full integration evidence. No Control Center check verifies a Groundbnb requirement.
+- `docs/ledger.csv` contains 249 product requirements. SYS-14 is Verified by the repository gate, mutation tests, and revisioned CI. The LEG-09 dependency audit blocker is removed; the full security baseline remains Not started. SYS-11 is Blocked on Q-005's client credential activation; role approval/creation is complete and Q-004 is closed. All other requirements remain Not started pending full integration evidence. No Control Center check verifies a Groundbnb requirement.
 - GitHub product repository: `finallyaiagency/groundbnb`. Preserve its history and frozen source.
 - Project Control Center now has its own GitHub repository, Vercel project, and Neon project. Its app code, migrations, authentication adapter, tests, and current QA are maintained there.
 
 ## Current milestone
 
-M0 — repository and isolated product environments. The M0-01 contract, baseline SQL, provenance guard, documentation gate, health route, and recovery runbook are implemented. Isolated Neon branches and schema migrations exist; the production seed guard and disposable baseline rollback were observed live. D-005's approved preview/local managed-auth grants committed; both empty Auth services now exist. Next: approve Q-005's prepared restricted roles and complete client password entry, finish email/session isolation and branch-bound protected preview configuration, then perform a quarantined baseline restore. The full LEG-12 account/revocation replay remains the M8 launch gate. Read `docs/tasks/M0-01-repo-environments.md` before product implementation. Start the prepared `docs/tasks/M1-01-foundation.md` only after M0 exit passes.
+M0 — repository and isolated product environments. The M0-01 contract, baseline SQL, provenance guard, documentation gate, health route, and recovery runbook are implemented. Isolated Neon branches and schema migrations exist; the production seed guard and disposable baseline rollback were observed live. D-005's approved preview/local managed-auth grants committed; both empty Auth services now exist. D-006's four read-only roles are created with login disabled; catalog permission checks passed. Next: client password/login activation, direct credential tests, email/session isolation and branch-bound protected preview configuration, then a quarantined baseline restore. The full LEG-12 account/revocation replay remains the M8 launch gate. Read `docs/tasks/M0-01-repo-environments.md` before product implementation. Start the prepared `docs/tasks/M1-01-foundation.md` only after M0 exit passes.
 
 ## Groundbnb environments
 
@@ -22,7 +22,8 @@ M0 — repository and isolated product environments. The M0-01 contract, baselin
 
 ## Verification and decisions
 
-- Current auth checkpoint evidence: `docs/qa/2026-10-04-M0-auth-grant.md`, D-005. Q-004's specific client approval allowed both grants; initial incorrect NOLOGIN assumption caused a safe rollback, then exact branch-pinned grants succeeded without role-attribute changes. Q-005 is a concrete unexecuted proposal for four limited read-only roles. Browser policy requires approval for new database access and client entry of new credentials. No application credentials are bound.
+- Current role checkpoint evidence: `docs/qa/2026-10-04-M0-readonly-roles.md`, D-006. All four restricted NOLOGIN roles are created and catalog checks passed. Operator SET ROLE was denied and rolled back; no new admin membership was granted. Direct login/read/denial tests require client password activation under browser handoff policy. No application credentials are bound. CI 37212278307 passed all Linux gates at `fec6933`.
+- Auth checkpoint evidence: `docs/qa/2026-10-04-M0-auth-grant.md`, D-005. Q-004's specific client approval allowed both grants; initial incorrect NOLOGIN assumption caused a safe rollback, then exact branch-pinned grants succeeded without role-attribute changes. All managed Auth services are distinct; real session/email isolation remains open.
 - Recovery UI observed a six-hour production window (earliest 05:05 EDT at about 11:05 EDT), not representative-write or restore-time proof. An old unexpired manual snapshot from 2026-09-29 is unreviewed historical material, not a preview parent; include it in future retention inventory and do not restore it into an accessible environment.
 - CI repair evidence: `docs/qa/2026-10-04-M0-CI-auth.md`. Next/ESLint 16.3.8 plus a scoped tinyglobby replacement/compatibility patch removes the unpatched braces chain. Local lint, typecheck, 10 tests, build, source/secret scans, and audit passed; GitHub CI 37210601814 passed every step at `51aa557`. High-severity gate unchanged. Runtime auth integration and recovery are not verified. The initial automatic approval denial remains historical evidence; it was resolved by D-005.
 - Cleanup evidence and exact checks: `docs/qa/2026-10-02-separation-cleanup.md`.
