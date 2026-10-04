@@ -18,6 +18,8 @@ The [official role documentation](https://github.com/neondatabase/website/blob/m
 
 Console/API-created roles receive broad neon_superuser membership. D-006/Q-005 approved SQL-created NOLOGIN roles with explicit metadata-only read grants and a separate recovery reader. All four are created; the catalog assertion script passed on each branch, including auth-table and write restrictions. Operator SET ROLE was denied, so direct credential checks still require client password/login activation. New password entry requires client handoff under browser confirmation policy; exact steps are in `docs/runbooks/M0-credential-handoff.md`. No role credential has been bound to an app.
 
+First-password correction, 2026-10-04: the client reported console Reset password rejects the passwordless preview role. Use client-executed SQL to initialize the first password and LOGIN, as documented by Neon/PostgreSQL; the handoff guide is corrected. Initial-password success is still unverified. Roles are branch-scoped; preview's two visible roles do not mean the other three branch roles are missing.
+
 Auth email settings offer Shared delivery or Custom SMTP. No capture configuration exists yet; public email signup is off during setup. The old nonexpiring snapshot observed in Restore is unreviewed and excluded from preview/local cloning. Exact observations and remaining gaps: `docs/qa/2026-10-04-M0-auth-grant.md`.
 
 ## Neon Free retention check — 2026-10-03

@@ -1,6 +1,6 @@
 # Groundbnb execution state
 
-Updated: 2026-10-04 (four approved read-only roles created; client credential activation pending)
+Updated: 2026-10-04 (first-password handoff corrected after client-reported reset failure)
 
 ## Authority
 
@@ -22,6 +22,7 @@ M0 — repository and isolated product environments. The M0-01 contract, baselin
 
 ## Verification and decisions
 
+- Credential handoff correction: `docs/qa/2026-10-04-M0-password-initialization.md`. Client reported console Reset password refuses the passwordless preview role. The four role names belong to four separate branches; two visible roles on preview are expected. `docs/runbooks/M0-credential-handoff.md` now uses client-executed ALTER ROLE with LOGIN/PASSWORD to initialize each first password. No credential was entered by Codex; successful initialization and direct login tests remain pending.
 - Current role checkpoint evidence: `docs/qa/2026-10-04-M0-readonly-roles.md`, D-006. All four restricted NOLOGIN roles are created and catalog checks passed. Operator SET ROLE was denied and rolled back; no new admin membership was granted. Direct login/read/denial tests require client password activation under browser handoff policy. No application credentials are bound. CI 37212278307 passed all Linux gates at `fec6933`.
 - Auth checkpoint evidence: `docs/qa/2026-10-04-M0-auth-grant.md`, D-005. Q-004's specific client approval allowed both grants; initial incorrect NOLOGIN assumption caused a safe rollback, then exact branch-pinned grants succeeded without role-attribute changes. All managed Auth services are distinct; real session/email isolation remains open.
 - Recovery UI observed a six-hour production window (earliest 05:05 EDT at about 11:05 EDT), not representative-write or restore-time proof. An old unexpired manual snapshot from 2026-09-29 is unreviewed historical material, not a preview parent; include it in future retention inventory and do not restore it into an accessible environment.
