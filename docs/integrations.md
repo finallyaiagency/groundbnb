@@ -1,16 +1,25 @@
 # Groundbnb integration register
 
-Checked: 2026-10-04. No Groundbnb product integration is verified live.
+Checked: 2026-10-05. Live database metadata connectivity is verified on all four roles; complete auth/email/recovery integration remains unverified.
 
 | Provider | Identity/source | State | Next check |
 | --- | --- | --- | --- |
 | GitHub | `finallyaiagency/groundbnb` | Product repository retained with frozen specification, ledger, and history. Control Center code moved to `finallyaiagency/project-control-center`. | Check CI on every M0 checkpoint. |
-| Vercel | Team `finally-ais-projects`, project `groundbnb`, ID `prj_r5Vk1uNMNvS28qWX1UHo63t2S4ry` | Production remains on the clean holding page at `885f7d2`; last checked draft-PR preview for `51aa557` is Ready, protected, and returns revisioned HTTP 503 without configuration. GitHub CI passed every step for that revision. Old Control Center variables and deployments were removed. | Provision branch-scoped product variables and prove preview connectivity/identity before live use. |
-| Neon | Project `groundbnb`, ID `divine-resonance-05443204` | Production, schema-only template, preview, local, and recovery-control branches exist. Baseline migration and seed refusal verified; disposable down migration passed 2026-10-03. Q-004/D-005 grants committed on preview/local; both Auth services initialized with zero users/sessions/accounts and issuers distinct from production. Free history UI observed six hours; old nonexpiring manual snapshot discovered, contents unknown. | Q-005 limited role approval and client password handoff; finish email/session isolation, recovery access, actual capped horizon and quarantined restore drill. Never clone customer identities or unknown snapshots into preview. |
+| Vercel | Team `finally-ais-projects`, project `groundbnb`, ID `prj_r5Vk1uNMNvS28qWX1UHo63t2S4ry` | Production holding page stays at `885f7d2`; preview dpl_BFh5e6iqaavYZ8YSFQFXsdVwkLoN at e5abf0a is Ready/protected, with HTTP 200/database_ready, pinned branch/revision and no-store. Preview public settings/Secret are exact-branch scoped; Production has zero variables. CI 37309688270 passed. | Keep login/jobs/metered dispatch off; complete auth/email isolation and remaining destination bindings. |
+| Neon | Project `groundbnb`, ID `divine-resonance-05443204` | All four restricted direct logins/metadata/catalog checks pass. Empty-template historical quarantine br-cool-frost-b8sacwyc restored at 06:40 UTC, baseline present/identities zero/Auth and control schemas absent. Production UI showed six-hour availability; old nonexpiring snapshot remains unreviewed. Preview/local Auth issuers separate but Shared email still configured. | Client saves prepared free capture credentials on preview/local, then live email/session isolation and recovery-key placement. Representative capped horizon and full replay remain launch/M8 gates. Never clone customer identities or unknown snapshots into preview. |
+| Ethereal | Official Nodemailer testing guide, checked 2026-10-05 | Two distinct temporary SMTP capture accounts prepared through exact nodemailer@10.0.15 development dependency. One synthetic STARTTLS submission accepted per account; credentials DPAPI encrypted locally, ignored by Git. Neon binding not saved yet. | Client-only credential entry/Save per docs/runbooks/M0-email-capture.md, then prove a Neon-generated synthetic message is captured and environments remain separate. |
 | Codex/Work allowance | Platform usage | Task-level credits unavailable. | Record only platform-reported measurements or labeled estimates. |
 | Google Maps, Gemini | Official terms and credentials | Not configured for Groundbnb. Dated map-policy review below; no provider payload is persisted or exported yet. | Complete field-by-field API policy, Gemini-context, pricing, and credential review before dependent design or live calls. |
 
 Project Control Center provider settings and verification evidence are maintained in its separate repository. Production, preview, local, and recovery credentials must be distinct.
+
+## Superseding direct-role/recovery/capture check — 2026-10-05
+
+Evidence: docs/qa/2026-10-05-M0-role-checks-recovery.md. All four direct role logins pass at e5abf0a. No repeated client password prompts are needed. Empty-baseline historical fork and read-only quarantine assertions pass; this is partial M0 recovery evidence, not representative production time/horizon or LEG-12 replay. Separate recovery ledger/key availability still gates reopening.
+
+The [official Ethereal guide](https://nodemailer.com/guides/testing-with-ethereal) describes free fake SMTP which captures rather than delivering messages, with temporary automatic accounts and development rate limits. Only synthetic contents are permitted here; capture is still third-party storage. Two distinct accounts were generated with caching disabled, provider/SMTP hosts pinned, certificate validation and required STARTTLS. Credentials stay out of AI context/Git and are handed to the client through a local DPAPI viewer. Neon currently remains on Shared delivery until the client saves Custom SMTP; the capture flag in app settings alone is insufficient. No account expiry duration or exact task provider cost is assumed.
+
+Neon's [2026-10-02 Free-plan announcement](https://neon.com/blog/neon-free-plan-1-gb-per-project) states ten branches/project and six-hour restore. Console showed six branches after this bounded historical fork; no paid upgrade occurred. Actual oldest time under representative writes remains a launch check. Old dated observations below are historical and superseded where this section differs.
 
 ## M0 active roles and driver/configuration — 2026-10-04
 

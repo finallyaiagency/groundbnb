@@ -2,6 +2,9 @@ allowBuilds:
   core-js: false
   unrs-resolver: false
 
+minimumReleaseAgeExclude:
+  - nodemailer@10.0.15
+
 # The plugin's only fast-glob call uses globSync(pattern, { onlyDirectories: true }).
 # tinyglobby implements that API without the unpatched braces dependency.
 # Keep this scoped to the reviewed plugin version; audits catch future changes.
