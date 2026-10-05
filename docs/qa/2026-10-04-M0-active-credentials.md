@@ -30,6 +30,8 @@ Masked connection details supplied public pooled hosts: preview `ep-red-night-b8
 
 ## Checks and limitations
 
+Published implementation revision: `84e280515202f20afd650ac9d90e0aa4bd91c92e`. GitHub Verify run [37256943376](https://github.com/finallyaiagency/groundbnb/actions/runs/37256943376) completed successfully. Vercel preview dpl_J5keAqwVJavoyAb4sraB3GVqRBs8 is Ready at that exact revision. Authenticated GET `/api/health` returned HTTP 503, Cache-Control no-store, configuration_required, database not_checked, environment null, and auth/email isolation unverified with the exact revision. The missing Secret therefore prevents a database connection; no live probe-role authentication is claimed. Production was not deployed.
+
 Local passes: pnpm test (16/16), pnpm typecheck, pnpm lint, pnpm build, pnpm audit --audit-level=high (no known vulnerabilities), pnpm state:check (249 IDs; frozen source hash unchanged), pnpm secrets:check (90 source files; no common credential patterns), git diff --check. Tests cover pre-transmission restrictions, wrong branch/missing/unknown evidence, redacted failures, configuration-before-network, revision/auth/email reporting, and actual-driver read-only serialization/parsing with synthetic HTTP. Simulated transport is not live integration proof.
 
 M0/SYS-11 remain incomplete: secret binding/direct role tests, auth/email isolation, recovery-control/key placement, actual capped six-hour availability and timed quarantined restore are open. M1 not started. No paid upgrade, metered product call or subagent. Task credits/provider costs unavailable; none inferred.
