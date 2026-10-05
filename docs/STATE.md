@@ -1,6 +1,6 @@
 # Groundbnb execution state
 
-Updated: 2026-10-05 (SMTP capture and preview/local sessions pass; private production-session handoff prepared)
+Updated: 2026-10-05 (SMTP capture and preview/local sessions pass; production-session handoff available at local browser URL)
 
 ## Authority
 
@@ -22,6 +22,8 @@ M0 — repository and isolated product environments. Existing contract, baseline
 - Preview/local email capture and actual session checks pass; real production-session rejection and remaining applicable bindings remain open. SMTP credentials and the separate recovery HMAC key are DPAPI encrypted in ignored local files outside Neon snapshots. Recovery application binding/portable backup remain unconfigured. Client chose Neon Free and approved A-001's six-hour launch minimum. The production UI showed a six-hour available window; representative-write horizon remains unverified.
 
 ## Verification and decisions
+
+- Client could not see the Windows production sign-in popup after two launches. Superseding handoff is the local browser page http://127.0.0.1:4317/ in docs/runbooks/M0-production-session.md. Blank browser render and HTTP/CSRF rejection verified without a real email/OTP request. Client alone enters the real identity/code and submits; Codex must not inspect the populated page. Same private worker and atomic one-attempt evidence shared with the legacy popup. SYS-11 remains Blocked pending that actual production-session check.
 
 - Current email/session/key evidence: `docs/qa/2026-10-05-M0-email-sessions.md`, published at 63f759b with passing CI 37382165951 and exact-revision Ready preview/database health at 22:24:31Z. SMTP handoffs complete; two Neon SMTP test messages captured separately. Three failed Auth diagnostics retained, then client-authorized continuation passed both genuine ordinary preview/local sessions, foreign/production rejection and cleanup at 22:14:27.362Z. Three public key sets distinct. Six synthetic Auth emails total, no passwords initialized. External HMAC key placement foundation only. Client's real production account/private OTP check is prepared in `docs/runbooks/M0-production-session.md`; its result is not yet available. Do not repeat completed database-password/SMTP handoffs. Historical entries below preserve earlier observations and are superseded where this paragraph differs.
 

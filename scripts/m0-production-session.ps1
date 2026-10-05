@@ -61,10 +61,14 @@ $m0Send.Add_Click({
     $m0Send.Enabled = $false
     $m0Email.ReadOnly = $true
     try {
+        if (Test-Path -LiteralPath $m0EvidencePath) { throw 'Another client check already attempted.' }
         $script:m0SentAt = [DateTime]::UtcNow
         New-Item -ItemType Directory -Path (Split-Path -Parent $m0EvidencePath) -Force | Out-Null
-        @{ok=$false; phase='production_otp_attempted'; maxRealEmails=1; checkedAtUtc=$script:m0SentAt.ToString('o')} |
-            ConvertTo-Json | Set-Content -LiteralPath $m0EvidencePath -Encoding UTF8
+        $m0AttemptMarker = [IO.File]::Open($m0EvidencePath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+        try {
+            $m0AttemptBytes = [Text.Encoding]::UTF8.GetBytes((@{ok=$false; phase='production_otp_attempted'; maxRealEmails=1; checkedAtUtc=$script:m0SentAt.ToString('o')} | ConvertTo-Json))
+            $m0AttemptMarker.Write($m0AttemptBytes, 0, $m0AttemptBytes.Length)
+        } finally { $m0AttemptMarker.Dispose() }
         $m0Sent = Invoke-M0PrivateWorker @{mode='send'; email=$m0Email.Text.Trim()}
         if (-not $m0Sent.ok) { throw 'Send failed' }
         $m0Otp.Enabled = $true
