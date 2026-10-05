@@ -9,5 +9,5 @@
   "requirementIds": ["SYS-11", "LEG-12"],
   "taskId": "M0-01",
   "date": "2026-10-04",
-  "implementationStatus": "All four branch-pinned NOLOGIN roles created and catalog permissions checked. No credentials set. Client password/login activation and direct credential tests remain pending; no complete isolation requirement is Verified."
+  "implementationStatus": "All four branch-pinned restricted roles created and catalog permissions checked. After the client reported done on 2026-10-04, preview LOGIN was observed enabled; local, production, and recovery LOGIN remain disabled. Password authentication and destination bindings remain unverified; no complete isolation requirement is Verified. Evidence: docs/qa/2026-10-04-M0-preview-activation.md."
 }

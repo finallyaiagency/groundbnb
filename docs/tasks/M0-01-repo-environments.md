@@ -24,3 +24,5 @@ Recommended model: GPT-5.6 Sol High, due to environment isolation, provider righ
 4. Once M0 exit checks pass, start the prepared M1-01 account/profile foundation packet. No M9 before M8.
 
 Credential handoff correction: initialize each first password and LOGIN with client-executed SQL from `docs/runbooks/M0-credential-handoff.md`; console Reset password failed for the passwordless preview role. Each role lives on its own branch. Do not infer successful activation from the approval or role catalog checks.
+
+Activation progress after client replied done: `docs/qa/2026-10-04-M0-preview-activation.md` confirms preview LOGIN=true; local/production/recovery remain LOGIN=false. Only those three password steps require client completion now. Operator catalog evidence does not prove direct password authentication or complete SYS-11 isolation.

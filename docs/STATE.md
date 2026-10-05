@@ -1,6 +1,6 @@
 # Groundbnb execution state
 
-Updated: 2026-10-04 (first-password handoff corrected after client-reported reset failure)
+Updated: 2026-10-04 (preview LOGIN confirmed; three remaining credential activations require client entry)
 
 ## Authority
 
@@ -12,7 +12,7 @@ Updated: 2026-10-04 (first-password handoff corrected after client-reported rese
 
 ## Current milestone
 
-M0 — repository and isolated product environments. The M0-01 contract, baseline SQL, provenance guard, documentation gate, health route, and recovery runbook are implemented. Isolated Neon branches and schema migrations exist; the production seed guard and disposable baseline rollback were observed live. D-005's approved preview/local managed-auth grants committed; both empty Auth services now exist. D-006's four read-only roles are created with login disabled; catalog permission checks passed. Next: client password/login activation, direct credential tests, email/session isolation and branch-bound protected preview configuration, then a quarantined baseline restore. The full LEG-12 account/revocation replay remains the M8 launch gate. Read `docs/tasks/M0-01-repo-environments.md` before product implementation. Start the prepared `docs/tasks/M1-01-foundation.md` only after M0 exit passes.
+M0 — repository and isolated product environments. The M0-01 contract, baseline SQL, provenance guard, documentation gate, health route, and recovery runbook are implemented. Isolated Neon branches and schema migrations exist; the production seed guard and disposable baseline rollback were observed live. D-005's approved preview/local managed-auth grants committed; both empty Auth services now exist. D-006's four read-only roles are created; catalog permission checks passed. Preview LOGIN is now enabled after client handoff; local, production, and recovery LOGIN remain disabled. Next: client activation of those three roles, direct credential tests, email/session isolation and branch-bound protected preview configuration, then a quarantined baseline restore. The full LEG-12 account/revocation replay remains the M8 launch gate. Read `docs/tasks/M0-01-repo-environments.md` before product implementation. Start the prepared `docs/tasks/M1-01-foundation.md` only after M0 exit passes.
 
 ## Groundbnb environments
 
@@ -22,6 +22,7 @@ M0 — repository and isolated product environments. The M0-01 contract, baselin
 
 ## Verification and decisions
 
+- Preview activation follow-up: `docs/qa/2026-10-04-M0-preview-activation.md`. Client replied done; read-only operator checks observed preview LOGIN=true and the other three LOGIN=false on their pinned branches. Metadata reads remain allowed, metadata writes/admin membership denied. No passwords were read; direct password authentication remains unverified. Complete only the three remaining handoff rows.
 - Credential handoff correction: `docs/qa/2026-10-04-M0-password-initialization.md`. Client reported console Reset password refuses the passwordless preview role. The four role names belong to four separate branches; two visible roles on preview are expected. `docs/runbooks/M0-credential-handoff.md` now uses client-executed ALTER ROLE with LOGIN/PASSWORD to initialize each first password. No credential was entered by Codex; successful initialization and direct login tests remain pending.
 - Current role checkpoint evidence: `docs/qa/2026-10-04-M0-readonly-roles.md`, D-006. All four restricted NOLOGIN roles are created and catalog checks passed. Operator SET ROLE was denied and rolled back; no new admin membership was granted. Direct login/read/denial tests require client password activation under browser handoff policy. No application credentials are bound. CI 37212278307 passed all Linux gates at `fec6933`.
 - Auth checkpoint evidence: `docs/qa/2026-10-04-M0-auth-grant.md`, D-005. Q-004's specific client approval allowed both grants; initial incorrect NOLOGIN assumption caused a safe rollback, then exact branch-pinned grants succeeded without role-attribute changes. All managed Auth services are distinct; real session/email isolation remains open.
