@@ -9,5 +9,5 @@
   "requirementIds": ["SYS-11", "LEG-12"],
   "taskId": "M0-01",
   "date": "2026-10-04",
-  "implementationStatus": "All four branch-pinned restricted roles created and catalog permissions checked. After the client reported done on 2026-10-04, preview LOGIN was observed enabled; local, production, and recovery LOGIN remain disabled. Password authentication and destination bindings remain unverified; no complete isolation requirement is Verified. Evidence: docs/qa/2026-10-04-M0-preview-activation.md."
+  "implementationStatus": "All four branch-pinned restricted roles created; LOGIN=true and restricted metadata catalog permissions observed after client all three done on 2026-10-04. Public M0 preview settings saved only for the exact Git branch; client preview Secret entry/direct password tests remain pending. Database health implementation passed local checks, not live credentials. No complete isolation requirement is Verified. Evidence: docs/qa/2026-10-04-M0-active-credentials.md."
 }

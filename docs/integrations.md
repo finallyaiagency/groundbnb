@@ -12,6 +12,12 @@ Checked: 2026-10-04. No Groundbnb product integration is verified live.
 
 Project Control Center provider settings and verification evidence are maintained in its separate repository. Production, preview, local, and recovery credentials must be distinct.
 
+## M0 active roles and driver/configuration — 2026-10-04
+
+After client **all three done**, all four LOGIN settings were observed true on their pinned branches with metadata reads allowed and metadata writes/admin membership denied. Direct credential authentication remains unverified. Vercel now has 16 public variables bound only to codex/m0-01-environment-contract Preview, with app login/jobs/metered dispatch off. Read-back confirmed exact scopes, no Production variables and no database Secret. The client must enter the approved preview credential in the prepared Secret form; no production/recovery credential is needed there. Historical first-password reports below are retained as earlier observations.
+
+Checked [official Neon driver](https://github.com/neondatabase/serverless) and [configuration API](https://github.com/neondatabase/serverless/blob/main/CONFIG.md): installed 1.2.0 exactly; HTTP noninteractive read-only transaction, lazy construction, timeout signal. Use only environment/migration/catalog metadata in M0; no auth payload, customer profile, provider-map content or recovery-event payload is read by health. Current [Vercel variable](https://vercel.com/docs/environment-variables) and [sensitive variable](https://vercel.com/docs/environment-variables/sensitive-environment-variables) docs support preview branch scoping and unreadable saved secrets. Existing resources retained; no paid upgrade or Marketplace provisioning. Code/local tests do not establish live password login or auth/email/recovery integration. Evidence: `docs/qa/2026-10-04-M0-active-credentials.md`.
+
 ## Neon Auth/access check — 2026-10-04
 
 The [official role documentation](https://github.com/neondatabase/website/blob/main/content/docs/manage/roles.md) identifies `neon_service` as an internal provider-managed role; do not use its credentials or change its attributes. Live metadata showed LOGIN=true, superuser=false. Approved database CREATE grants on the exact synthetic preview/local branches enabled Auth initialization. Provider provisioning does not prove app session isolation.
