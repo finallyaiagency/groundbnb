@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param()
-# CLIENT ONLY: Codex must not open this form or inspect its contents.
+# CLIENT INPUT ONLY: Codex may launch the blank form, but never inspect it or operate its controls.
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing

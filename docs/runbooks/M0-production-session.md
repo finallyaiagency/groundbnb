@@ -7,7 +7,7 @@ Production Auth was empty on 2026-10-05. Use your own real identity, never a syn
 ## Client steps
 
 1. In the prepared **production → Better Auth → Create user** form, enter your own real email/name and click Create. No password is requested. Do not promote the account.
-2. Run the following locally. Codex must not open or inspect its private form.
+2. Use the prepared private local sign-in window. Codex may launch this blank form but must never inspect it, enter values, click its controls or receive your inputs. If the window is closed, run the following locally.
 
 ```powershell
 powershell -NoProfile -STA -File "C:\Users\17044\Documents\Code\Groundbnb\scripts\m0-production-session.ps1"
