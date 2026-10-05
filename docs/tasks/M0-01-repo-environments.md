@@ -18,6 +18,8 @@ Recommended model: GPT-5.6 Sol High, due to environment isolation, provider righ
 
 ## Remaining work in order
 
+Latest handoff 2026-10-05: client saved the preview Secret; its initial Production scope was corrected to only the M0 preview Git branch by metadata-only edit. Do not ask for that password again. Verify the new preview's live health/direct restricted-role assertions. See `docs/qa/2026-10-05-M0-preview-secret.md`; the historical pending handoff text below is superseded.
+
 1. CI dependency repair completed at `51aa557`; high-severity audit and Linux CI passed with the original gate retained.
 2. Distinct production/preview/local managed Auth services exist with empty users. Q-004 is closed by D-005. D-006's four limited roles now have LOGIN enabled after client handoff; catalog checks passed. Public preview settings are saved at the exact Git branch. Client must enter the preview URL in Vercel's Secret form, then run direct credential read/denial checks and verify live database health/revision. Finish email capture or verified test-recipient restrictions before app auth use, keep metered dispatch off, and prove real auth isolation.
 3. Record actual six-hour recovery availability and a timed quarantined baseline restore. Keep the complete deleted-account/revoked-credential replay drill as the LEG-12/M8 launch gate when account controls exist.

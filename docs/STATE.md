@@ -1,6 +1,6 @@
 # Groundbnb execution state
 
-Updated: 2026-10-04 (all four LOGIN settings confirmed; database health implemented, preview Secret handoff pending)
+Updated: 2026-10-05 (client preview Secret saved; scope corrected to the exact preview branch, direct check pending)
 
 ## Authority
 
@@ -21,6 +21,8 @@ M0 — repository and isolated product environments. The M0-01 contract, baselin
 - Independent Auth, credentials, Vercel branch bindings, and restricted recovery access are still M0 work. No metered product dispatch is enabled. Client chose to keep Neon Free and approved A-001's six-hour launch minimum (D-004, Q-002 closed). Free's change-history cap may shorten actual availability; verify it rather than treating configuration as evidence.
 
 ## Verification and decisions
+
+- Preview Secret handoff: `docs/qa/2026-10-05-M0-preview-secret.md`. Client saved the sensitive variable under Production; metadata-only edit moved the same Secret to Preview/exact M0 Git branch without reading its value. Read-back shows zero Production variables and all 16 public settings plus the Secret on the correct preview branch. New preview/direct database health is pending; other environment credentials, auth/email isolation and recovery remain open.
 
 - All-role activation/database probe: `docs/qa/2026-10-04-M0-active-credentials.md`. All four pinned LOGIN settings observed true; metadata read=true/write=false/admin=false. Expanded preview catalog query reports baseline/privileges safe as operator. Exact Neon driver, read-only HTTP health probe, pre-transmission guards and error redaction implemented; 16 tests, lint/typecheck/build/audit passed. Public Vercel settings read back at exact preview branch; no database Secret or Production variable is saved. Prepared blank Secret form requires client entry. Live direct password login, auth/email isolation and recovery remain unverified.
 - Preview activation follow-up: `docs/qa/2026-10-04-M0-preview-activation.md`. Client replied done; read-only operator checks observed preview LOGIN=true and the other three LOGIN=false on their pinned branches. Metadata reads remain allowed, metadata writes/admin membership denied. No passwords were read; direct password authentication remains unverified. Complete only the three remaining handoff rows.
