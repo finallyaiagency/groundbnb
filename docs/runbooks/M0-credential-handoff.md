@@ -6,6 +6,12 @@ Progress checked 2026-10-04 after the client's **all three done**: all four LOGI
 
 ## Next: bind only the preview credential
 
+2026-10-05 update: preview Secret saved by the client; initial Production scope corrected without reading its value. Live deployed health now passes direct preview-role login, metadata identity/baseline and restricted catalog assertions. No need to enter the preview Secret again. See `docs/qa/2026-10-05-M0-preview-secret.md`.
+
+### Next manual step: check the other three existing passwords
+
+Run `scripts/verify-m0-credentials.ps1` in PowerShell from this repository. It prompts with hidden input for local / groundbnb_local_probe, production / groundbnb_production_probe, then recovery / groundbnb_recovery_reader. Enter the different passwords already set for those roles. This performs read-only metadata checks at the three fixed, verified Neon hosts, including recovery-control SELECT/no-write catalog privileges. It creates no credential file, changes no role/grant/data, and saves only whitelisted pass/fail evidence in ignored `.tmp/evidence/m0-direct-roles.json` with the Git revision and UTC check time. Driver/raw errors are suppressed. Report **role checks done**; do not send passwords. This is direct authentication and catalog evidence, not an attempted-write denial or session/email isolation proof. Credentials are transient in the local child process; they are not persisted as app configuration by this command.
+
 Codex saved the 16 public preview settings and prepared a blank [Vercel Secret form](https://vercel.com/finally-ais-projects/groundbnb/settings/environment-variables?create=true). Key: `GROUND_DATABASE_URL`. Type: **Secret**. Environment: **only** `codex/m0-01-environment-contract` under Preview Branches; Production, all-Preview and Development are unselected.
 
 Use username `groundbnb_preview_probe`, the saved **preview** password, pooled host `ep-red-night-b8pf2mdl-pooler.c-14.us-east-1.aws.neon.tech`, database `groundbnb`, and query options `sslmode=require&channel_binding=require`. The complete placeholder URL is in `.env.example`; replace its password only in the Vercel Value field. URL-encode punctuation in the password; the recommended generated letters/numbers need no encoding. Click Save yourself, close the form and reply **preview secret saved**. Never paste the completed URL into chat or Git. Codex will redeploy and verify connectivity/identity afterward.
