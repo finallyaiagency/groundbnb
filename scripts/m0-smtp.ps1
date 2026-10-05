@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([ValidateSet('Prepare', 'Show')][string]$Mode = 'Show')
+param([ValidateSet('Prepare', 'Show', 'Verify', 'VerifyAuth')][string]$Mode = 'Show')
 $ErrorActionPreference = 'Stop'
 $m0Root = Split-Path -Parent $PSScriptRoot
 $m0Kinds = @('preview', 'local')
@@ -56,7 +56,87 @@ if ($Mode -eq 'Prepare') {
     exit 0
 }
 
-# Client-only display. Codex must never run Show or read these decrypted values.
+if ($Mode -in @('Verify', 'VerifyAuth')) {
+    # Private fixed-target worker, never print decrypted credentials or message contents.
+    $m0Accounts = @()
+    $m0Payload = $null
+    $m0Child = $null
+    try {
+        foreach ($m0Kind in $m0Kinds) {
+            $m0Bytes = [Security.Cryptography.ProtectedData]::Unprotect(
+                [IO.File]::ReadAllBytes((Join-Path $m0Root ".env.m0-smtp-$m0Kind.dpapi")), $null,
+                [Security.Cryptography.DataProtectionScope]::CurrentUser)
+            try { $m0Accounts += ([Text.Encoding]::UTF8.GetString($m0Bytes) | ConvertFrom-Json) }
+            finally { [Array]::Clear($m0Bytes, 0, $m0Bytes.Length) }
+        }
+        $m0RunName = if ($Mode -eq 'VerifyAuth') { 'm0-auth-run.json' } else { 'm0-email-run.json' }
+        $m0Run = Get-Content -LiteralPath (Join-Path $m0Root ".tmp/evidence/$m0RunName") -Raw | ConvertFrom-Json
+        if ([DateTime]::UtcNow -gt [DateTime]::Parse($m0Run.expiresAtUtc).ToUniversalTime()) { throw 'Bounded run expired.' }
+        if ($Mode -eq 'VerifyAuth' -and (Test-Path -LiteralPath (Join-Path $m0Root '.tmp/evidence/m0-auth-check.json'))) { throw 'Auth run already attempted; refusing automatic repetition.' }
+        $m0Payload = @{ accounts = $m0Accounts; startedAtUtc = $m0Run.startedAtUtc } | ConvertTo-Json -Depth 4 -Compress
+        $m0Start = New-Object Diagnostics.ProcessStartInfo
+        $m0Start.FileName = (Get-Command node -ErrorAction Stop).Source
+        $m0WorkerName = if ($Mode -eq 'VerifyAuth') { 'verify-m0-auth.mjs' } else { 'verify-m0-mailboxes.mjs' }
+        $m0Start.Arguments = '"' + (Join-Path $PSScriptRoot $m0WorkerName) + '"'
+        $m0Start.WorkingDirectory = $m0Root
+        $m0Start.UseShellExecute = $false
+        $m0Start.CreateNoWindow = $true
+        $m0Start.RedirectStandardInput = $true
+        $m0Start.RedirectStandardOutput = $true
+        $m0Start.RedirectStandardError = $true
+        $m0Child = [Diagnostics.Process]::Start($m0Start)
+        $m0Child.StandardInput.Write($m0Payload)
+        $m0Child.StandardInput.Close()
+        $m0Payload = $null
+        $m0Accounts = $null
+        $m0Timeout = if ($Mode -eq 'VerifyAuth') { 150000 } else { 50000 }
+        if (-not $m0Child.WaitForExit($m0Timeout)) { $m0Child.Kill(); throw 'Timeout' }
+        $m0Output = $m0Child.StandardOutput.ReadToEnd() | ConvertFrom-Json
+        if ($Mode -eq 'VerifyAuth') {
+            $m0Evidence = @{ checkedAtUtc = [DateTime]::UtcNow.ToString('o'); runId = $m0Run.runId;
+                revision = (& git -c "safe.directory=$($m0Root.Replace('\','/'))" -C $m0Root rev-parse HEAD);
+                ok = $m0Child.ExitCode -eq 0 -and $m0Output.ok -eq $true;
+                distinctPublicKeys = $(if ($null -eq $m0Output.distinctPublicKeys) { $null } else { [bool]$m0Output.distinctPublicKeys }) }
+            if ($m0Output.phase -match '^[a-z_]+$') { $m0Evidence.phase = $m0Output.phase }
+            if ($null -ne $m0Output.status) { $m0Evidence.status = [int]$m0Output.status }
+            if ($null -ne $m0Output.loginShape) {
+                $m0Evidence.loginShape = @{}
+                foreach ($m0ShapeKey in @('cookiePresent','userPresent','wrappedUserPresent','tokenPresent','emailMatches','emailVerified','ordinaryRole')) {
+                    $m0Evidence.loginShape[$m0ShapeKey] = [bool]$m0Output.loginShape.$m0ShapeKey
+                }
+            }
+            $m0Evidence.results = @($m0Output.results | Where-Object { $null -ne $_ } | ForEach-Object {
+                [pscustomobject]@{ kind = $_.kind; ok = [bool]$_.ok; ownSessionVerified = [bool]$_.ownSessionVerified;
+                    otherSessionRejected = [bool]$_.otherSessionRejected; productionRejected = [bool]$_.productionRejected;
+                    signOutVerified = [bool]$_.signOutVerified }
+            })
+            $m0Evidence | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $m0Root '.tmp/evidence/m0-auth-check.json') -Encoding UTF8
+            Write-Host ('Synthetic Auth session checks: ' + $(if ($m0Evidence.ok) { 'PASS' } else { 'FAIL' }))
+            if (-not $m0Evidence.ok) { exit 1 }
+            exit 0
+        }
+        if (-not $m0Output.results -or $m0Output.results.Count -ne 2) { throw 'Check failed' }
+        $m0Results = @($m0Output.results | ForEach-Object {
+            [pscustomobject]@{ kind = $_.kind; ok = [bool]$_.ok; readOnly = [bool]$_.readOnly;
+                smokeCount = [int]$_.smokeCount; neonCount = [int]$_.neonCount; foreignCount = [int]$_.foreignCount;
+                authMessageCount = [int]$_.authMessageCount; linkShapes = @($_.linkShapes | ForEach-Object {
+                    [pscustomobject]@{ sameAuthHost = [bool]$_.sameAuthHost; tokenInQuery = [bool]$_.tokenInQuery;
+                        pathSegmentCount = [int]$_.pathSegmentCount;
+                        knownPathSegments = @($_.knownPathSegments | Where-Object { $_ -in @('auth','api','groundbnb','verify-email','reset-password') }) }
+                }) }
+        })
+        $m0Evidence = @{ checkedAtUtc = $m0Output.checkedAtUtc; runId = $m0Run.runId;
+            revision = (& git -c "safe.directory=$($m0Root.Replace('\','/'))" -C $m0Root rev-parse HEAD);
+            ok = $m0Child.ExitCode -eq 0 -and $m0Output.ok -eq $true; results = $m0Results }
+        $m0Evidence | ConvertTo-Json -Depth 7 | Set-Content -LiteralPath (Join-Path $m0Root '.tmp/evidence/m0-email-capture-verified.json') -Encoding UTF8
+        Write-Host ('Captured Neon messages: ' + $(if ($m0Evidence.ok) { 'PASS' } else { 'FAIL' }))
+        if (-not $m0Evidence.ok) { exit 1 }
+    } catch { Write-Host 'Mailbox check failed; no credential or message details displayed.'; exit 1 }
+    finally { $m0Accounts = $null; $m0Payload = $null; if ($m0Child) { $m0Child.Dispose() } }
+    exit 0
+}
+
+# Client-only display. Codex must never run Show or expose decrypted values.
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 $m0Form = New-Object Windows.Forms.Form

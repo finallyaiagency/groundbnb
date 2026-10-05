@@ -6,11 +6,15 @@ The [official Ethereal guide](https://nodemailer.com/guides/testing-with-etherea
 
 ## Prepared credentials
 
-`scripts/m0-smtp.ps1 -Mode Prepare` was run once on 2026-10-05. It created two distinct accounts through the official Nodemailer helper and submitted one synthetic message per account over required STARTTLS with certificate validation. Both SMTP submissions were accepted. No Neon-generated message has been observed yet.
+`scripts/m0-smtp.ps1 -Mode Prepare` was run once on 2026-10-05. Both client configuration handoffs are now complete. One original SMTP smoke message and one new Neon test message were captured per distinct account, with zero cross-recipient messages. See docs/qa/2026-10-05-M0-email-sessions.md. Do not repeat credential entry or replace accounts automatically.
 
-Credentials are Windows DPAPI CurrentUser encrypted in ignored `.env.m0-smtp-preview.dpapi` and `.env.m0-smtp-local.dpapi`. They are outside Neon snapshots and are not application environment files. Do not open/decrypt them in an agent tool or add them to Git. They are tied to this Windows user/machine; they are not portable disaster backups. The private child writes credentials only into the parent process's captured pipe; direct invocation without its wrapper flag refuses before network use. Raw provider errors are suppressed. The exact development dependency is `nodemailer@10.0.15`; it is not imported by the application.
+Credentials are Windows DPAPI CurrentUser encrypted in ignored `.env.m0-smtp-preview.dpapi` and `.env.m0-smtp-local.dpapi`. They are outside Neon snapshots and are not application environment files. Never print decrypted values, open them in an agent response, or add them to Git. They are tied to this Windows user/machine; they are not portable disaster backups. The private Prepare child writes credentials only into the parent process's captured pipe; direct invocation without its wrapper flag refuses before network use. Raw provider errors are suppressed. The exact development dependency is `nodemailer@10.0.15`; it is not imported by the application.
+
+The private Verify mode may unseal the existing accounts directly into transient worker stdin for read-only IMAP at the same Ethereal service. It returns only fixed-field counts/booleans, never credentials, subjects, addresses, message IDs or bodies. The worker pins imap.ethereal.email:993, validates account kinds/distinctness before connecting, requires certificate validation, disables protocol logging and caps mailbox inspection at ten synthetic messages. This continues the approved capture verification without a new credential-entry handoff. `Show` remains client-only. ImapFlow is an exact development dependency; its official read-only mailbox/envelope API was checked on 2026-10-05.
 
 ## Client action
+
+The following SMTP handoff is complete and retained for maintenance. Current client action is docs/runbooks/M0-production-session.md. Private VerifyAuth uses documented Neon/Better Auth OTP sign-in for the existing ordinary synthetic fixtures, fresh get-session, foreign-cookie rejection, fixture-only prior-session cleanup and signout. Codes/cookies are transient private values; no passwords are initialized. Three failed diagnostics are retained; final preview/local run passed. This does not prove production-to-preview rejection. Run timestamps/expiry and attempt evidence prevent automatic repeated submissions.
 
 Run this locally; do not paste its contents or passwords into chat:
 

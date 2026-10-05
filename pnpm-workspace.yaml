@@ -4,6 +4,10 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - nodemailer@10.0.15
+  - '@zone-eu/mailsplit@5.4.20'
+  - imapflow@2.2.5
+  - libmime@5.4.7
+  - mailparser@3.9.36
 
 # The plugin's only fast-glob call uses globSync(pattern, { onlyDirectories: true }).
 # tinyglobby implements that API without the unpatched braces dependency.
