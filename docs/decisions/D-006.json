@@ -4,10 +4,15 @@
   "source": "Client",
   "decision": "Approve four SQL-created, passwordless NOLOGIN roles: production/preview/local metadata probes and a separate recovery-control reader, using the prepared branch-pinned SQL.",
   "rationale": "Client replied I approve to the four read-only database roles and acknowledged the subsequent manual credential handoff.",
-  "alternatives": ["Leave the proposed roles uncreated and M0 connectivity blocked"],
+  "alternatives": [
+    "Leave the proposed roles uncreated and M0 connectivity blocked"
+  ],
   "impact": "Probe roles may read environment identity/migration metadata; the recovery reader may also read recovery-control events. No writes, auth-table grants, admin membership, future-table grants, paid services, or metered calls are authorized. New password entry and login activation remain the client handoff.",
-  "requirementIds": ["SYS-11", "LEG-12"],
+  "requirementIds": [
+    "SYS-11",
+    "LEG-12"
+  ],
   "taskId": "M0-01",
   "date": "2026-10-04",
-  "implementationStatus": "All four roles active and direct login/identity/baseline/catalog checks pass at e5abf0a on 2026-10-05: deployed preview plus client hidden local/production/recovery prompts. Recovery read/no-write catalog assertion passes. No password was saved/read by Codex; prior prompts complete. Remaining destination bindings and full email/session isolation are open. No complete isolation requirement is Verified. Evidence: docs/qa/2026-10-05-M0-role-checks-recovery.md."
+  "implementationStatus": "All four roles active and direct login/identity/baseline/catalog checks pass at e5abf0a on October 5: deployed preview plus client hidden local/production/recovery prompts. No password saved/read by Codex. Later SMTP, three-way real session rejection/cleanup and final D-007 test-provider read-backs complete M0 on October 6; SYS-11 Verified. Future application write credentials/recovery binding are separate feature prerequisites. Evidence: docs/qa/2026-10-06-M0-complete.md."
 }

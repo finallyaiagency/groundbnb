@@ -1,5 +1,9 @@
 # Groundbnb integration register
 
+## M0 exit complete — October 6
+
+Final evidence: `docs/qa/2026-10-06-M0-complete.md`, D-007. Google removed only on preview/local; email signup off, existing synthetic email-code sign-in on, sole approved fixture on each; production Google remains configured. Protected exact 7521ac6 health, all genuine managed session directions/cleanup, distinct capture SMTP and disabled paid dispatch pass. Exact f8780af CI passes and preview is READY; optional newest health URL was browser-blocked, so no new response is claimed. Runtime/database code is unchanged since the proven health check. SYS-09/SYS-11/SYS-14 Verified; M1 ready but not started. Recovery binding/portable backup, representative horizon and full replay remain launch/M8 prerequisites. All pending M0 handoff text below is superseded.
+
 ## Superseding M0 audit — October 6
 
 `docs/qa/2026-10-06-M0-session-exit.md`: actual ordinary production session, preview/local rejection and sign-out pass at ac7f91f; all managed session directions now proven. Main protected review/strict CI is applied and read back. Exact 7521ac6 CI passes and protected preview is READY. Metadata-only Vercel check retains 17 exact-branch Preview variables including sensitive DB URL, zero Production variables and disabled login/jobs/metered dispatch. Fresh health read-back needs client browser sign-in after a temporary-bypass fetch was rejected by automatic review. No bypass created.

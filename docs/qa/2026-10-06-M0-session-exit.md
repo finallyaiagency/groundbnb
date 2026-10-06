@@ -1,5 +1,7 @@
 # M0 production session pass and exit audit
 
+Closure: `docs/qa/2026-10-06-M0-complete.md` supersedes this audit's pending Q-006/M0 text after approved provider removals and read-backs. Earlier observations/defects remain evidence history.
+
 Audit based on `7521ac643c66f5310cdd831286b3c65fcc3bd089`. Frozen source and 249 IDs unchanged. M0 remains open; M1 has not started. Earlier missing-email/session observations are superseded by the actual result below, not erased.
 
 ## Production session — PASS

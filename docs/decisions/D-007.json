@@ -1,0 +1,13 @@
+{
+  "id": "D-007",
+  "questionId": "Q-006",
+  "source": "Client",
+  "decision": "Remove Shared Google sign-in from groundbnb-preview and groundbnb-local only; retain their existing synthetic email-code sign-in and production Google provider.",
+  "rationale": "Client replied done to the pending request naming both test branches and the existing-Google-login warning. Read-back showed preview already complete; Codex completed the same approved removal on local and verified both plus unchanged production.",
+  "alternatives": ["Keep the public Google signup path and leave test-environment isolation incomplete"],
+  "impact": "Google sign-in is unavailable on the two synthetic test issuers. Email signup remains off and existing email sign-in remains on; production Google remains configured. No user deletion, credential change, paid upgrade, metered dispatch or waiver of production SYS-03 is authorized.",
+  "requirementIds": ["SYS-11", "SYS-03"],
+  "taskId": "M0-01",
+  "date": "2026-10-06",
+  "implementationStatus": "Complete. Metadata-only provider and identity read-back at 2026-10-06T15:08:29.246Z: Google absent on preview/local, email signup off/sign-in on, each contains its sole approved synthetic Auth fixture; production Google still configured. Evidence: docs/qa/2026-10-06-M0-complete.md."
+}

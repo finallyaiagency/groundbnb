@@ -1,5 +1,7 @@
 # M0 environment and recovery runbook
 
+M0 exit is complete October 6: `docs/qa/2026-10-06-M0-complete.md`. D-007/Q-006 provider changes and read-backs pass; all credential/SMTP/production-session/health handoffs are complete. Remaining recovery/application prerequisites below carry to their feature/launch gates. Earlier pending text is historical.
+
 October 6 update: genuine managed Auth own/foreign session checks and sign-out now pass in all three directions; SMTP handoffs are complete. Q-006 test-only Google signup removal approval and fresh protected preview health read-back are the current M0 actions. Do not repeat database-password, SMTP or production-code handoffs. Representative horizon and full replay remain launch/M8 prerequisites. Exact evidence: `docs/qa/2026-10-06-M0-session-exit.md`.
 
 This runbook is a configuration contract. Live branch, baseline migration, disposable rollback, all-role login and historical empty-baseline quarantine evidence is in the dated `docs/qa/` M0-01 files. Complete email/session isolation, representative horizon and LEG-12 replay remain open. Client decision D-004 and approved A-001 set the effective launch recovery-history minimum to six hours, keeping Neon Free. Source bytes remain frozen; less protection against errors discovered late is accepted. Never place connection strings, auth tokens, email addresses of real users, or HMAC keys in Git or task context.

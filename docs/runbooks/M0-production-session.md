@@ -1,5 +1,7 @@
 # M0 production session handoff
 
+Status: **Completed October 6**. Actual ordinary production own-session, preview/local rejection and sign-out pass at ac7f91f. Final M0 exit is `docs/qa/2026-10-06-M0-complete.md`. Steps below are preserved procedure; do not request another code for the completed M0 gate.
+
 Preview/local SMTP and genuine session rejection tests pass. SYS-11 still needs the reverse direction: a valid **production** session must be rejected by preview/local. Distinct issuer URLs and public signing keys alone cannot prove that.
 
 Production Auth was empty on 2026-10-05. Use your own real identity, never a synthetic production fixture. This creates an ordinary Auth account, not application owner/admin privileges; those belong to M1's controlled bootstrap and MFA implementation.

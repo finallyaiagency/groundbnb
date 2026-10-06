@@ -1,5 +1,7 @@
 # M0-01 — Repository and isolated environments
 
+Status: **Complete, October 6**. Exit evidence: `docs/qa/2026-10-06-M0-complete.md`; D-007/Q-006 closed. SYS-09/SYS-11/SYS-14 Verified by their referenced live/revisioned evidence. M1-01 packet is ready; no M1 implementation is included. Pending handoff text later in this packet is retained history and superseded by this status.
+
 Milestone: M0. Binding requirements: SYS-01, SYS-09, SYS-11, SYS-14, RULE-12, RULE-13, LEG-12 foundation. Read `AGENTS.md`, `docs/STATE.md`, this packet, `docs/spec/00-overview.md`, `docs/spec/13-launch.md`, `docs/spec/15-shared-safeguards.md`, and the exact source rows by `source_line` in `docs/ledger.csv`. Verify branch/revision first.
 
 Source rows SHA-256 (binding IDs in the order above): `3BD7D9734DE02894BFB471B5179340AAB51D286B97C39F0C65765E051DF85D72`. Refresh this packet against the frozen source if those rows change through an approved amendment.
@@ -16,7 +18,7 @@ Exit: preview health check identifies revision; synthetic preview contains no pr
 
 Recommended model: GPT-5.6 Sol High, due to environment isolation, provider rights, and recovery architecture. No subagents. Large: split after environment contracts if necessary. Live checks use explicit bounded budget.
 
-## Remaining work in order
+## Historical remaining work (superseded by completed exit)
 
 Superseding October 6 exit audit: `docs/qa/2026-10-06-M0-session-exit.md`. Client production sign-in, preview/local rejection of its actual cookie and sign-out pass at ac7f91f; do not repeat that OTP handoff. Main protected review/strict CI is configured and read back. Latest 7521ac6 CI passes and preview is READY. Remaining client actions: approve Q-006 to close Shared Google signup only on preview/local; sign in to the prepared Vercel health tab. Then read back both provider settings and exact protected preview health before closing M0. An unapproved temporary-bypass fetch was rejected; use the ordinary signed-in browser. No M1 work has started. Older pending account/OTP instructions below are historical and superseded.
 
