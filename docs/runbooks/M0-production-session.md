@@ -6,7 +6,7 @@ Production Auth was empty on 2026-10-05. Use your own real identity, never a syn
 
 ## Client steps
 
-1. In the prepared **production → Better Auth → Create user** form, enter your own real email/name and click Create. No password is requested. Do not promote the account.
+1. Use your existing ordinary production Auth account. If it has not been created yet, enter your own real email/name in **production → Better Auth → Create user** and click Create. No password is requested. Do not promote the account.
 2. Open the prepared [private local browser page](http://127.0.0.1:4317/). The Windows popup was not visible to the client; this page supersedes it. Codex may open the blank page but must never inspect it after client input, enter values, click its controls or receive your inputs. It binds only 127.0.0.1 and closes after thirty minutes. If it has expired, start it locally:
 
 ```powershell

@@ -33,3 +33,11 @@ First marker rechecked unchanged after the five-minute deadline plus 65-second w
 
 Code and required local gates checkpoint: `780d7ed9a2a75df5b1e746af8b33439f020e9ca8`, pushed to the existing draft PR branch. Replacement loopback helper started at 2026-10-06T02:57:49Z: HTTP 200, no-store, expected static title; request without Origin/CSRF gets 403 before any email worker; active attempt file absent. Whitelisted startup evidence: ignored `.tmp/evidence/m0-production-web-diagnostic-restart-20261006.json`. The helper expires after thirty minutes. Client must refresh the existing private page to receive its new nonce and send the one permitted retry; Codex does not inspect the populated page or submit it. No retry or production-session pass recorded at this checkpoint.
 GitHub runs 37406688869 and 37406685472 were in progress when observed; no remote CI or deployment pass is claimed for this checkpoint.
+
+### Client receipt report and expired handoff — October 6
+
+At 09:26 AM EDT October 6, client reported receiving the production code at 10:43 PM the preceding night. Receipt is client-reported, not independently validated provider evidence. The local helper's five-minute verification window had elapsed; the code was not used, reproduced or saved in repository evidence. No diagnostic retry result exists, so the previously authorized single retry is still unused. Production session isolation/cleanup remain unverified, and SYS-11/M0 stay Blocked.
+
+The thirty-minute helper had expired. Reopened the same code at `ac7f91f53fbda62d332389501bbcc0908b454f17` at 2026-10-06T13:27:45Z (09:27 AM EDT): HTTP 200, no-store true, expected static title, missing Origin/CSRF 403, active attempt absent. Fixed metadata saved in ignored `.tmp/evidence/m0-production-web-morning-restart-20261006.json`; first attempt preserved. No provider request or real email sent by Codex. Client refreshes, requests one fresh code and privately verifies within five minutes.
+
+Both previously pending GitHub runs 37406688869 and 37406685472 completed successfully at `780d7ed9a2a75df5b1e746af8b33439f020e9ca8`. This does not verify a production session or deployment health. Documentation-only follow-up: state/hash gate, credential scan and diff check pass; usage records no invented cost/credits. Existing executable checks stand.

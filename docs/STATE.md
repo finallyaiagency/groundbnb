@@ -1,6 +1,6 @@
 # Groundbnb execution state
 
-Updated: 2026-10-06 UTC (production OTP delivery unknown; diagnostic retry prepared)
+Updated: 2026-10-06 UTC (client reports OTP receipt; fresh private session check pending)
 
 ## Authority
 
@@ -22,6 +22,8 @@ M0 — repository and isolated product environments. Existing contract, baseline
 - Preview/local email capture and actual session checks pass; real production-session rejection and remaining applicable bindings remain open. SMTP credentials and the separate recovery HMAC key are DPAPI encrypted in ignored local files outside Neon snapshots. Recovery application binding/portable backup remain unconfigured. Client chose Neon Free and approved A-001's six-hour launch minimum. The production UI showed a six-hour available window; representative-write horizon remains unverified.
 
 ## Verification and decisions
+
+- Client reports the production code arrived at 10:43 PM EDT on October 5. This is client-reported receipt, not an independently verified provider delivery or session pass. Its local five-minute verification window has expired; the supplied code was not used or copied into repository evidence. No diagnostic retry result exists. Reopened the expired helper at 09:27 AM EDT October 6 for the still-unused single client-controlled retry; HTTP/no-store and missing Origin/CSRF refusal pass. Client alone requests and enters a fresh code. SYS-11/M0 remain Blocked. The email diagnostic checkpoint's CI runs 37406688869 and 37406685472 now pass at 780d7ed. See docs/qa/2026-10-06-M0-production-email.md.
 
 - Production email delivery remains unverified after client reported no code. A real client request marker at 2026-10-06 02:43:15.511Z exists, but the prior helper omitted its send response; no HTTP acceptance/delivery result can be inferred. Read-only production Auth UI showed one visible user and Shared email; personal email/code were not read. Fixed whitelisted sendAccepted/status/phase evidence, retaining deliveryConfirmed unknown. Preserve the initial attempt; prepare only one client-controlled diagnostic retry, with no automatic send. SYS-11/M0 remain Blocked. See docs/qa/2026-10-06-M0-production-email.md.
 
