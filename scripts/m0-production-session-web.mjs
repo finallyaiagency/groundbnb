@@ -77,9 +77,21 @@ const server = createServer(async (request, response) => {
       try { await marker.writeFile(JSON.stringify({ ok: false, phase: 'production_otp_attempted', revision, maxRealEmails: 1, checkedAtUtc: new Date().toISOString() })); }
       finally { await marker.close(); }
       email = body.email; sentAt = Date.now();
-      const result = await privateWorker({ mode: 'send', email });
-      if (!result.ok) email = '';
-      reply(200, { ok: result.ok === true });
+      let accepted = false;
+      let sendRecord = { ok: false, revision, phase: 'production_otp_worker_failed',
+        maxRealEmails: 1, deliveryConfirmed: null, checkedAtUtc: new Date().toISOString() };
+      try {
+        const result = await privateWorker({ mode: 'send', email });
+        accepted = result.ok === true;
+        sendRecord.phase = accepted ? 'production_otp_request_accepted' : 'production_otp_request_failed';
+        sendRecord.sendAccepted = accepted;
+        if (Number.isInteger(result.status)) sendRecord.status = result.status;
+      } finally {
+        sendRecord.checkedAtUtc = new Date().toISOString();
+        await writeFile(evidence, JSON.stringify(sendRecord));
+        if (!accepted) email = '';
+      }
+      reply(200, { ok: accepted });
     } else {
       if (!email || verifyAttempted || Date.now() - sentAt > 300000 || !/^\d{6}$/.test(body.otp ?? '')) throw new Error('Invalid or expired');
       verifyAttempted = true;

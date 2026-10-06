@@ -38,7 +38,7 @@ try {
   if (mode === 'send') {
     phase = 'production_otp_send';
     await request('production', '/email-otp/send-verification-otp', { email, type: 'sign-in' });
-    result = { ok: true, phase: 'production_otp_sent' };
+    result = { ok: true, phase: 'production_otp_request_accepted', status };
   } else {
     if (typeof otp !== 'string' || !/^\d{6}$/.test(otp)) throw new Error('OTP required');
     phase = 'production_sign_in';

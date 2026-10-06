@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 $m0Root = Split-Path -Parent $PSScriptRoot
+$m0Revision = (& git -c "safe.directory=$($m0Root.Replace('\','/'))" -C $m0Root rev-parse HEAD)
 $m0EvidencePath = Join-Path $m0Root '.tmp/evidence/m0-production-session.json'
 if (Test-Path -LiteralPath $m0EvidencePath) { throw 'Check already attempted. Review its result before any new bounded run.' }
 function Invoke-M0PrivateWorker($m0Body) {
@@ -66,10 +67,20 @@ $m0Send.Add_Click({
         New-Item -ItemType Directory -Path (Split-Path -Parent $m0EvidencePath) -Force | Out-Null
         $m0AttemptMarker = [IO.File]::Open($m0EvidencePath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
         try {
-            $m0AttemptBytes = [Text.Encoding]::UTF8.GetBytes((@{ok=$false; phase='production_otp_attempted'; maxRealEmails=1; checkedAtUtc=$script:m0SentAt.ToString('o')} | ConvertTo-Json))
+            $m0AttemptBytes = [Text.Encoding]::UTF8.GetBytes((@{ok=$false; revision=$m0Revision; phase='production_otp_attempted'; maxRealEmails=1; checkedAtUtc=$script:m0SentAt.ToString('o')} | ConvertTo-Json))
             $m0AttemptMarker.Write($m0AttemptBytes, 0, $m0AttemptBytes.Length)
         } finally { $m0AttemptMarker.Dispose() }
-        $m0Sent = Invoke-M0PrivateWorker @{mode='send'; email=$m0Email.Text.Trim()}
+        $m0SendRecord=@{ok=$false; revision=$m0Revision; phase='production_otp_worker_failed';
+            deliveryConfirmed=$null; maxRealEmails=1; checkedAtUtc=[DateTime]::UtcNow.ToString('o')}
+        try {
+            $m0Sent = Invoke-M0PrivateWorker @{mode='send'; email=$m0Email.Text.Trim()}
+            $m0SendRecord.phase=$(if ($m0Sent.ok) {'production_otp_request_accepted'} else {'production_otp_request_failed'})
+            $m0SendRecord.sendAccepted=[bool]$m0Sent.ok
+            if ($null -ne $m0Sent.status) { $m0SendRecord.status=[int]$m0Sent.status }
+        } finally {
+            $m0SendRecord.checkedAtUtc=[DateTime]::UtcNow.ToString('o')
+            $m0SendRecord | ConvertTo-Json | Set-Content -LiteralPath $m0EvidencePath -Encoding UTF8
+        }
         if (-not $m0Sent.ok) { throw 'Send failed' }
         $m0Otp.Enabled = $true
         $m0Verify.Enabled = $true
