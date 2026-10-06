@@ -37,3 +37,9 @@ Concrete M0 remaining work: approved test-branch signup configuration/read-back,
 Two client real production OTP request attempts total: original response unavailable, one diagnostic handoff now verified through a genuine session. No additional Auth/SMTP email, provider-data call, paid upgrade or metered product dispatch by this audit. Task credits/provider charges unavailable; no exact costs invented. Required executable gates are the passing exact-revision CI above. Documentation state/hash, credential scan and diff checks recorded after this update.
 
 Documentation gate passed: 249 IDs and frozen SHA-256 unchanged; credential scan 107 source files, usage CSV nine records, diff check clean. Executable gates are the passing exact 7521ac6 CI noted above.
+
+## Protected health handoff completed — 10:57 AM EDT October 6
+
+Client supplied the health JSON after ordinary Vercel sign-in. Independent read-only browser observation on the existing health tab confirms database_ready, preview, exact revision `7521ac643c66f5310cdd831286b3c65fcc3bd089` and branch `br-bitter-hall-b8ibnrfy`. No temporary bypass link was created. The health route intentionally reports authIsolation/emailIsolation unverified: it probes database identity/catalog only; separate genuine session/capture evidence is authoritative for those checks. No provider email/session was requested again.
+
+SYS-09 is now Verified by the combined protected-review read-back, exact-revision CI/preview/health and versioned synthetic-baseline/disposable-rollback evidence above and in referenced QA. The remaining SYS-11/M0 gate is Q-006 test-only Google signup removal approval and both branch read-backs. No approval for that operation was inferred from the supplied health JSON. M1 has not started.
