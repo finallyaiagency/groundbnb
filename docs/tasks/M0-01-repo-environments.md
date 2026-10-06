@@ -18,6 +18,8 @@ Recommended model: GPT-5.6 Sol High, due to environment isolation, provider righ
 
 ## Remaining work in order
 
+Superseding October 6 exit audit: `docs/qa/2026-10-06-M0-session-exit.md`. Client production sign-in, preview/local rejection of its actual cookie and sign-out pass at ac7f91f; do not repeat that OTP handoff. Main protected review/strict CI is configured and read back. Latest 7521ac6 CI passes and preview is READY. Remaining client actions: approve Q-006 to close Shared Google signup only on preview/local; sign in to the prepared Vercel health tab. Then read back both provider settings and exact protected preview health before closing M0. An unapproved temporary-bypass fetch was rejected; use the ordinary signed-in browser. No M1 work has started. Older pending account/OTP instructions below are historical and superseded.
+
 Latest handoff 2026-10-05: database password/login and both SMTP handoffs are complete; do not repeat them. Live Neon SMTP messages are captured separately. Ordinary preview/local OTP sessions pass own-session, other-branch/production rejection, prior diagnostic session cleanup and signout. External 32-byte HMAC key is DPAPI sealed outside Neon snapshots; binding/portable recovery backup remain unconfigured. Next client step: create an ordinary real production Auth account and run scripts/m0-production-session.ps1 per docs/runbooks/M0-production-session.md. Reverse production-session rejection and remaining applicable bindings still block SYS-11/M0. See docs/qa/2026-10-05-M0-email-sessions.md; historical pending handoff text below is superseded.
 
 1. CI dependency repair completed at `51aa557`; high-severity audit and Linux CI passed with the original gate retained.

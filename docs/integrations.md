@@ -1,5 +1,11 @@
 # Groundbnb integration register
 
+## Superseding M0 audit — October 6
+
+`docs/qa/2026-10-06-M0-session-exit.md`: actual ordinary production session, preview/local rejection and sign-out pass at ac7f91f; all managed session directions now proven. Main protected review/strict CI is applied and read back. Exact 7521ac6 CI passes and protected preview is READY. Metadata-only Vercel check retains 17 exact-branch Preview variables including sensitive DB URL, zero Production variables and disabled login/jobs/metered dispatch. Fresh health read-back needs client browser sign-in after a temporary-bypass fetch was rejected by automatic review. No bypass created.
+
+Neon preview UI observation October 6: Email signup off, Email sign-in on, Shared Google still configured; Auth page states anyone on the web can sign up and restricted signups are coming later. Q-006 asks approval to remove Shared Google from preview/local only while retaining synthetic email-code checks and production provider. Prepared preview removal dialog warns existing Google logins cease working; not submitted. This closes a test-environment path without waiving future production Google support. No paid upgrade or additional email sent. Earlier pending-production-session entries below are historical and superseded.
+
 Checked: 2026-10-05. Four restricted role checks, distinct live SMTP capture and preview/local session isolation pass; production-session rejection and complete recovery integration remain unverified.
 
 | Provider | Identity/source | State | Next check |
