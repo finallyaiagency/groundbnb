@@ -28,3 +28,8 @@ Initial required audit failed on newly reported [GHSA-68fv-2mgg-jv7q](https://gi
 After installation: `pnpm lint`, `pnpm typecheck`, `pnpm test` (16/16), `pnpm build`, and `pnpm audit --audit-level high` all pass. Node syntax checks for both production helper scripts and PowerShell parser check pass; missing private wrapper is rejected before network access with sanitized metadata only. No live production OTP/session pass is inferred from these checks.
 
 First marker rechecked unchanged after the five-minute deadline plus 65-second worker interval; preserved as ignored `.tmp/evidence/m0-production-session-attempt1-20261006T024315Z.json`. Stopped only the owned loopback server. No production request was sent by this preparation. State/hash gate passes with 249 IDs, frozen SHA-256 unchanged; secret scan passes for 106 source files, usage CSV six rows, diff check passes.
+
+### Published diagnostic handoff
+
+Code and required local gates checkpoint: `780d7ed9a2a75df5b1e746af8b33439f020e9ca8`, pushed to the existing draft PR branch. Replacement loopback helper started at 2026-10-06T02:57:49Z: HTTP 200, no-store, expected static title; request without Origin/CSRF gets 403 before any email worker; active attempt file absent. Whitelisted startup evidence: ignored `.tmp/evidence/m0-production-web-diagnostic-restart-20261006.json`. The helper expires after thirty minutes. Client must refresh the existing private page to receive its new nonce and send the one permitted retry; Codex does not inspect the populated page or submit it. No retry or production-session pass recorded at this checkpoint.
+GitHub runs 37406688869 and 37406685472 were in progress when observed; no remote CI or deployment pass is claimed for this checkpoint.
