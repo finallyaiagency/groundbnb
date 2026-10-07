@@ -1,0 +1,13 @@
+{
+  "id": "D-009",
+  "questionId": "Q-008",
+  "source": "Client",
+  "decision": "Approve migration 0002 and bounded read_profile/save_profile function grants on pinned local and preview databases.",
+  "rationale": "Client said I approve this and all similar requests, asked for maximum autonomous progress, and requested a new chat for the next milestone only after M1 completes.",
+  "alternatives": ["Keep the reviewed migrations staged"],
+  "impact": "Approved scope is normalized synthetic account/profile tables and two bounded function grants on br-rough-flower-b8lerkcf and br-bitter-hall-b8ibnrfy. No production/recovery change, direct table/Auth grant, password entry, supplier transaction or specification amendment. Mandatory action-time confirmations and credential handoffs still apply where required by tool policy.",
+  "requirementIds": ["SYS-02", "SYS-07", "SYS-11", "DATA-01", "DATA-02", "OP-02"],
+  "taskId": "M1-01D",
+  "date": "2026-10-07",
+  "implementationStatus": "Approved, not submitted. Browser control failed during resume with Windows sandbox setup errors, including after reset. Elevated terminal reads/writes/checks work. Database role state remains last observed dormant; no migration execution or live profile save is claimed."
+}

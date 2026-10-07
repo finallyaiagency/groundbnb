@@ -1,6 +1,6 @@
 # M1-01D — Account mapping and atomic profile persistence
 
-Status: implementing; migration and function grants require action-time approval before browser submission. Roles remain dormant.
+Status: implementing; migration/function grants approved under D-009/Q-008. Browser submission is blocked by Windows tool setup failure; roles remain last observed dormant.
 
 Binding: SYS-02, SYS-07, SYS-11, DATA-01, DATA-02, OP-02, RULE-05, RULE-06, RULE-08 and Sections 11.3–11.4/11.22. Read STATE, M1-01, named views 00-overview, 01-ui-nav, 07-data-ops, 12-membership, 15-shared-safeguards and exact source rows before edits. M0 and D-008 carry forward.
 
