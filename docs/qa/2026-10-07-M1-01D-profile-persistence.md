@@ -1,0 +1,15 @@
+# M1-01D profile persistence draft
+
+Audit base bdd13ac, October 7, 2026. Implementation and review only; migration not submitted, roles still dormant and application activation off.
+
+Server profile API, closed typed seven-field persistence adapter, pinned separate-role configuration and normalized SQL migration are prepared. Each database save derives account ownership from the server identity binding, locks account/revision, rejects revoked/suspended/deleting accounts and stale revisions, and commits profile plus canonical operation acknowledgment together. Replays with identical JSON return the retained result; changed replay payload is rejected. Direct tables/helpers remain denied; two security-definer functions alone are proposed for the app roles. Fixed trusted paths and explicit PUBLIC execution revocation follow official PostgreSQL 18 guidance.
+
+Local gates: 28 tests pass; typecheck, lint, build, state/hash gate (249 IDs) and diff whitespace checks pass. Initial secret scan detected the literal dummy connection URL in the new unit fixture; it was changed to the existing URL-construction fixture convention, then all four persistence tests and the 137-file scan passed. No real credential was exposed or stored. Dependency set unchanged. SQL has not yet been compiled/executed against Neon: proposed operator verification checks save, replay, stale conflict, foreign identity, isolated transaction-only account, suspension, revocation and acknowledgment-failure rollback, then outputs only safe metadata. These are pending, not passes.
+
+Open gates: action-time migration/function-access approval; client-entered distinct app passwords; exact restricted-role login/catalog; application session/callback/cookie issuance; browser save/reload/two-account isolation; remaining typed fields, vehicles/notes/calendar; MFA/admin/bootstrap; membership/reservations; recovery controls. Full ledger statuses unchanged. No production/recovery change, metered call, OTP request, provider map storage or paid upgrade. Credits/cost unavailable.
+
+Metadata-only live schema check on pinned preview: neon_auth user id is uuid, email is text, emailVerified is boolean. Draft seed explicitly casts the verified subject to text. No identity value or email was read. Untouched-only down migration is prepared, not run; it refuses saved answers/operations or privileged/nonactive accounts.
+
+The installed-driver serialization regression also passes: one explicitly read/write HTTP transaction, private no-store timeout and decoded JSON acknowledgment. This uses a stubbed response and proves serialization only, not a live save. Direct credential worker JavaScript and PowerShell syntax pass; final secret scan covers 141 source files. Q-008 records the concrete action-time migration/function-grant approval request; preview SQL is staged but Run has not been pressed.
+
+Final full deterministic suite: 29 tests passed. Typecheck/build passed for the new route; no app source changed afterward. Ledger references added without changing product requirement statuses; source hash unchanged.
