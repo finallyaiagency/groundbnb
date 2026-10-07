@@ -1,0 +1,10 @@
+[
+  {
+    "id": "M0-EXIT",
+    "category": "Milestone gate",
+    "result": "Passed",
+    "revision": "36ce7e889eb3b0fb561fa31a02ae79a81b8ada61",
+    "evidence": "https://github.com/finallyaiagency/groundbnb/blob/36ce7e889eb3b0fb561fa31a02ae79a81b8ada61/docs/qa/2026-10-06-M0-complete.md",
+    "date": "2026-10-06"
+  }
+]

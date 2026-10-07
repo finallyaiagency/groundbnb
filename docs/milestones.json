@@ -1,5 +1,5 @@
 [
-  {"id":"M0","name":"Repository & environments","tier":"v1","status":"Not started","gate":"Isolated preview revision, schema, CI, recovery controls, bounded live test","source":"docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md#L1237"},
+  {"id":"M0","name":"Repository & environments","tier":"v1","status":"Complete","gate":"Isolated preview revision, schema, CI, recovery controls, bounded live test","source":"docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md#L1237","exitEvidence":"docs/qa/2026-10-06-M0-complete.md","completedAt":"2026-10-06"},
   {"id":"M1","name":"Foundation","tier":"v1","status":"Not started","gate":"Auth, profile, safeguards, membership and cost reservations","source":"docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md#L1238"},
   {"id":"M2","name":"Saved manual trip","tier":"v1","status":"Not started","gate":"Revisioned trips, stops, legs, undo and reload","source":"docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md#L1239"},
   {"id":"M2A","name":"Core experience proof","tier":"v1","status":"Not started","gate":"Live three-stop flow, exact points, AI edit, undo and fresh reload","source":"docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md#L1240"},

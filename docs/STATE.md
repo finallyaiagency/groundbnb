@@ -2,6 +2,8 @@
 
 Updated: 2026-10-06 (M0 complete; M1 packet ready, implementation not started)
 
+October 7 dashboard correction: `docs/milestones.json` now records the existing M0 completion with its October 6 exit evidence; `docs/qa/runs.json` indexes that combined gate audit. The separate PCC will refresh its stale September 29 pin and exclude PCC setup from Groundbnb's tasks. See `docs/qa/2026-10-07-PCC-milestones.md`. Ledger statuses and scope unchanged; M1 remains next, not started.
+
 ## Authority
 
 - Frozen product specification: `docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md` (SHA-256 in `docs/spec/SOURCE-HASH.txt`).
