@@ -1,0 +1,13 @@
+{
+  "id": "D-008",
+  "questionId": "Q-007",
+  "source": "Client",
+  "decision": "Create passwordless NOLOGIN groundbnb_local_app on br-rough-flower-b8lerkcf and groundbnb_preview_app on br-bitter-hall-b8ibnrfy with metadata reads only using the reviewed guarded SQL.",
+  "rationale": "Client answered Approve both roles to the action-time request naming both principals, branches and restricted scope.",
+  "alternatives": ["Leave the separate application principals unprovisioned"],
+  "impact": "Reserves two dormant application principals. Login, credentials and profile privileges remain separate activation gates. No production/recovery, probe or frozen specification change.",
+  "requirementIds": ["SYS-07", "SYS-11", "DATA-01", "OP-02"],
+  "taskId": "M1-01C",
+  "date": "2026-10-07",
+  "implementationStatus": "Complete for approved provisioning scope. SQL at cb01fe3 committed and operator catalog read-backs passed on both pinned branches. Evidence: docs/qa/2026-10-07-M1-01C-app-roles.md. Full product requirements remain unchanged."
+}
