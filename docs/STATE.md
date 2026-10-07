@@ -1,8 +1,10 @@
 # Groundbnb execution state
 
-Updated: 2026-10-06 (M0 complete; M1 packet ready, implementation not started)
+Updated: 2026-10-07 (M0 complete; M1 in progress)
 
-October 7 dashboard correction: `docs/milestones.json` now records the existing M0 completion with its October 6 exit evidence; `docs/qa/runs.json` indexes that combined gate audit. The separate PCC will refresh its stale September 29 pin and exclude PCC setup from Groundbnb's tasks. See `docs/qa/2026-10-07-PCC-milestones.md`. Ledger statuses and scope unchanged; M1 remains next, not started.
+October 7 M1 start: `docs/tasks/M1-01A-profile-write-contract.md` adds a local profile patch/revision boundary. It prepares candidates only; no user is authenticated, no Neon profile is written, and no durable save is claimed. Its account-field allowlist follows Section 11.3. DATA-02, OP-02, ACC-02, and ACC-07 remain Not started pending full acceptance evidence. Current checks: 20 tests, typecheck, lint, state validation, secret scan, and build pass. Dependency audit is unavailable because the npm advisory endpoint denied access. No isolated local auth/database config is present, so live integration remains blocked. See `docs/qa/2026-10-07-M1-01A-profile-contract.md`. Task-level Codex usage is unavailable.
+
+October 7 dashboard correction: `docs/milestones.json` records the existing M0 completion with its October 6 exit evidence; `docs/qa/runs.json` indexes that combined gate audit. PCC is maintained separately and reads a reviewed, pinned snapshot. Refresh its pin after this source checkpoint so the pages include the M1-01A local profile-contract slice; do not claim background synchronization. See `docs/qa/2026-10-07-PCC-milestones.md`. Ledger statuses and product scope are unchanged; M1 is in progress.
 
 ## Authority
 
@@ -16,7 +18,7 @@ October 7 dashboard correction: `docs/milestones.json` now records the existing 
 
 M0-01 exit complete — `docs/qa/2026-10-06-M0-complete.md`. Protected revisioned preview/database health, synthetic-only preview/local, all genuine managed-session directions and cleanup, distinct captured SMTP, disabled jobs/metered dispatch, schema/rollback, independent recovery controls/key foundation and exact CI gates pass. Client completed preview Google removal; approved local removal/read-back is complete under D-007. Production Google is retained. No further role/SMTP/OTP/Vercel-login handoff is needed for M0.
 
-M1-01 is prepared and ready; implementation has not started. Its account/profile/login/callback/MFA/ownership work must retain and revalidate these isolation controls. Production remains the original unconfigured holding deployment. Recovery-key application binding/portable backup, representative six-hour history/four-hour target and full LEG-12 replay remain launch/M8 prerequisites. No M9 before M8. Frozen source and approved A-001 remain authoritative.
+M1-01 is in progress. The current M1-01A slice implements a local revisioned profile-patch candidate only; authentication, Neon persistence, ownership isolation, durable save acknowledgments, MFA/step-up, membership, and reservations remain open. Revalidate the M0 isolation controls as integrations are enabled. Production remains the original unconfigured holding deployment. Recovery-key application binding/portable backup, representative six-hour history/four-hour target and full LEG-12 replay remain launch/M8 prerequisites. No M9 before M8. Frozen source and approved A-001 remain authoritative.
 
 ## Groundbnb environments
 
@@ -27,7 +29,7 @@ M1-01 is prepared and ready; implementation has not started. Its account/profile
 
 ## Verification and decisions
 
-- M0 closure October 6 at 11:08 AM EDT: docs/qa/2026-10-06-M0-complete.md and D-007. Both synthetic branches have Google absent, email signup off/email sign-in on and exactly their approved fixture; production Google remains configured. SYS-11 now Verified by combined live gates; SYS-09/SYS-14 stand. CI 37483421239/37483414470 pass at f8780af, current protected preview READY. Additional newest-URL fetch was blocked by the browser client; no response/pass inferred. Required exact 7521ac6 health remains proven and runtime/db code is unchanged through f8780af. M0 exit complete; M1 ready but not started. Historical pending handoffs below are superseded.
+- M0 closure October 6 at 11:08 AM EDT: docs/qa/2026-10-06-M0-complete.md and D-007. Both synthetic branches have Google absent, email signup off/email sign-in on and exactly their approved fixture; production Google remains configured. SYS-11 now Verified by combined live gates; SYS-09/SYS-14 stand. CI 37483421239/37483414470 pass at f8780af, current protected preview READY. Additional newest-URL fetch was blocked by the browser client; no response/pass inferred. Required exact 7521ac6 health remains proven and runtime/db code is unchanged through f8780af. M0 exit complete; M1 subsequently started with the local profile-contract slice. Historical pending handoffs below are superseded.
 
 - October 6 protected health handoff complete at 10:57 AM EDT: client JSON and independent browser read confirm database_ready, preview, exact 7521ac6 revision and br-bitter-hall-b8ibnrfy. Ordinary client sign-in used; no protection bypass created. SYS-09 now Verified with protected-review, CI, baseline/rollback and exact health evidence in docs/qa/2026-10-06-M0-session-exit.md. Health auth/email labels intentionally remain unverified because only the database probe runs there; separate session/capture checks stand. Q-006 approval is still pending and cannot be inferred from the health response.
 
