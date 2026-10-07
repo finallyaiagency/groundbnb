@@ -1,0 +1,22 @@
+﻿{
+    "ok":  true,
+    "revision":  "a7c747a83118d9cbd5a910233dcf287c93e5b3e0",
+    "browserFlowVerified":  false,
+    "checkedAtUtc":  "2026-10-07T17:26:25.7655002Z",
+    "results":  [
+                    {
+                        "kind":  "preview",
+                        "ok":  true,
+                        "sdkOwnSessionVerified":  true,
+                        "sdkForeignRejected":  true,
+                        "sdkSignOutVerified":  true
+                    },
+                    {
+                        "kind":  "local",
+                        "ok":  true,
+                        "sdkOwnSessionVerified":  true,
+                        "sdkForeignRejected":  true,
+                        "sdkSignOutVerified":  true
+                    }
+                ]
+}

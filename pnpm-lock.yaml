@@ -7,6 +7,9 @@ settings:
 overrides:
   '@next/eslint-plugin-next@16.3.8>fast-glob': npm:tinyglobby@0.2.17
   postcss@8.5.23>source-map-js: 1.2.2
+  '@better-auth/api-key': 1.6.23
+  '@better-auth/core': 1.6.23
+  '@daveyplate/better-auth-ui@3.4.0>better-call': 1.3.7
 
 patchedDependencies:
   '@next/eslint-plugin-next@16.3.8': d7a0c229345565f0fead02cb8765ea194aea7452800857b53b9236f591c44165
@@ -17,7 +20,7 @@ importers:
     dependencies:
       '@neondatabase/auth':
         specifier: 0.5.0-beta
-        version: 0.5.0-beta(ac521ef1c4029dca131b6832452b08c5)
+        version: 0.5.0-beta(64a70ca46e439b925f3432de79967542)
       '@neondatabase/serverless':
         specifier: 1.2.0
         version: 1.2.0
@@ -132,13 +135,13 @@ packages:
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
 
-  '@better-auth/api-key@1.7.7':
-    resolution: {integrity: sha512-XWtZxF37A7BURHh/GvsYh2Vype1p+R1ZxvQHkRzB4tK3uniZpILe2WRIXfVj3m8NIBHdg8Ez8S8sZJY/ewTu7w==}
+  '@better-auth/api-key@1.6.23':
+    resolution: {integrity: sha512-HQMTv1GkY5FzE8BlUXdNhuKPBPUvusBYlAtIQElQjfsmGiPiBie7BdzuhcbXhAqJerunU299yvEge2WlZusp+Q==}
     peerDependencies:
-      '@better-auth/core': ^1.7.7
+      '@better-auth/core': 1.6.23
       '@better-auth/utils': 0.4.2
-      better-auth: ^1.7.7
-      better-call: 1.4.0
+      better-auth: ^1.6.23
+      better-call: 1.3.7
 
   '@better-auth/core@1.6.23':
     resolution: {integrity: sha512-beEhOs0uVeOxYOZKUfIEBd/nQV2Bd4/6wyLxZ0OFkn6CMTK2Vi+hXuZLnyPBeB6RdHpebEoJWiHqwHxBIxgPDQ==}
@@ -157,24 +160,10 @@ packages:
       '@opentelemetry/api':
         optional: true
 
-  '@better-auth/core@1.7.7':
-    resolution: {integrity: sha512-srgFzHEjB2WWlokFz1i4BfG41sNhsA105Pukgqu6RrEh5A+LSkzf1mCHydVipkjt9l5qswtBMi7IL6ouHbZL4Q==}
-    peerDependencies:
-      '@better-auth/utils': 0.4.2
-      '@better-fetch/fetch': 1.3.2
-      '@opentelemetry/api': ^1.9.0
-      better-call: 1.4.0
-      jose: ^6.1.0
-      kysely: ^0.28.5 || ^0.29.0
-      nanostores: ^1.0.1
-    peerDependenciesMeta:
-      '@opentelemetry/api':
-        optional: true
-
   '@better-auth/drizzle-adapter@1.6.23':
     resolution: {integrity: sha512-2+/PTVfIP9E7iz6af8TB3lhnowHUj9ljC66kECmHaFEdUqPgzHoWux9epotKwO7XDg2ui4ttWQ8CMeNFLvQeKQ==}
     peerDependencies:
-      '@better-auth/core': ^1.6.23
+      '@better-auth/core': 1.6.23
       '@better-auth/utils': 0.4.2
       drizzle-orm: ^0.45.2
     peerDependenciesMeta:
@@ -184,7 +173,7 @@ packages:
   '@better-auth/kysely-adapter@1.6.23':
     resolution: {integrity: sha512-zbNJsMbG09exfkGyvFqBLLqWoMPAUWjxCuUnEK5AsjbYoZeIjj/QGZgdf4CapVWryKxjA9Q6Jlr6fbiPpC3VAg==}
     peerDependencies:
-      '@better-auth/core': ^1.6.23
+      '@better-auth/core': 1.6.23
       '@better-auth/utils': 0.4.2
       kysely: ^0.28.17 || ^0.29.0
     peerDependenciesMeta:
@@ -194,13 +183,13 @@ packages:
   '@better-auth/memory-adapter@1.6.23':
     resolution: {integrity: sha512-krIiR0pIVkaKlAzm690n5bcMW4NGbqeMg0HQSD9fz/KcQF/eWLqcq9gG/BhHTj2i/y96qH+W5JWPmaSOS5iTgQ==}
     peerDependencies:
-      '@better-auth/core': ^1.6.23
+      '@better-auth/core': 1.6.23
       '@better-auth/utils': 0.4.2
 
   '@better-auth/mongo-adapter@1.6.23':
     resolution: {integrity: sha512-7+QdevitGlKBbP6JbiSk5SBnzPsKV/mDrQBGBn8hwByQLeJwqpqbuBPw7ZI8vzUlFfAAnyFiqwP3Eb8mxnp7pA==}
     peerDependencies:
-      '@better-auth/core': ^1.6.23
+      '@better-auth/core': 1.6.23
       '@better-auth/utils': 0.4.2
       mongodb: ^6.0.0 || ^7.0.0
     peerDependenciesMeta:
@@ -210,7 +199,7 @@ packages:
   '@better-auth/passkey@1.6.23':
     resolution: {integrity: sha512-nr5tKaNd/huUwTYX4DUm4HcXgBkixj0lXrRHdy9azY4fFjF49Tyif4sPyRMWnQJYxlRJ1HVEMJq2nGyr5CLXQg==}
     peerDependencies:
-      '@better-auth/core': ^1.6.23
+      '@better-auth/core': 1.6.23
       '@better-auth/utils': 0.4.2
       '@better-fetch/fetch': 1.3.1
       better-auth: ^1.6.23
@@ -220,7 +209,7 @@ packages:
   '@better-auth/prisma-adapter@1.6.23':
     resolution: {integrity: sha512-2qSdzidq4tkb1eS5TTqb4Nzg0mdZWm3Qky9SYeXeb8PpVQbC2sxqJhEM5mK7y12uU6I8hc64wO9f7AFVNL+6UQ==}
     peerDependencies:
-      '@better-auth/core': ^1.6.23
+      '@better-auth/core': 1.6.23
       '@better-auth/utils': 0.4.2
       '@prisma/client': ^5.0.0 || ^6.0.0 || ^7.0.0
       prisma: ^5.0.0 || ^6.0.0 || ^7.0.0
@@ -233,12 +222,9 @@ packages:
   '@better-auth/telemetry@1.6.23':
     resolution: {integrity: sha512-/R2Kb+z2BpDOOWwVHqOk+c0VNpuwfCv4Hp5Yr9003WIZPax/zyNraGLB9CFE8qF2gZW8Dsz419k4I8CPrGzpDA==}
     peerDependencies:
-      '@better-auth/core': ^1.6.23
+      '@better-auth/core': 1.6.23
       '@better-auth/utils': 0.4.2
       '@better-fetch/fetch': 1.3.1
-
-  '@better-auth/utils@0.3.1':
-    resolution: {integrity: sha512-+CGp4UmZSUrHHnpHhLPYu6cV+wSUSvVbZbNykxhUDocpVNTo9uFFxw/NqJlh1iC4wQ9HKKWGCKuZ5wUgS0v6Kg==}
 
   '@better-auth/utils@0.4.2':
     resolution: {integrity: sha512-AUxrvu+HaaODsUyzDxFgwd/8RZ1yZaYo42LXKSrU2oGgR38pS1ij8nqQKNgtTWoYGpNevNXtCfgTy6loHveW9A==}
@@ -1882,14 +1868,6 @@ packages:
       zod:
         optional: true
 
-  better-call@2.0.2:
-    resolution: {integrity: sha512-QqSKtfJD/ZzQdlm7BTUxT9RCA0AxcrZEMyU/yl7/uoFDoR7YCTdc555xQXjReo75M6/xkskPawPdhbn3fge4Cg==}
-    peerDependencies:
-      zod: ^4.0.0
-    peerDependenciesMeta:
-      zod:
-        optional: true
-
   bowser@2.14.1:
     resolution: {integrity: sha512-tzPjzCxygAKWFOJP011oxFHs57HzIhOEracIgAePE4pqB3LikALKnSzUyU4MGs9/iCEUuHlAJTjTc5M+u7YEGg==}
 
@@ -3445,27 +3423,15 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@better-auth/api-key@1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(better-auth@1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(better-call@2.0.2(zod@4.6.5))':
+  '@better-auth/api-key@1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(better-auth@1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(better-call@1.3.7(zod@4.6.5))':
     dependencies:
-      '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5)
+      '@better-auth/core': 1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5)
       '@better-auth/utils': 0.4.2
       better-auth: 1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      better-call: 2.0.2(zod@4.6.5)
+      better-call: 1.3.7(zod@4.6.5)
       zod: 4.6.5
 
   '@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5)':
-    dependencies:
-      '@better-auth/utils': 0.4.2
-      '@better-fetch/fetch': 1.3.1
-      '@opentelemetry/semantic-conventions': 1.43.0
-      '@standard-schema/spec': 1.1.0
-      better-call: 1.3.7(zod@4.6.5)
-      jose: 6.2.5
-      kysely: 0.29.6
-      nanostores: 1.5.5
-      zod: 4.6.5
-
-  '@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5)':
     dependencies:
       '@better-auth/utils': 0.4.2
       '@better-fetch/fetch': 1.3.1
@@ -3499,9 +3465,9 @@ snapshots:
       '@better-auth/core': 1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5)
       '@better-auth/utils': 0.4.2
 
-  '@better-auth/passkey@1.6.23(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(better-call@1.3.7(zod@4.6.5))(nanostores@1.5.5)':
+  '@better-auth/passkey@1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(better-call@1.3.7(zod@4.6.5))(nanostores@1.5.5)':
     dependencies:
-      '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5)
+      '@better-auth/core': 1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5)
       '@better-auth/utils': 0.4.2
       '@better-fetch/fetch': 1.3.1
       '@simplewebauthn/browser': 13.3.0
@@ -3521,8 +3487,6 @@ snapshots:
       '@better-auth/core': 1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5)
       '@better-auth/utils': 0.4.2
       '@better-fetch/fetch': 1.3.1
-
-  '@better-auth/utils@0.3.1': {}
 
   '@better-auth/utils@0.4.2':
     dependencies:
@@ -3548,10 +3512,10 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  '@daveyplate/better-auth-ui@3.4.0(9f99dee584d559d95f135b96617a19ac)':
+  '@daveyplate/better-auth-ui@3.4.0(062c550f08c63496c2ee27cb960333f4)':
     dependencies:
-      '@better-auth/api-key': 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(better-auth@1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(better-call@2.0.2(zod@4.6.5))
-      '@better-auth/passkey': 1.6.23(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(better-call@1.3.7(zod@4.6.5))(nanostores@1.5.5)
+      '@better-auth/api-key': 1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(better-auth@1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(better-call@1.3.7(zod@4.6.5))
+      '@better-auth/passkey': 1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(better-call@1.3.7(zod@4.6.5))(nanostores@1.5.5)
       '@better-fetch/fetch': 1.3.1
       '@captchafox/react': 1.13.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@daveyplate/better-auth-tanstack': 1.3.6(@tanstack/query-core@5.104.1)(@tanstack/react-query@5.104.1(react@19.3.0))(better-auth@1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -3580,7 +3544,7 @@ snapshots:
       '@triplit/react': 1.0.51(react@19.3.0)(typescript@5.9.3)
       '@wojtekmaj/react-recaptcha-v3': 0.1.4(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       better-auth: 1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      better-call: 2.0.2(zod@4.6.5)
+      better-call: 1.3.7(zod@4.6.5)
       bowser: 2.14.1
       class-variance-authority: 0.7.1
       clsx: 2.1.1
@@ -3890,15 +3854,15 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
-  '@neondatabase/auth-ui@0.3.0-beta(a165a012f3f26fff0e81d4be4239979c)':
+  '@neondatabase/auth-ui@0.3.0-beta(dd99477c3d483c9d4b2aec4cc4967fa3)':
     dependencies:
-      '@better-auth/passkey': 1.6.23(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(better-call@1.3.7(zod@4.6.5))(nanostores@1.5.5)
+      '@better-auth/passkey': 1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.3.7(zod@4.6.5))(jose@6.2.5)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(better-call@1.3.7(zod@4.6.5))(nanostores@1.5.5)
       '@captchafox/react': 1.13.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@daveyplate/better-auth-ui': 3.4.0(9f99dee584d559d95f135b96617a19ac)
+      '@daveyplate/better-auth-ui': 3.4.0(062c550f08c63496c2ee27cb960333f4)
       '@hcaptcha/react-hcaptcha': 1.17.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@hookform/resolvers': 5.9.1(@standard-schema/spec@1.1.0)(react-hook-form@7.89.0(@types/react@19.3.0)(react@19.3.0))(zod@4.6.5)
       '@marsidev/react-turnstile': 1.6.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@neondatabase/auth': 0.5.0-beta(ac521ef1c4029dca131b6832452b08c5)
+      '@neondatabase/auth': 0.5.0-beta(64a70ca46e439b925f3432de79967542)
       '@radix-ui/react-avatar': 1.2.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-checkbox': 1.3.12(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-context': 1.2.2(@types/react@19.3.0)(react@19.3.0)
@@ -3988,10 +3952,10 @@ snapshots:
       - vue
       - yup
 
-  '@neondatabase/auth@0.5.0-beta(ac521ef1c4029dca131b6832452b08c5)':
+  '@neondatabase/auth@0.5.0-beta(64a70ca46e439b925f3432de79967542)':
     dependencies:
       '@better-fetch/fetch': 1.3.1
-      '@neondatabase/auth-ui': 0.3.0-beta(a165a012f3f26fff0e81d4be4239979c)
+      '@neondatabase/auth-ui': 0.3.0-beta(dd99477c3d483c9d4b2aec4cc4967fa3)
       '@supabase/auth-js': 2.79.0
       better-auth: 1.6.23(next@16.3.8(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@24.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       jose: 6.2.5
@@ -5149,15 +5113,6 @@ snapshots:
     dependencies:
       '@better-auth/utils': 0.4.2
       '@better-fetch/fetch': 1.3.2
-      rou3: 0.7.12
-      set-cookie-parser: 3.1.2
-    optionalDependencies:
-      zod: 4.6.5
-
-  better-call@2.0.2(zod@4.6.5):
-    dependencies:
-      '@better-auth/utils': 0.3.1
-      '@better-fetch/fetch': 1.3.1
       rou3: 0.7.12
       set-cookie-parser: 3.1.2
     optionalDependencies:

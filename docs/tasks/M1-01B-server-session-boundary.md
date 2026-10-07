@@ -1,6 +1,6 @@
 # M1-01B — Server session identity boundary
 
-Status: implemented locally; bounded live reader gate pending. See `docs/qa/2026-10-07-M1-01B-session-boundary.md`.
+Status: local and bounded live server-reader gates pass; browser login/account mapping remain open. See `docs/qa/2026-10-07-M1-01B-session-boundary.md`.
 
 Read `AGENTS.md`, `docs/STATE.md`, `docs/spec/00-overview.md`, `docs/spec/01-ui-nav.md`, `docs/spec/07-data-ops.md`, `docs/spec/12-membership.md`, and `docs/spec/15-shared-safeguards.md`. Binding frozen source rows: SYS-07, DATA-01, OP-01 and Section 11.22 C/D. Retain D-007 and the completed M0 isolation evidence.
 
