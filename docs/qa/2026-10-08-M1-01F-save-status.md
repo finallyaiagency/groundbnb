@@ -15,3 +15,9 @@ Open: full-domain adapter/editor binding, serialized 600ms text autosave/blur fl
 Exact task credits, duration and provider charges unavailable. Three agent continuation attempts failed at the usage limit; no substitute model or credit purchase was used.
 
 Final secret scan passes across 182 source files.
+
+## Full-domain adapter continuation
+
+The persistence adapter now accepts the complete typed v1 registry only under explicit GROUND_PROFILE_DOMAIN_MODE=full-v1; missing/off keeps the existing seven-field contract. No private environment or deployment was switched. Unknown mode refuses configuration. Wire answers still accept only value/answered, while account scope and timestamps remain server-owned. v1.1/authority fields and non-null client-supplied homePoint are rejected; a provenance-reviewed resolution flow remains required. When a full-domain homeAddress update occurs, the same saved patch clears homePoint to unanswered/null. This prevents stale resolution and preserves the typed address; it does not implement geocoding.
+
+Two new tests prove the opt-in full-domain adapter, frozen traveler range 1–999, typed zero/false/unanswered-list handling, client metadata/point/prototype rejection, and same-transaction home-point invalidation. Full suite passes 87/87 and secret scan still passes 182 files. SQL validator/runtime and full editor remain separate open gates.

@@ -24,6 +24,33 @@ const operation = { kind: 'save', operationId: '00000000-0000-4000-8000-00000000
 const acknowledgment = { ok: true, operationId: operation.operationId, savedAt: '2026-10-07T19:00:00.000Z',
   profile: { accountId: 'synthetic-account', revision: 1, answers: { hasPets: { value: false, answered: true } } } };
 
+test('full v1 domain stays opt-in and validates typed fields without trusting client metadata or locations', async () => {
+  const patch = { travelerCount: {value:999,answered:true}, budgetAmount:{value:'0.00',answered:true},
+    budgetCurrency:{value:'USD',answered:true}, activities:{value:['hiking/backpacking'],answered:true},
+    comfortLevel:{value:0,answered:true}, needsFoodAccess:{value:false,answered:true},
+    preferredTransport:{value:[],answered:false} };
+  assert.throws(()=>validatePersistentPatch(patch));
+  assert.equal(validatePersistentPatch(patch,{fullDomain:true}),patch);
+  for (const invalid of [
+    {travelerCount:{value:1000,answered:true}}, {budgetAmount:{value:0,answered:true}},
+    {budgetCurrency:{value:'usd',answered:true}}, {needsFoodAccess:{value:false,answered:true,scope:'account'}},
+    {homePoint:{value:{latitude:1,longitude:2},answered:true}},
+    {units:{value:'metric',answered:true}}, JSON.parse('{"__proto__":{"value":null,"answered":false}}'),
+  ]) assert.throws(()=>validatePersistentPatch(invalid,{fullDomain:true}));
+  assert.equal(profileConfiguration(env).fullDomain,false);
+  assert.equal(profileConfiguration({...env,GROUND_PROFILE_DOMAIN_MODE:'full-v1'}).fullDomain,true);
+  assert.equal(profileConfiguration({...env,GROUND_PROFILE_DOMAIN_MODE:'unknown'}),null);
+});
+
+test('full-domain address changes invalidate prior resolved home point in the same save transaction',async()=>{
+  const result=await persistProfile({...env,GROUND_PROFILE_DOMAIN_MODE:'full-v1'},identity,
+    {...operation,patch:{homeAddress:{value:'Synthetic home text',answered:true}}},async(_config,_sql,values)=>{
+      assert.deepEqual(JSON.parse(values[4]),{homeAddress:{value:'Synthetic home text',answered:true},homePoint:{value:null,answered:false}});
+      return acknowledgment;
+    });
+  assert.deepEqual(result,acknowledgment);
+});
+
 test('typed persistence retains explicit false and empty list, denies undeclared authority and other field types', () => {
   assert.doesNotThrow(() => validatePersistentPatch({ hasPets: { value: false, answered: true },
     preferredRegions: { value: [], answered: true }, travelerCount: { value: null, answered: false } }));
