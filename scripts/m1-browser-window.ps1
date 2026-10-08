@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([Parameter(Mandatory=$true)][ValidateSet('Prepare','MarkSend','Capture','Close')][string]$Mode)
+param([Parameter(Mandatory=$true)][ValidateSet('Prepare','MarkSend','MarkDiagnostic','Capture','Close')][string]$Mode)
 $ErrorActionPreference='Stop'
 $browserRoot=Split-Path -Parent $PSScriptRoot
 $browserEnv=Join-Path $browserRoot '.env.development.local'
@@ -50,8 +50,17 @@ try {
     Write-Host 'Prior private local environment restored; browser activation closed.'
   } else {
     $browserRecord=Get-Content -LiteralPath $browserAttempt -Raw | ConvertFrom-Json
-    if ([DateTime]::UtcNow -ge [DateTime]::Parse($browserRecord.expiresAtUtc)) { throw 'Expired' }
-    if ($Mode -eq 'MarkSend') {
+    if ([DateTime]::UtcNow -ge [DateTimeOffset]::Parse($browserRecord.expiresAtUtc).UtcDateTime) { throw 'Expired' }
+    if ($Mode -eq 'MarkDiagnostic') {
+      if (-not $browserRecord.sendStartedAtUtc -or ($browserRecord.PSObject.Properties.Name -contains 'diagnosticSentAtUtc')) { throw 'Diagnostic not admissible' }
+      $browserDiagnosticMarker=[IO.File]::Open((Join-Path $browserRoot '.tmp/evidence/m1-01e-browser-diagnostic-admitted'),[IO.FileMode]::CreateNew,[IO.FileAccess]::Write)
+      $browserDiagnosticMarker.Dispose()
+      $browserRecord | Add-Member -NotePropertyName diagnosticSentAtUtc -NotePropertyValue ([DateTime]::UtcNow.ToString('o'))
+      $browserRecord | Add-Member -NotePropertyName diagnosticReason -NotePropertyValue 'reproduced_sqlstate_25006_fixed_explicit_transaction'
+      $browserRecord.maxOtpRequests=2
+      $browserRecord | ConvertTo-Json | Set-Content -LiteralPath $browserAttempt -Encoding UTF8
+      Write-Host 'One controlled diagnostic admitted after reproduced defect; original expiry unchanged.'
+    } elseif ($Mode -eq 'MarkSend') {
       if ($browserRecord.PSObject.Properties.Name -contains 'sendStartedAtUtc') { throw 'Already admitted' }
       $browserSendMarker=[IO.File]::Open((Join-Path $browserRoot '.tmp/evidence/m1-01e-browser-send-admitted'),[IO.FileMode]::CreateNew,[IO.FileAccess]::Write)
       $browserSendMarker.Dispose()
@@ -62,7 +71,8 @@ try {
       if (-not $browserRecord.sendStartedAtUtc) { throw 'No request admitted' }
       $browserBytes=[Security.Cryptography.ProtectedData]::Unprotect([IO.File]::ReadAllBytes((Join-Path $browserRoot '.env.m0-smtp-local.dpapi')),$null,[Security.Cryptography.DataProtectionScope]::CurrentUser)
       $browserAccount=[Text.Encoding]::UTF8.GetString($browserBytes) | ConvertFrom-Json
-      $browserInput=@{account=$browserAccount;sentAt=$browserRecord.sendStartedAtUtc;publicKey=[IO.File]::ReadAllText((Join-Path $browserRoot '.tmp/evidence/m1-browser-public.pem'))} | ConvertTo-Json -Compress
+      $browserCaptureAt=if ($browserRecord.PSObject.Properties.Name -contains 'diagnosticSentAtUtc') { $browserRecord.diagnosticSentAtUtc } else { $browserRecord.sendStartedAtUtc }
+      $browserInput=@{account=$browserAccount;sentAt=$browserCaptureAt;publicKey=[IO.File]::ReadAllText((Join-Path $browserRoot '.tmp/evidence/m1-browser-public.pem'))} | ConvertTo-Json -Compress
       $browserInfo=New-Object Diagnostics.ProcessStartInfo
       $browserInfo.FileName=(Get-Command node).Source
       $browserInfo.Arguments='"'+(Join-Path $PSScriptRoot 'capture-m1-browser-otp.mjs')+'"'

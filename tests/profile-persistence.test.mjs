@@ -93,9 +93,11 @@ test('installed Neon driver explicitly opens one read/write transaction and deco
     assert.equal(options.cache, 'no-store');
     assert.ok(options.signal instanceof AbortSignal);
     const body = JSON.parse(options.body);
-    assert.equal(body.queries.length, 1);
-    assert.deepEqual(body.queries[0].params, [identity.issuer, identity.subject, operation.operationId, '0', JSON.stringify(operation.patch)]);
-    return new Response(JSON.stringify({ results: [{ fields: [{ name: 'result', dataTypeID: 3802 }],
+    assert.equal(body.queries.length, 2);
+    assert.equal(body.queries[0].query, 'SET TRANSACTION READ WRITE');
+    assert.deepEqual(body.queries[0].params, []);
+    assert.deepEqual(body.queries[1].params, [identity.issuer, identity.subject, operation.operationId, '0', JSON.stringify(operation.patch)]);
+    return new Response(JSON.stringify({ results: [{ fields: [], rows: [], rowCount: 0, command: 'SET' }, { fields: [{ name: 'result', dataTypeID: 3802 }],
       rows: [[JSON.stringify(acknowledgment)]], rowCount: 1, command: 'SELECT' }] }));
   };
   try {
