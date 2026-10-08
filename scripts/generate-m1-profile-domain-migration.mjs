@@ -1,15 +1,15 @@
 import { createHash } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { PROFILE_CATALOGS, PROFILE_FIELD_DEFINITIONS } from '../lib/profile-domain.mjs';
+import { PROFILE_CURRENCY_CODES } from '../lib/profile-currency-codes.mjs';
 
 const quote = value => `'${String(value).replaceAll("'", "''")}'`;
 const sqlArray = values => `ARRAY[${values.map(quote).join(',')}]::text[]`;
-const currencyCodes = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('currency') : [];
 const registry = {
   version: 1,
   fields: PROFILE_FIELD_DEFINITIONS,
   catalogs: PROFILE_CATALOGS,
-  currencies: currencyCodes,
+  currencies: PROFILE_CURRENCY_CODES,
 };
 const registryJson = JSON.stringify(registry, null, 2);
 const registryHash = createHash('sha256').update(JSON.stringify(registry)).digest('hex').toUpperCase();
@@ -74,13 +74,11 @@ function validatorCase(field, definition) {
         IF value_type='string' AND (length(answer_value #>> '{}')>256 OR (answer_value #>> '{}') !~ '^(0|[1-9][0-9]*)(\\.[0-9]+)?$') THEN RETURN false; END IF;`;
   if (type === 'nullableCurrency') return `WHEN item.key=${key} THEN
         ${nullableTypeSql(['null', 'string'], { allowNullWhenAnswered: true })}
-        IF value_type='string' AND NOT ((answer_value #>> '{}') = ANY(${sqlArray(currencyCodes)})) THEN RETURN false; END IF;`;
+        IF value_type='string' AND NOT ((answer_value #>> '{}') = ANY(${sqlArray(PROFILE_CURRENCY_CODES)})) THEN RETURN false; END IF;`;
   if (type === 'nullablePoint') return `WHEN item.key=${key} THEN
         ${nullableTypeSql(['null', 'object'], { allowNullWhenAnswered: true })}
-        IF value_type='object' AND ((SELECT count(*) FROM jsonb_object_keys(answer_value))<>2 OR
-          jsonb_typeof(answer_value->'latitude') IS DISTINCT FROM 'number' OR jsonb_typeof(answer_value->'longitude') IS DISTINCT FROM 'number') THEN RETURN false; END IF;
-        IF value_type='object' AND ((answer_value->>'latitude')::numeric NOT BETWEEN -90 AND 90 OR
-          (answer_value->>'longitude')::numeric NOT BETWEEN -180 AND 180) THEN RETURN false; END IF;`;
+        -- Resolved home points remain read-only until a provenance-bound resolver path exists.
+        IF value_type='object' THEN RETURN false; END IF;`;
   throw new Error(`No SQL validator mapping for ${field}: ${type}`);
 }
 

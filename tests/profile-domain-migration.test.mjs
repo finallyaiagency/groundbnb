@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { PROFILE_CATALOGS, PROFILE_FIELD_DEFINITIONS } from '../lib/profile-domain.mjs';
+import { PROFILE_CURRENCY_CODES } from '../lib/profile-currency-codes.mjs';
 import { PROFILE_DOMAIN_REGISTRY_HASH, buildForwardMigration } from '../scripts/generate-m1-profile-domain-migration.mjs';
 
 const up = readFileSync(new URL('../db/migrations/0003_profile_domain.sql', import.meta.url), 'utf8');
@@ -24,10 +25,11 @@ test('frozen SQL registry snapshot matches the current v1 source registry and ha
     version: 1,
     fields: PROFILE_FIELD_DEFINITIONS,
     catalogs: PROFILE_CATALOGS,
-    currencies: Intl.supportedValuesOf('currency'),
+    currencies: PROFILE_CURRENCY_CODES,
   };
   assert.deepEqual(parsed, expected);
   assert.equal(createHash('sha256').update(JSON.stringify(parsed)).digest('hex').toUpperCase(), PROFILE_DOMAIN_REGISTRY_HASH);
+  assert.equal(PROFILE_DOMAIN_REGISTRY_HASH, '5BE2FD8ADC201DDDFC7BA8089F1424FA9223226F8B23CBBD3B7174D233DA36DA');
   assert.match(up, new RegExp(`Generated profile registry SHA-256: ${PROFILE_DOMAIN_REGISTRY_HASH}`));
 });
 
@@ -61,8 +63,8 @@ test('forward database allowlist and validator fields match the full v1 account 
   assert.doesNotMatch(functionBody, /item\.value \? 'scope'|item\.value \? 'updatedAt'/);
   assert.match(functionBody, /NOT CASE WHEN value_type='array' THEN jsonb_array_length\(answer_value\)=0 ELSE false END/);
   assert.match(functionBody, /jsonb_typeof\(v\) IS DISTINCT FROM 'string'/);
-  assert.match(functionBody, /jsonb_typeof\(answer_value->'latitude'\) IS DISTINCT FROM 'number'/);
-  assert.match(functionBody, /jsonb_typeof\(answer_value->'longitude'\) IS DISTINCT FROM 'number'/);
+  assert.match(functionBody, /Resolved home points remain read-only until a provenance-bound resolver path exists/);
+  assert.match(functionBody, /IF value_type='object' THEN RETURN false; END IF/);
   assert.match(functionBody, /jsonb_array_length\(answer_value\)>64/);
 });
 

@@ -5,6 +5,7 @@ import {
   TRIP_ONLY_PROFILE_FIELDS, V1_1_PROFILE_FIELDS, createEmptyProfileAnswers,
   validateProfileAnswerRecords, validateProfilePatch,
 } from '../lib/profile-domain.mjs';
+import { PROFILE_CURRENCY_CODES } from '../lib/profile-currency-codes.mjs';
 
 const savedAt = new Date('2026-10-07T18:00:00.000Z');
 const answer = (value, changes = {}) => ({ value, answered: true, scope: 'account', ...changes });
@@ -119,6 +120,27 @@ test('money values use exact nonnegative decimal strings and ISO currency codes'
   for (const value of ['USD', 'EUR', 'JPY']) assert.equal(validateProfilePatch(patch('budgetCurrency', value), { now: savedAt }).budgetCurrency.value, value);
   for (const value of ['usd', 'ZZZ', 'US', 'USDD']) expectFieldError(() => validateProfilePatch(patch('budgetCurrency', value), { now: savedAt }), 'budgetCurrency', 'invalid_currency');
   assert.equal(validateProfilePatch(patch('splurgeAmount', null, { answered: false }), { now: savedAt }).splurgeAmount.value, null);
+});
+
+test('profile input strings are safe for PostgreSQL JSONB before a save is attempted', () => {
+  for (const [field, value] of [
+    ['homeAddress', `x${String.fromCharCode(0)}y`],
+    ['dietaryRequirements', String.fromCharCode(0xd800)],
+    ['specialRequirements', String.fromCharCode(0xdc00)],
+    ['preferredRegions', [`Region${String.fromCharCode(0)}Name`]],
+    ['overnightPreferences', [`Style${String.fromCharCode(0xd800)}`]],
+    ['budgetAmount', `1${String.fromCharCode(0)}.00`],
+  ]) {
+    expectFieldError(() => validateProfilePatch(patch(field, value), { now: savedAt }), field, 'invalid_text_encoding');
+  }
+  const validUnicode = 'Route with 🏕 and café';
+  assert.equal(validateProfilePatch(patch('homeAddress', validUnicode), { now: savedAt }).homeAddress.value, validUnicode);
+});
+
+test('currency acceptance uses the frozen SQL registry rather than runtime ICU updates', () => {
+  assert.ok(Object.isFrozen(PROFILE_CURRENCY_CODES));
+  assert.ok(PROFILE_CURRENCY_CODES.includes('USD'));
+  assert.equal(PROFILE_CURRENCY_CODES.length, new Set(PROFILE_CURRENCY_CODES).size);
 });
 
 test('home address and point preserve unresolved state while enforcing point coordinates', () => {

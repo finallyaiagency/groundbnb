@@ -135,3 +135,21 @@ test('allows note removal as a tombstone and preserves its text and origin', () 
   }, savedAt);
   assert.deepEqual(prepared.profile.notes, [{ ...note, userRemoved: true }]);
 });
+
+test('a subsequent update accepts trusted normalized manual provenance without letting clients assert it', () => {
+  const first = prepareProfileRecordsUpdate(profile, { operationId, expectedRevision: 3, vehicleUpserts: [vehicle] }, savedAt);
+  const second = prepareProfileRecordsUpdate(first.profile, { operationId, expectedRevision: 4, noteUpserts: [note] }, savedAt);
+  assert.deepEqual(second.profile.vehicles, first.profile.vehicles);
+  assert.throws(() => validateProfileVehicle(first.profile.vehicles[0]), /unsupported field/);
+  const unsafe = structuredClone(first.profile.vehicles[0]);
+  unsafe.location.origin = 'provider';
+  assert.throws(() => validateProfileVehicle(unsafe, {canonical:true}), /unsupported provenance/);
+});
+
+test('vehicle and note text rejects JSONB-incompatible Unicode before persistence', () => {
+  for (const text of ['nul\u0000text', 'unpaired\ud800']) {
+    assert.throws(() => validateProfileVehicle({...vehicle,name:text}), /text encoding/);
+    assert.throws(() => validateProfileNote({...note,text}), /text encoding/);
+  }
+  assert.equal(validateProfileVehicle({...vehicle,name:'Synthetic 🚐'}).name,'Synthetic 🚐');
+});

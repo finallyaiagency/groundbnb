@@ -20,6 +20,22 @@ const identity = { issuer:env.GROUND_AUTH_ISSUER, subject:'synthetic-subject' };
 const resolve = async () => ({ok:true,identity});
 const request = (suffix='') => new Request(`http://localhost:3000/api/account/profile/operations/${id}${suffix}`);
 
+test('record status preserves kind and original owner references but refuses foreign snapshot IDs', async () => {
+  const result = {ok:true,status:'saved',operationKind:'profile_records',operationId:id,
+    savedAt:'2026-10-08T08:28:01.176146-04:00',affectedIds:['00000000-0000-4000-8000-000000000003','00000000-0000-4000-8000-000000000004'],
+    profile:{accountId:'00000000-0000-4000-8000-000000000003',revision:2,answers:{},vehicles:[],notes:[{id:'00000000-0000-4000-8000-000000000004',text:'Synthetic note',origin:'user',selectedQuoteIds:[],userRemoved:false}]}};
+  const response = await handleProfileOperationRequest(request(),id,env,resolve,async()=>result);
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).operationKind,'profile_records');
+  const persisted = await persistProfile(env,identity,{kind:'status',operationId:id},async()=>result);
+  assert.deepEqual(persisted,result);
+  for (const change of [{affectedIds:['synthetic-account','foreign']},{operationKind:undefined}]) {
+    const malformed={...result,...change};
+    assert.equal((await handleProfileOperationRequest(request(),id,env,resolve,async()=>malformed)).status,503);
+    assert.equal((await persistProfile(env,identity,{kind:'status',operationId:id},async()=>malformed)).category,'unavailable');
+  }
+});
+
 test('operation status gates configuration, UUID, selectors and authentication before storage', async () => {
   let calls=0;
   const store=async()=>{ calls++; throw new Error('unexpected'); };
@@ -32,6 +48,7 @@ test('operation status gates configuration, UUID, selectors and authentication b
 test('status exposes only original saved acknowledgment or current not-found observation', async () => {
   for (const status of ['saved','not_found']) {
     const result={ok:true,status,operationId:id,privateDiagnostic:'hidden',
+      affectedIds:['synthetic-account'],
       profile:{accountId:'synthetic-account',revision:1,answers:{}}, savedAt:'2026-10-08T03:00:00.000Z'};
     const response=await handleProfileOperationRequest(request(),id,env,resolve,async(_env,owner,operation)=>{
       assert.deepEqual(owner,identity); assert.deepEqual(operation,{kind:'status',operationId:id}); return result;

@@ -26,6 +26,36 @@ function patch(body = JSON.stringify(payload), changes = {}) {
 }
 const resolve = async () => ({ ok: true, identity });
 
+test('invalid UTF-8 is refused without replacing the users input or reaching storage',async()=>{
+  let calls=0;
+  const response=await handleProfileRequest(patch(new Uint8Array([0x7b,0x22,0xc3,0x22,0x7d])),env,resolve,
+    async()=>{calls++;return {ok:true};});
+  assert.equal(response.status,400);assert.equal(calls,0);
+});
+
+test('manual record capability requires explicit modes and canonical record arrays',async()=>{
+  const profile={accountId:'synthetic-account',revision:0,answers:{},vehicles:[],notes:[]};
+  for(const [change,snapshot,expected] of [
+    [{GROUND_PROFILE_DOMAIN_MODE:'full-v1',GROUND_PROFILE_RECORDS_MODE:'manual-v1'},profile,'manual-v1'],
+    [{GROUND_PROFILE_DOMAIN_MODE:'full-v1'},profile,'off'],
+    [{GROUND_PROFILE_RECORDS_MODE:'manual-v1'},profile,'off'],
+    [{GROUND_PROFILE_DOMAIN_MODE:'full-v1',GROUND_PROFILE_RECORDS_MODE:'manual-v1'},{...profile,notes:undefined},'off']]) {
+    const response=await handleProfileRequest(new Request('http://localhost:3000/api/account/profile'),
+      {...env,...change},resolve,async()=>({ok:true,profile:snapshot,recordsMode:'forged'}));
+    assert.equal((await response.json()).recordsMode,expected);
+  }
+});
+
+test('successful profile reads expose only the server-configured editor mode', async () => {
+  for (const mode of [undefined, 'off', 'full-v1']) {
+    const response = await handleProfileRequest(new Request('http://localhost:3000/api/account/profile'),
+      { ...env, GROUND_PROFILE_DOMAIN_MODE: mode }, resolve, async () => ({ ok: true,
+        profile: { accountId: 'synthetic-account', revision: 0, answers: {} }, profileMode: 'client-must-not-select' }));
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).profileMode, mode === 'full-v1' ? 'full-v1' : 'smoke');
+  }
+});
+
 test('profile route refuses disabled configuration, foreign origins, non-JSON and selector queries before adapters', async () => {
   let calls = 0;
   const denied = async () => { calls++; throw new Error('should not call'); };

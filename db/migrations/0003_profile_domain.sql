@@ -654,10 +654,8 @@ BEGIN
         IF value_type='string' AND (length(answer_value #>> '{}')=0 OR btrim(answer_value #>> '{}')='') THEN RETURN false; END IF;
       WHEN item.key='homePoint' THEN
         IF value_type NOT IN ('null','object') THEN RETURN false; END IF;
-        IF value_type='object' AND ((SELECT count(*) FROM jsonb_object_keys(answer_value))<>2 OR
-          jsonb_typeof(answer_value->'latitude') IS DISTINCT FROM 'number' OR jsonb_typeof(answer_value->'longitude') IS DISTINCT FROM 'number') THEN RETURN false; END IF;
-        IF value_type='object' AND ((answer_value->>'latitude')::numeric NOT BETWEEN -90 AND 90 OR
-          (answer_value->>'longitude')::numeric NOT BETWEEN -180 AND 180) THEN RETURN false; END IF;
+        -- Resolved home points remain read-only until a provenance-bound resolver path exists.
+        IF value_type='object' THEN RETURN false; END IF;
       WHEN item.key='alwaysBeginEndAtHome' THEN
         IF value_type NOT IN ('null','boolean') THEN RETURN false; END IF;
         IF item.value->'answered'='true'::jsonb AND value_type='null' THEN RETURN false; END IF;

@@ -22,7 +22,19 @@ const identity = { issuer: env.GROUND_AUTH_ISSUER, subject: 'synthetic-subject' 
 const operation = { kind: 'save', operationId: '00000000-0000-4000-8000-000000000001',
   expectedRevision: 0, patch: { hasPets: { value: false, answered: true } } };
 const acknowledgment = { ok: true, operationId: operation.operationId, savedAt: '2026-10-07T19:00:00.000Z',
+  affectedIds: ['synthetic-account'],
   profile: { accountId: 'synthetic-account', revision: 1, answers: { hasPets: { value: false, answered: true } } } };
+
+test('both smoke and full-domain text reject JSONB-incompatible Unicode before SQL',async()=>{
+  for(const fullDomain of [false,true]) for(const value of ['text\u0000','text\ud800']) {
+    const patch={dietaryRequirements:{value,answered:true}};
+    assert.throws(()=>validatePersistentPatch(patch,{fullDomain}));
+    let calls=0;
+    const result=await persistProfile({...env,GROUND_PROFILE_DOMAIN_MODE:fullDomain?'full-v1':'off'},identity,
+      {...operation,patch},async()=>{calls++;return acknowledgment;});
+    assert.equal(result.category,'validation');assert.equal(calls,0);
+  }
+});
 
 test('full v1 domain stays opt-in and validates typed fields without trusting client metadata or locations', async () => {
   const patch = { travelerCount: {value:999,answered:true}, budgetAmount:{value:'0.00',answered:true},
@@ -49,6 +61,19 @@ test('full-domain address changes invalidate prior resolved home point in the sa
       return acknowledgment;
     });
   assert.deepEqual(result,acknowledgment);
+});
+
+test('save/status acknowledgments require the exact affected profile and revision exhaustion never reaches SQL', async () => {
+  for (const kind of ['save','status']) {
+    const input=kind==='save' ? operation : {kind,operationId:operation.operationId};
+    for (const affectedIds of [undefined, [], ['foreign-account'], ['synthetic-account','foreign-account']]) {
+      const result=await persistProfile(env,identity,input,async()=>({...acknowledgment,affectedIds,...(kind==='status'?{status:'saved'}:{})}));
+      assert.deepEqual(result,{ok:false,category:'unavailable'});
+    }
+  }
+  let calls=0;
+  const result=await persistProfile(env,identity,{...operation,expectedRevision:Number.MAX_SAFE_INTEGER},async()=>{calls++;});
+  assert.equal(result.category,'validation'); assert.equal(calls,0);
 });
 
 test('typed persistence retains explicit false and empty list, denies undeclared authority and other field types', () => {

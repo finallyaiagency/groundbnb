@@ -1,0 +1,11 @@
+{
+  "id": "D-011",
+  "source": "Client",
+  "decision": "Continue through checkpoints and milestone completion until a hard blocker needs the client. At each actual milestone exit, create the next Groundbnb chat and continue there. Keep independent subagent work moving while client input is pending; prefer Luna High for simple coding and stronger models only when warranted.",
+  "rationale": "Client expressly requested maximum autonomous progress on October 8.",
+  "impact": "Execution preference only. No product requirement, frozen specification, environment boundary, release tier, budget or action-time browser permission rule is amended. No M2 chat before actual M1 exit.",
+  "requirementIds": ["SYS-14"],
+  "taskId": "M1-01F",
+  "date": "2026-10-08",
+  "implementationStatus": "Recorded. Parallel local M1 profile and membership work continues; the specific new database-reader grant approval is pending."
+}
