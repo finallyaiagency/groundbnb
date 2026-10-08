@@ -7,6 +7,7 @@ import { PROFILE_FIELD_DEFINITIONS, validateProfilePatch } from '@/lib/profile-d
 import { acknowledgedDraftFields, advanceRequestGeneration, createDebouncedTask, isCurrentRequestGeneration, isMatchingProfileAcknowledgment, pendingTextAutosaveFields } from '@/lib/profile-editor-state.mjs';
 import ProfileTransferControls from './profile-transfer-controls';
 import ProfileRecordsControls from './profile-records-controls';
+import ProfilePdfControls from './profile-pdf-controls';
 import { preferCurrentCanonicalProfile, selectCanonicalAfterStatusRefresh } from '@/lib/profile-transfer-editor-state.mjs';
 import { calculateProfileCompletion, createReadableProfileSummary } from '@/lib/profile-completion.mjs';
 
@@ -522,6 +523,14 @@ export default function ProfileEditor() {
         <button type="submit" disabled={busy || !!pending || recordsPending || recordsDraftDirty || !Object.values(dirty).some(Boolean)}>Save preferences</button>
       </form>
       {renderSummary()}
+      {profile.accountId && profile.updatedAt
+        ? <ProfilePdfControls key={`${profile.accountId}:${profile.revision}:${profile.updatedAt}`} profile={profile as Profile & { accountId: string }}
+          disabled={busy || !!pending || !!conflict || recordsPending || recordsDraftDirty || Object.values(dirty).some(Boolean) || signedOut}
+          registerController={registerRequestController} getSessionGeneration={getSessionGeneration} />
+        : <section aria-labelledby="profile-pdf-unavailable-heading">
+          <h2 id="profile-pdf-unavailable-heading">Download profile PDF</h2>
+          <p>Reload your saved profile to prepare a PDF with its confirmed save time.</p>
+        </section>}
       <ProfileTransferControls key={profile.accountId} profile={profileTransferView ?? profile} transferMode={transferMode}
         disabled={busy || !!pending || !!conflict || recordsPending || recordsDraftDirty} canStartWrite={canStartTransferWrite}
         registerController={registerRequestController} getSessionGeneration={getSessionGeneration} onBusyChange={handleChildBusyChange}
