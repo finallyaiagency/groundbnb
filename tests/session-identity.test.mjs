@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveSessionIdentity, sessionConfiguration } from '../lib/session-identity.mjs';
+import { resolveManagedSessionIdentity, resolveSessionIdentity, sessionConfiguration } from '../lib/session-identity.mjs';
 
 const env = {
   GROUND_ENV: 'local', GROUND_LOGIN_MODE: 'session-check',
@@ -76,4 +76,92 @@ test('pinned real SDK serializes a fresh provider read and forwards only the iso
       'groundbnb_local_session=synthetic-token; unrelated=discarded; groundbnb_preview_session=foreign', undefined, now)).ok, true);
     assert.equal(calls, 1);
   } finally { globalThis.fetch = originalFetch; }
+});
+
+test('managed identity resolver returns only pinned verified identity and session freshness', async () => {
+  let calls = 0;
+  const result = await resolveManagedSessionIdentity(env, 'groundbnb_local_session=synthetic-token',
+    async (config, token) => {
+      calls++;
+      assert.equal(config.issuer, env.GROUND_AUTH_ISSUER);
+      assert.equal(token, 'synthetic-token');
+      return { data: fixture };
+    }, now);
+  assert.deepEqual(result, { ok: true, identity: {
+    issuer: env.GROUND_AUTH_ISSUER, subject: fixture.user.id,
+    sessionId: fixture.session.id, expiresAt: fixture.session.expiresAt,
+  } });
+  assert.equal(calls, 1);
+  assert.equal(JSON.stringify(result).includes('synthetic-token'), false);
+  assert.equal(JSON.stringify(result).includes('owner'), false);
+  assert.equal(JSON.stringify(result).includes('email'), false);
+});
+
+test('managed identity rejects malformed identity/session identifiers and expiry timestamps', async () => {
+  const malformed = [
+    { ...fixture, user: { ...fixture.user, id: '   ' } },
+    { ...fixture, user: { ...fixture.user, id: 's'.repeat(201) } },
+    { ...fixture, user: { ...fixture.user, id: 'bad\u0000subject' } },
+    { ...fixture, session: { ...fixture.session, id: '  ' } },
+    { ...fixture, session: { ...fixture.session, id: 'x'.repeat(201) } },
+    { ...fixture, session: { ...fixture.session, id: 'bad\u007fsession' } },
+    { ...fixture, session: { ...fixture.session, expiresAt: '2026-02-30T16:00:00Z' } },
+    { ...fixture, session: { ...fixture.session, expiresAt: '2026-10-07 16:00:00Z' } },
+    { ...fixture, session: { ...fixture.session, expiresAt: '2026-10-07T16:00:00' } },
+    { ...fixture, session: { ...fixture.session, expiresAt: '2026-10-07T16:00:00+14:01' } },
+    { ...fixture, session: { ...fixture.session, expiresAt: '2026-10-07T16:00:00+01:60' } },
+    { ...fixture, session: { ...fixture.session, expiresAt: '2026-10-07T16:00:00.1234567890Z' } },
+    { ...fixture, session: { ...fixture.session, expiresAt: '2026-10-07T15:00:00.000000000Z' } },
+  ];
+  for (const data of malformed) {
+    const result = await resolveManagedSessionIdentity(env, 'groundbnb_local_session=synthetic-token',
+      async () => ({ data }), now);
+    assert.deepEqual(result, { ok: false, category: 'auth' });
+  }
+});
+
+test('managed identity accepts strict calendar timestamps with offsets and sub-millisecond precision', async () => {
+  for (const expiresAt of [
+    '2026-10-07T12:00:00-04:00',
+    '2026-10-07T15:00:00.000000001Z',
+  ]) {
+    const result = await resolveManagedSessionIdentity(env, 'groundbnb_local_session=synthetic-token',
+      async () => ({ data: { ...fixture, session: { ...fixture.session, expiresAt } } }), now);
+    assert.equal(result.ok, true);
+    assert.equal(result.identity.expiresAt, expiresAt);
+  }
+});
+
+test('invalid server clock refuses both resolvers before contacting managed auth', async () => {
+  for (const invalidClock of [new Date(Number.NaN), null, '2026-10-07T15:00:00Z']) {
+    for (const resolve of [resolveManagedSessionIdentity, resolveSessionIdentity]) {
+      let called = false;
+      const result = await resolve(env, 'groundbnb_local_session=synthetic-token', async () => {
+        called = true;
+        return { data: fixture };
+      }, invalidClock);
+      assert.deepEqual(result, { ok: false, category: 'unavailable' });
+      assert.equal(called, false);
+    }
+  }
+});
+
+test('malformed environment values refuse both resolvers before contacting managed auth', async () => {
+  for (const invalidEnv of [null, [], 'local', 42]) {
+    for (const resolve of [resolveManagedSessionIdentity, resolveSessionIdentity]) {
+      let called = false;
+      const result = await resolve(invalidEnv, 'groundbnb_local_session=synthetic-token', async () => {
+        called = true;
+        return { data: fixture };
+      }, now);
+      assert.deepEqual(result, { ok: false, category: 'unavailable' });
+      assert.equal(called, false);
+    }
+  }
+});
+
+test('legacy resolver keeps its narrow issuer/subject output while sharing strict session validation', async () => {
+  const result = await resolveSessionIdentity(env, 'groundbnb_local_session=synthetic-token',
+    async () => ({ data: fixture }), now);
+  assert.deepEqual(result, { ok: true, identity: { issuer: env.GROUND_AUTH_ISSUER, subject: fixture.user.id } });
 });
