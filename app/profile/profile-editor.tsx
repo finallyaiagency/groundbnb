@@ -38,7 +38,11 @@ export default function ProfileEditor() {
       const result = await response.json();
       if (signal?.aborted || currentGeneration !== generation.current) return;
       if (response.ok && result.ok === true) { acceptProfile(result.profile); setMessage('Your saved preferences are ready.'); }
-      else if (response.status === 401) { setProfile(null); setSignedOut(true); setMessage('Sign in to load your profile.'); }
+      else if (response.status === 401) {
+        setProfile(null); setDraft({ travelerCount: '', hasPets: '', dietaryRequirements: '' });
+        setDirty({}); setPending(null); setConflict(null); setSignedOut(true);
+        setMessage('Sign in to load your profile.');
+      }
       else setMessage('Your profile could not be loaded. Try again.');
     } catch { if (!signal?.aborted && currentGeneration === generation.current) setMessage('Your profile could not be loaded. Try again.'); }
   }, [acceptProfile]);
@@ -49,12 +53,13 @@ export default function ProfileEditor() {
   }, [load]);
   function change(field: keyof typeof draft, value: string) { setDraft(current => ({ ...current, [field]: value })); setDirty(current => ({ ...current, [field]: true })); }
   async function save(operation: Operation) {
-    ++generation.current;
+    const currentGeneration = ++generation.current;
     setBusy(true); setPending(operation); setConflict(null); setMessage('Saving…');
     try {
       const response = await fetch('/api/account/profile', { method: 'PATCH', credentials: 'same-origin', cache: 'no-store',
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(operation), signal: AbortSignal.timeout(25000) });
       const result = await response.json();
+      if (currentGeneration !== generation.current) return;
       if (response.ok && result.ok === true && result.operationId === operation.operationId && result.savedAt) {
         acceptProfile(result.profile); setMessage('Saved.');
       } else if (response.status === 409 && result.category === 'conflict') {
@@ -65,8 +70,11 @@ export default function ProfileEditor() {
         setSignedOut(true); setMessage('Your session is unavailable. Sign in again.');
       } else if (response.status === 400) { setPending(null); setMessage('Check the fields. Your draft is kept.'); }
       else setMessage('Save could not be confirmed. Your draft is kept. Retry this same save.');
-    } catch { setMessage('Save could not be confirmed. Your draft is kept. Retry this same save.'); }
-    finally { setBusy(false); }
+    } catch {
+      if (currentGeneration === generation.current) setMessage('Save could not be confirmed. Your draft is kept. Retry this same save.');
+    } finally {
+      if (currentGeneration === generation.current) setBusy(false);
+    }
   }
   function submit(event: FormEvent) {
     event.preventDefault(); if (!profile || busy || pending || !Object.values(dirty).some(Boolean)) return;
