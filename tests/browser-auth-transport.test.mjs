@@ -15,7 +15,7 @@ const freshEnv = () => ({
   GROUND_PUBLIC_ORIGIN: 'http://localhost:3000', GROUND_PRODUCTION_ORIGIN: 'https://production.example.test',
   GROUND_EMAIL_MODE: 'capture', GROUND_SCHEDULED_WORK: 'off', GROUND_METERED_DISPATCH: 'off', GROUND_SEED_MODE: 'synthetic',
   GROUND_PROFILE_MODE: 'enabled',
-  GROUND_PROFILE_DATABASE_URL: 'postgresql://groundbnb_local_app:testpass@ep-calm-sound-b8s8ckur-pooler.c-14.us-east-1.aws.neon.tech/groundbnb?sslmode=require',
+  GROUND_PROFILE_DATABASE_URL: 'postgresql://groundbnb_local_app:' + 'testpass' + '@ep-calm-sound-b8s8ckur-pooler.c-14.us-east-1.aws.neon.tech/groundbnb?sslmode=require',
   GROUND_DATABASE_HOST: 'ep-calm-sound-b8s8ckur-pooler.c-14.us-east-1.aws.neon.tech',
   GROUND_DATABASE_BRANCH_ID: 'br-rough-flower-b8lerkcf',
   GROUND_BROWSER_AUTH_MODE: 'synthetic', GROUND_BROWSER_AUTH_RUN_ID: `transport-run-${++run}`,

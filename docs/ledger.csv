@@ -39,7 +39,7 @@ id,title,tier,milestone,depends_on,status,evidence,notes,v1_portion_status,v1_po
 "ACC-04","Profile notes are a concise resolved summary with selected meaningful user quotes attached to the relevant notes.","v1","M1","","Not started","","","","","","","299"
 "ACC-05","Download a detailed profile PDF with headings, readable prose, selected quotes, annual calendar summary, and correct page breaks.","v1","M1","","Not started","","","","","","","300"
 "ACC-06","Account switching clears visible and cached profile, trips, itineraries, chat, map markers, tours, and provider query caches before loading th…","v1","M1","","Not started","","","","","","","301"
-"ACC-07","Intake, Profile, Planner, and AI edits share one account-profile truth.","v1","M1","","Not started","docs/qa/2026-10-07-M1-01E-browser-profile.md","Inactive three-field editor only; new browser auth/form coverage and genuine application acceptance pending.","","","","","302"
+"ACC-07","Intake, Profile, Planner, and AI edits share one account-profile truth.","v1","M1","","Not started","docs/qa/2026-10-07-M1-01E-browser-profile.md","Local synthetic browser save/reload/conflict review observed; replay/logout/full shared profile flows remain open.","","","","","302"
 "TRP-01","New trip creates a blank trip-specific route, dates, destinations, chat, tour, and map state while retaining account preferences and vehicles.","v1","M2","","Not started","","","","","","","303"
 "TRP-02","Autosave trip changes with a visible sync indicator.","v1","M2","","Not started","","","","","","","304"
 "TRP-03","Order My Trips by recent activity.","v1","M2","","Not started","","","","","","","305"

@@ -57,6 +57,7 @@ try {
       $browserDiagnosticMarker.Dispose()
       $browserRecord | Add-Member -NotePropertyName diagnosticSentAtUtc -NotePropertyValue ([DateTime]::UtcNow.ToString('o'))
       $browserRecord | Add-Member -NotePropertyName diagnosticReason -NotePropertyValue 'reproduced_sqlstate_25006_fixed_explicit_transaction'
+      $browserRecord | Add-Member -NotePropertyName diagnosticRevision -NotePropertyValue (& git -c "safe.directory=$($browserRoot.Replace('\','/'))" -C $browserRoot rev-parse HEAD)
       $browserRecord.maxOtpRequests=2
       $browserRecord | ConvertTo-Json | Set-Content -LiteralPath $browserAttempt -Encoding UTF8
       Write-Host 'One controlled diagnostic admitted after reproduced defect; original expiry unchanged.'

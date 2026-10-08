@@ -6,6 +6,8 @@ main { min-height: 100vh; display: flex; flex-direction: column; justify-content
 h1 { margin: 24px 0 12px; font-size: clamp(2.5rem, 7vw, 4.5rem); line-height: 1.05; }
 p { max-width: 34rem; font-size: 1.2rem; line-height: 1.5; }
 .account-page { justify-content: flex-start; max-width: 760px; padding-top: 48px; }
+body:has(.account-page) { color-scheme: dark; background: #0b0b0b; color: #f5f0e8; }
+.account-page .mark { color: #ffd45b; }
 .account-page h1 { font-size: clamp(2rem, 5vw, 3rem); }
 .account-form { max-width: 520px; display: grid; gap: 12px; }
 .account-form fieldset { display: grid; gap: 12px; border: 1px solid #a1b5aa; border-radius: 12px; padding: 20px; }
@@ -18,3 +20,12 @@ button:disabled { opacity: .6; cursor: default; }
 dl > div { margin: 12px 0; }
 dt { font-weight: 600; }
 dd { margin: 4px 0; overflow-wrap: anywhere; }
+.account-page .account-form fieldset { min-width: 0; background: #19191b; border-color: #394148; border-radius: 16px; }
+.account-page input, .account-page select, .account-page textarea { background: #121a24; color: #f5f0e8; border-color: #59616b; }
+.account-page button { min-height: 44px; background: #ffd45b; color: #0b0b0b; border-color: #ffd45b; }
+.account-page button[type="button"] { background: #19191b; color: #f5f0e8; border-color: #59616b; }
+.account-page button:hover:not(:disabled) { border-color: #f5f0e8; filter: brightness(1.08); }
+.account-page button:active:not(:disabled) { transform: translateY(1px); }
+.account-page :focus-visible { outline-color: #ffd45b; }
+.account-page a { color: #ffd45b; }
+.account-page dd { color: #c5cbd1; }
