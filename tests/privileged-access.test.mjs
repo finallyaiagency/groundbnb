@@ -114,3 +114,29 @@ test('returns only a frozen decision with no protected payload or mutation', () 
   assert.deepEqual(Object.keys(result).sort(), ['allowed', 'reason']);
   assert.deepEqual(decision({ factorAttestation: null }), { allowed: false, reason: 'factor_required' });
 });
+
+test('trusted PostgreSQL offset/microsecond times preserve exact freshness and future boundaries', () => {
+  assert.equal(decision({ factorAttestation: {
+    challengedAt: '2026-10-08T11:59:00.176146-04:00', lastActivityAt: '2026-10-08T12:00:00.000000-04:00',
+  } }).allowed, true);
+  assert.equal(decision({ factorAttestation: { challengedAt: '2026-10-08T16:00:00.000001Z' } }).reason, 'invalid_factor_times');
+  assert.equal(decision({ context: { sensitive: true }, factorAttestation: {
+    challengedAt: '2026-10-08T15:54:59.999999Z', lastActivityAt: NOW,
+  } }).reason, 'step_up_required');
+  assert.equal(decision({ context: { sensitive: true }, factorAttestation: {
+    challengedAt: '2026-10-08T15:55:00.000000Z', lastActivityAt: NOW,
+  } }).allowed, true);
+  assert.equal(decision({ factorAttestation: { challengedAt: '2026-10-08T15:20:00.000000Z',
+    lastActivityAt: '2026-10-08T15:30:00.000001Z' } }).allowed, true);
+  assert.equal(decision({ factorAttestation: { challengedAt: '2026-10-08T15:20:00.000000Z',
+    lastActivityAt: '2026-10-08T15:30:00.000000Z' } }).reason, 'session_idle');
+});
+
+test('unknown timestamp and non-string owner values deny without coercing an identity', () => {
+  for (const challengedAt of [0, new Date(NOW), {}, []]) {
+    assert.equal(decision({ factorAttestation: { challengedAt } }).reason, 'invalid_factor_times');
+  }
+  const untrustedOwner = { toString() { throw new Error('must not coerce'); } };
+  assert.equal(decision({ principal: { accountId: untrustedOwner } }).reason, 'invalid_principal');
+  assert.equal(decision({ factorAttestation: { accountId: untrustedOwner } }).reason, 'identity_mismatch');
+});

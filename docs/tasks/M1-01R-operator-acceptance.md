@@ -1,0 +1,9 @@
+# M1-01R — Prepared operator acceptance scripts
+
+Read STATE, M1-01F/K/M/P, named views 00/01/07/12/15 and frozen Sections 11.3/11.14/11.15/11.22. Prepare operator-only SQL acceptance after guarded migrations 0001–0009 on exactly the pinned local/preview synthetic branches. Do not execute SQL, grant roles, enable dispatch or provision keys/factors/providers.
+
+Every script guards database=groundbnb, session_user=neondb_owner, exact environment/branch, prior migration receipts and sole verified synthetic fixture. Use BEGIN and final ROLLBACK; ephemeral test records/receipt/audit changes must never survive. Do not read plaintext credentials/Auth session tokens or emit profile identity/content. Return fixed pass markers only after asserted invariants. Synthetic financial rates are explicitly test arithmetic fixtures, never vendor prices/official rate verification; no network dispatch or global mode persists.
+
+Prepare three independent scripts: full profile records/atomic transfer/status replay/conflict/authority rejection; versioned membership/financial reserve/dispatch replay/settlement/unknown/close/NaN/provenance checks; durable factor epoch/event/revocation/rechallenge/recovery consumption/throttle overlap/privacy checks. Catch expected constraint failures in subtransactions and assert the failure type/invariant, not any arbitrary exception. Preserve original profile, grants, usage, epoch and audit through rollback. Do not disable/drop production guards or constraint triggers to make fixtures pass.
+
+Static Node checks assert guards, transaction boundaries, fixed output and meaningful scenario coverage. They prove preparation only. Runtime SQL, concurrent races/two connections, disposable complete migration rollback, restricted-role ACL and authenticated MFA/PDF browser acceptance remain separate gates. Record defects without bypassing frozen requirements; no whole ledger status becomes Verified.
