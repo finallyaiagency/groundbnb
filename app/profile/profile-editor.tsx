@@ -52,6 +52,31 @@ export default function ProfileEditor() {
     return () => controller.abort();
   }, [load]);
   function change(field: keyof typeof draft, value: string) { setDraft(current => ({ ...current, [field]: value })); setDirty(current => ({ ...current, [field]: true })); }
+  async function checkSave(operation: Operation, retry: boolean) {
+    if (busy) return;
+    const currentGeneration = ++generation.current;
+    setBusy(true); setMessage('Checking your save…');
+    try {
+      const response = await fetch(`/api/account/profile/operations/${encodeURIComponent(operation.operationId)}`, {
+        credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(15000),
+      });
+      const result = await response.json();
+      if (currentGeneration !== generation.current) return;
+      if (response.ok && result.ok === true && result.operationId === operation.operationId && result.status === 'saved' && result.profile && result.savedAt) {
+        acceptProfile(result.profile); setMessage('Saved.');
+      } else if (response.ok && result.ok === true && result.operationId === operation.operationId && result.status === 'not_found') {
+        if (retry) await save(operation);
+        else setMessage('No completed save was found. Your draft is kept. Retry this same save.');
+      } else if (response.status === 401) {
+        setProfile(null); setDraft({ travelerCount: '', hasPets: '', dietaryRequirements: '' }); setDirty({}); setPending(null); setConflict(null);
+        setSignedOut(true); setMessage('Your session is unavailable. Sign in again.');
+      } else setMessage(`Could not confirm your save. Your draft is kept. Check again.${result.requestId ? ` Request: ${result.requestId}` : ''}`);
+    } catch {
+      if (currentGeneration === generation.current) setMessage('Could not confirm your save. Your draft is kept. Check again.');
+    } finally {
+      if (currentGeneration === generation.current) setBusy(false);
+    }
+  }
   async function save(operation: Operation) {
     const currentGeneration = ++generation.current;
     setBusy(true); setPending(operation); setConflict(null); setMessage('Saving…');
@@ -112,7 +137,10 @@ export default function ProfileEditor() {
         </fieldset>
         <button type="submit" disabled={busy || !!pending || !Object.values(dirty).some(Boolean)}>Save preferences</button>
       </form>
-      {pending && !conflict && <button type="button" disabled={busy} onClick={() => void save(pending)}>Retry same save</button>}
+      {pending && !conflict && <>
+        <button type="button" disabled={busy} onClick={() => void checkSave(pending, false)}>Check save status</button>
+        <button type="button" disabled={busy} onClick={() => void checkSave(pending, true)}>Retry same save</button>
+      </>}
       {conflict && pending && <section aria-label="Review changed values"><h2>Review changes</h2>
         {Object.entries(conflict.fieldComparison).map(([field, values]) => <p key={field}><strong>{labels[field] ?? 'Preference'}</strong>: saved — {readable(values.current)}; your draft — {readable(values.proposed)}.</p>)}
         <button type="button" disabled={busy} onClick={() => void save({ ...pending, operationId: crypto.randomUUID(), expectedRevision: conflict.currentRevision })}>Save reviewed draft</button>

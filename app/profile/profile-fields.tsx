@@ -21,6 +21,7 @@ export type ProfileFieldsProps = {
   dirtyFields: ReadonlySet<FieldName> | Partial<Record<FieldName, boolean>>;
   onDraftChange: (field: FieldName, answer: ProfileFieldAnswer) => void;
   onDirtyChange: (field: FieldName, dirty: boolean) => void;
+  onFlush?: (field: FieldName) => void;
   validationErrors?: Partial<Record<FieldName, string>>;
   disabled?: boolean;
   pending?: boolean;
@@ -119,6 +120,11 @@ if (uniqueGroupedFieldNames.size !== groupedFieldNames.length ||
   throw new Error('Profile field labels and sections must cover each supported v1 account field exactly once.');
 }
 
+export const PROFILE_FIELD_LABELS: Readonly<Record<FieldName, string>> = Object.freeze(
+  Object.fromEntries(Object.entries(FIELD_META).map(([field, meta]) => [field, meta.label])) as Record<FieldName, string>,
+);
+export const PROFILE_FIELD_GROUPS = FIELD_GROUPS;
+
 function isDirty(dirtyFields: ProfileFieldsProps['dirtyFields'], field: FieldName) {
   if (typeof (dirtyFields as ReadonlySet<FieldName>).has === 'function') return (dirtyFields as ReadonlySet<FieldName>).has(field);
   return (dirtyFields as Partial<Record<FieldName, boolean>>)[field] === true;
@@ -156,6 +162,7 @@ function renderField(props: ProfileFieldsProps, field: FieldName) {
   const dirty = isDirty(props.dirtyFields, field);
   const readonly = field === 'homePoint';
   const common = { id, 'aria-describedby': describedBy, 'aria-invalid': error ? true : undefined };
+  const textField = ['text', 'textList', 'manualChoiceList'].includes(definition.type);
 
   let control: React.ReactNode;
   switch (definition.type) {
@@ -257,7 +264,10 @@ function renderField(props: ProfileFieldsProps, field: FieldName) {
       ? <span id={`${id}-label`} className="profile-field-label">{meta.label}</span>
       : <label id={`${id}-label`} htmlFor={id}>{meta.label}</label>}
     {meta.description && <p id={helpId} className="profile-field-help">{meta.description}</p>}
-    <div className="profile-field-control" aria-disabled={(props.disabled || props.pending || readonly) || undefined}>{control}</div>
+    <div className="profile-field-control" aria-disabled={(props.disabled || props.pending || readonly) || undefined}
+      onBlurCapture={event => {
+        if (textField && !event.currentTarget.contains(event.relatedTarget as Node | null)) props.onFlush?.(field);
+      }}>{control}</div>
     {dirty && <span className="profile-dirty-indicator">Unsaved edit</span>}
     {!answer.answered && field !== 'homePoint' && <span className="profile-answer-state">Not specified</span>}
     {error && <p id={errorId} role="alert" className="profile-field-error">{error}</p>}

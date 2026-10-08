@@ -1,6 +1,8 @@
 # Groundbnb execution state
 
-Updated: 2026-10-07 (M0 complete; M1 in progress)
+Updated: 2026-10-08 (M0 complete; M1 in progress)
+
+M1-01F continuation: save-status endpoint and explicit status-before-retry flow prepared, with migration 0004 adding an owner-scoped original-acknowledgment reader. No SQL applied or window activated. 85 tests, lint/type/build/state/hash pass. Full-domain editor/adapter and transfer integration remain pending. All three Luna high agents hit the account usage limit; parent continued directly. See `docs/qa/2026-10-08-M1-01F-save-status.md`. M1 exit/M2 chat remain pending.
 
 Superseding M1 browser observation (October 8 UTC): the controlled second synthetic sign-in succeeded after the transaction fix. Actual browser save, reload, stale-revision conflict, explicit conflict review and dirty-field preservation passed on local. Three updates persisted. Lost-response replay and logout remain unverified: the development proxy did not hydrate, then Chrome could not reach the restarted local server. No third OTP or window extension occurred. Both app processes and the proxy were stopped; the prior private environment was restored. The original window expired at 01:59:54Z. Provider-session revocation was not confirmed. Full-domain modules, controlled fields and migration 0003 are prepared but not activated or applied. Full M1 remains open; no M2 chat yet.
 
