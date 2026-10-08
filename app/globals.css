@@ -5,3 +5,16 @@ main { min-height: 100vh; display: flex; flex-direction: column; justify-content
 .mark { font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #20745c; }
 h1 { margin: 24px 0 12px; font-size: clamp(2.5rem, 7vw, 4.5rem); line-height: 1.05; }
 p { max-width: 34rem; font-size: 1.2rem; line-height: 1.5; }
+.account-page { justify-content: flex-start; max-width: 760px; padding-top: 48px; }
+.account-page h1 { font-size: clamp(2rem, 5vw, 3rem); }
+.account-form { max-width: 520px; display: grid; gap: 12px; }
+.account-form fieldset { display: grid; gap: 12px; border: 1px solid #a1b5aa; border-radius: 12px; padding: 20px; }
+.account-form label { font-weight: 600; }
+input, select, textarea { font: inherit; padding: 12px; border: 1px solid #859f91; border-radius: 6px; width: 100%; background: white; color: #182d25; }
+textarea { min-height: 90px; resize: vertical; }
+button { font: inherit; padding: 12px 18px; border-radius: 6px; border: 1px solid #20745c; background: #20745c; color: white; cursor: pointer; margin: 4px 8px 4px 0; }
+button:disabled { opacity: .6; cursor: default; }
+:focus-visible { outline: 3px solid #be7900; outline-offset: 3px; }
+dl > div { margin: 12px 0; }
+dt { font-weight: 600; }
+dd { margin: 4px 0; overflow-wrap: anywhere; }
