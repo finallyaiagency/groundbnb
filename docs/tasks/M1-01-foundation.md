@@ -9,3 +9,5 @@ Dependency: M0-01 must first prove a protected, synthetic preview with separate 
 Goal: authenticated account and profile foundation with ownership, optimistic revisions, durable save acknowledgment, MFA/step-up boundary, membership data, and atomic financial reservation substrate. Split into bounded follow-up packets after inspecting the named views and ledger.
 
 Exit: each selected v1 requirement has a real pass observation on the isolated preview and revision-tied evidence; no mock is used to verify live auth. Update the ledger, QA, state, usage, and Git checkpoint.
+
+Credential continuation: D-010 approved existing app connection reuse. Both actual app-role metadata/ACL logins and distinct private bindings now pass; local profile mode remains off and Vercel Secret is restricted to the exact Preview review branch. No new password handoff is needed. Browser auth/profile and full M1 acceptance remain open. See docs/qa/2026-10-07-M1-01D-credential-bindings.md.

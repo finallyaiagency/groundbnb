@@ -4,6 +4,8 @@ $ErrorActionPreference='Stop'
 $bindingRoot=Split-Path -Parent $PSScriptRoot
 $bindingBytes=$null
 $bindingUrl=$null
+$bindingChild=$null
+$bindingPhase='encrypted_binding'
 Add-Type -AssemblyName System.Security
 try {
   $bindingBytes=[Security.Cryptography.ProtectedData]::Unprotect(
@@ -25,19 +27,35 @@ try {
   } else {
     $bindingProject=Get-Content -LiteralPath (Join-Path $bindingRoot '.vercel/project.json') -Raw | ConvertFrom-Json
     if ($bindingProject.projectId -ne 'prj_r5Vk1uNMNvS28qWX1UHo63t2S4ry' -or $bindingProject.orgId -ne 'team_1qtToGFf4pjRqNb8wL5ySGKP') { throw 'Project pin rejected' }
-    $bindingCli=(Get-Command vercel -ErrorAction Stop).Source
-    Push-Location $bindingRoot
-    try {
-      # Secret travels only over stdin to the pinned Groundbnb Preview branch.
-      $bindingUrl | & $bindingCli env add GROUND_PROFILE_DATABASE_URL preview codex/m0-01-environment-contract --sensitive --yes --scope=finally-ais-projects *> $null
-      if ($LASTEXITCODE -ne 0) { throw 'Preview Secret submission failed; inspect metadata only before retrying' }
-    } finally { Pop-Location }
+    $bindingPhase='cli_start'
+    $bindingShim=(Get-Command vercel -ErrorAction Stop).Source
+    $bindingCli=Join-Path (Split-Path -Parent $bindingShim) 'node_modules/vercel/dist/vc.js'
+    if (-not (Test-Path -LiteralPath $bindingCli)) { throw 'Installed CLI entry unavailable' }
+    $bindingStart=New-Object Diagnostics.ProcessStartInfo
+    $bindingStart.FileName=(Get-Command node -ErrorAction Stop).Source
+    $bindingStart.Arguments='"'+$bindingCli+'" env add GROUND_PROFILE_DATABASE_URL preview codex/m0-01-environment-contract --sensitive --yes --scope finally-ais-projects'
+    $bindingStart.WorkingDirectory=$bindingRoot
+    $bindingStart.UseShellExecute=$false
+    $bindingStart.CreateNoWindow=$true
+    $bindingStart.RedirectStandardInput=$true
+    $bindingStart.RedirectStandardOutput=$true
+    $bindingStart.RedirectStandardError=$true
+    # Capture both streams privately: PowerShell treats native CLI stderr as errors
+    # under Stop, including ordinary progress banners. No secret goes in arguments.
+    $bindingChild=[Diagnostics.Process]::Start($bindingStart)
+    $bindingChild.StandardInput.WriteLine($bindingUrl)
+    $bindingChild.StandardInput.Close()
+    $bindingPhase='cli_timeout'
+    if (-not $bindingChild.WaitForExit(35000)) { $bindingChild.Kill(); throw 'Submission uncertain; inspect metadata' }
+    $bindingPhase='cli_result'
+    if ($bindingChild.ExitCode -ne 0) { throw 'Preview Secret submission failed; inspect metadata before retrying' }
     Write-Host 'Groundbnb preview branch Secret submitted; verify metadata before any activation.'
   }
 } catch {
-  Write-Host 'Binding failed. Details suppressed to protect credentials; do not enable profile mode.'
+  Write-Host ('Binding failed ('+$bindingPhase+'). Details suppressed; inspect metadata before retrying.')
   exit 1
 } finally {
   if ($bindingBytes) { [Array]::Clear($bindingBytes,0,$bindingBytes.Length) }
   $bindingUrl=$null; $bindingUri=$null; $bindingLines=$null
+  if ($bindingChild) { $bindingChild.Dispose() }
 }

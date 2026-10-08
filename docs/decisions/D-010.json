@@ -1,0 +1,18 @@
+{
+  "id": "D-010",
+  "source": "Client",
+  "decision": "Approve reuse of the existing local and preview application connections from the signed-in Neon console for pinned direct checks, encrypted local storage and branch-only preview Secret binding.",
+  "rationale": "Client twice failed manual setup and explicitly answered Approve existing app connections after automatic review rejected initial retrieval for insufficient authorization.",
+  "impact": "Two existing restricted app credentials only; no password rotation, new privilege, production/recovery binding, public disclosure or metered dispatch. Plaintext values remain private in memory/child stdin; browser transfer files use RSA OAEP and persisted bindings use Windows CurrentUser DPAPI.",
+  "requirementIds": [
+    "SYS-02",
+    "SYS-07",
+    "SYS-11",
+    "DATA-01",
+    "DATA-02",
+    "OP-02"
+  ],
+  "taskId": "M1-01D",
+  "date": "2026-10-07",
+  "implementationStatus": "Both direct app-role login/catalog checks pass. Distinct encrypted bindings saved; local profile stays off; Vercel preview Secret metadata confirms exact review branch. Browser profile acceptance remains open."
+}

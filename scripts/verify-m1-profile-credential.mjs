@@ -3,6 +3,7 @@ import { neon } from '@neondatabase/serverless';
 
 let input = '';
 let result = { ok: false };
+let phase = 'input';
 try {
   for await (const chunk of process.stdin) { input += chunk; if (input.length > 4096) throw new Error(); }
   const { kind, password } = JSON.parse(input);
@@ -11,6 +12,7 @@ try {
   if (!target || typeof password !== 'string' || !password || password.length > 2048) throw new Error();
   const url = new URL(`postgresql://${target.host}/groundbnb?sslmode=require&channel_binding=require`);
   url.username = target.role; url.password = password;
+  phase = 'connection';
   const sql = neon(url.href);
   const [rows] = await sql.transaction([sql.query(`SELECT e.kind,e.branch_id,current_database() AS database_name,
     current_user AS role_name,
@@ -33,10 +35,18 @@ try {
     readOnly: true, fetchOptions: { signal: AbortSignal.timeout(8000), cache: 'no-store' },
   });
   const row = rows?.[0];
+  phase = 'result';
   const ok = rows?.length === 1 && row.kind === kind && row.branch_id === target.branch &&
     row.database_name === 'groundbnb' && row.role_name === target.role &&
     ['migration_present','attributes_safe','functions_allowed','helpers_denied','tables_denied','create_denied'].every(key => row[key] === true);
-  result = { kind, role: target.role, branchId: target.branch, ok, checks: ok ? 'direct_login_metadata_profile_acl' : 'failed' };
-} catch { /* Never emit driver, URL, password, identity or SQL errors. */ }
+  result = { kind, role: target.role, branchId: target.branch, ok, phase: ok ? 'complete' : 'result',
+    category: ok ? undefined : 'catalog', checks: ok ? 'direct_login_metadata_profile_acl' : 'failed' };
+} catch (error) {
+  // Only fixed categories leave the worker; never emit arbitrary error messages or URLs.
+  const category = phase === 'input' ? 'input' : error?.code === '28P01' ? 'auth' :
+    error?.code === '42501' ? 'permission' : error?.name === 'TimeoutError' ? 'timeout' :
+    ['ENOTFOUND','ECONNREFUSED','ETIMEDOUT'].includes(error?.cause?.code) ? 'network' : 'unknown';
+  result = { ok: false, phase, category };
+}
 process.stdout.write(JSON.stringify(result));
 process.exitCode = result.ok ? 0 : 1;

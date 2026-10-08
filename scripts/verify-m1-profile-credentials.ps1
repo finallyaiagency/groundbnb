@@ -14,11 +14,12 @@ foreach ($profileKind in @('local','preview')) {
   $profilePointer = [IntPtr]::Zero
   $profileChild = $null
   $profilePayload = $null
+  $profilePhase = 'password_input'
   try {
     $profilePointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($profileSecret)
     if ($SavePrivateBinding) {
       $profilePassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($profilePointer)
-      if ($profilePassword -notmatch '^[A-Za-z0-9]{24,}$') { throw 'Use a new random password of at least 24 letters/numbers' }
+      if ($profilePassword.Length -lt 24 -or $profilePassword.Length -gt 2048 -or $profilePassword -match '[\x00\r\n]') { throw 'Use a new random password of at least 24 characters' }
       $profilePasswordBytes = [Text.Encoding]::UTF8.GetBytes($profilePassword)
       $profileHasher = [Security.Cryptography.SHA256]::Create()
       try { $profileDigest = [Convert]::ToBase64String($profileHasher.ComputeHash($profilePasswordBytes)) }
@@ -36,14 +37,18 @@ foreach ($profileKind in @('local','preview')) {
     $profileStart.RedirectStandardInput = $true
     $profileStart.RedirectStandardOutput = $true
     $profileStart.RedirectStandardError = $true
+    $profilePhase = 'worker_start'
     $profileChild = [Diagnostics.Process]::Start($profileStart)
     $profileChild.StandardInput.Write($profilePayload)
     $profileChild.StandardInput.Close()
     $profilePayload = $null
+    $profilePhase = 'worker_timeout'
     if (-not $profileChild.WaitForExit(25000)) { $profileChild.Kill(); throw 'Timeout' }
+    $profilePhase = 'worker_response'
     $profileOutput = $profileChild.StandardOutput.ReadToEnd() | ConvertFrom-Json
     $profilePass = $profileChild.ExitCode -eq 0 -and $profileOutput.ok -eq $true
     if ($profilePass -and $SavePrivateBinding) {
+      $profilePhase = 'encrypted_storage'
       $profileHost = if ($profileKind -eq 'local') { 'ep-calm-sound-b8s8ckur-pooler.c-14.us-east-1.aws.neon.tech' } else { 'ep-red-night-b8pf2mdl-pooler.c-14.us-east-1.aws.neon.tech' }
       $profilePassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($profilePointer)
       $profileUrl = 'postgresql://groundbnb_' + $profileKind + '_app:' + [Uri]::EscapeDataString($profilePassword) + '@' + $profileHost + '/groundbnb?sslmode=require&channel_binding=require'
@@ -57,11 +62,13 @@ foreach ($profileKind in @('local','preview')) {
       }
     }
     $profileResults += [pscustomobject]@{ kind=$profileKind; ok=[bool]$profilePass;
-      checks=$(if ($profilePass) { 'direct_login_metadata_profile_acl' } else { 'failed' }) }
-    Write-Host ($profileKind + ': ' + $(if ($profilePass) { 'PASS' } else { 'FAIL' }))
+      checks=$(if ($profilePass) { 'direct_login_metadata_profile_acl' } else { 'failed' });
+      phase=$(if ($profilePass) { 'complete' } elseif ($profileOutput.phase -in @('input','connection','catalog','result')) { $profileOutput.phase } else { 'worker_response' });
+      category=$(if ($profileOutput.category -in @('auth','permission','timeout','network','catalog','input','unknown')) { $profileOutput.category } else { 'unknown' }) }
+    Write-Host ($profileKind + ': ' + $(if ($profilePass) { 'PASS' } else { 'FAIL (' + $profileResults[-1].phase + '/' + $profileResults[-1].category + ')' }))
   } catch {
-    $profileResults += [pscustomobject]@{ kind=$profileKind; ok=$false; checks='failed' }
-    Write-Host ($profileKind + ': FAIL (details suppressed)')
+    $profileResults += [pscustomobject]@{ kind=$profileKind; ok=$false; checks='failed'; phase=$profilePhase; category='helper' }
+    Write-Host ($profileKind + ': FAIL (' + $profilePhase + '/helper; private details suppressed)')
   } finally {
     $profilePayload=$null
     if ($profilePointer -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($profilePointer) }

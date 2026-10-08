@@ -1,6 +1,6 @@
 # M1-01D — Account mapping and atomic profile persistence
 
-Status: implementing; migration/function grants approved under D-009/Q-008. Migration committed on both pinned branches at b236d01; rolled-back operator invariants/catalog checks pass. Roles remain NOLOGIN; client credential activation and application/browser gates are pending.
+Status: implementing; migration/function grants approved under D-009/Q-008. Migration committed on both pinned branches at b236d01; rolled-back operator invariants/catalog checks pass. Both genuine restricted app logins and distinct private bindings now pass under D-010; application/browser gates remain pending.
 
 Binding: SYS-02, SYS-07, SYS-11, DATA-01, DATA-02, OP-02, RULE-05, RULE-06, RULE-08 and Sections 11.3–11.4/11.22. Read STATE, M1-01, named views 00-overview, 01-ui-nav, 07-data-ops, 12-membership, 15-shared-safeguards and exact source rows before edits. M0 and D-008 carry forward.
 
@@ -11,3 +11,5 @@ Migration 0002 creates normalized accounts, issuer/subject bindings, profiles, p
 Server read/save route remains off unless separate app credentials, profile enabled flag and existing isolated session gate are configured. PATCH requires exact app Origin, JSON and at most 16 KiB streamed body. Owner/entity selection comes from the freshly verified provider session, never request input. Safe no-store errors preserve retry with the same operation ID; the server does not automatically retry uncertain commits.
 
 Checks: deterministic field/configuration/parameter/response tests; type/lint/build/state/secret checks. After approved migration: operator transactional invariants, ACL read-back, then client credential activation and direct restricted-role tests. Actual signed-in browser/deployed persistence and two-account isolation remain required before product verification. SQL/operator tests or mocks do not prove these.
+
+Credential continuation: D-010 approved existing app connection reuse. Both actual app-role metadata/ACL logins and distinct private bindings now pass; local profile mode remains off and Vercel Secret is restricted to the exact Preview review branch. No new password handoff is needed. Browser auth/profile and full M1 acceptance remain open. See docs/qa/2026-10-07-M1-01D-credential-bindings.md.
