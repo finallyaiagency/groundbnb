@@ -45,8 +45,13 @@ function Read-RunRecord([string]$Path,[string]$ExpectedRunId) {
     if ($hashDifference -ne 0) { throw 'Run integrity check failed' }
   } finally { [Array]::Clear($actualHash,0,$actualHash.Length); [Array]::Clear($protectedHash,0,$protectedHash.Length); [Array]::Clear($rawBytes,0,$rawBytes.Length) }
   $record=$raw | ConvertFrom-Json
+  $hasRecordsMode=$null -ne $record.PSObject.Properties['recordsMode']
+  $hasTransferMode=$null -ne $record.PSObject.Properties['transferMode']
+  $legacyModes=(-not $hasRecordsMode -and -not $hasTransferMode)
+  $expandedModes=($record.recordsMode -eq 'manual-v1' -and $record.transferMode -eq 'reviewed-v1')
   if ($record.runId -ne $ExpectedRunId -or $record.fixture -ne 'local-01@example.test' -or
       $record.profileMode -ne 'enabled' -or $record.profileDomainMode -ne 'full-v1' -or
+      (-not ($legacyModes -or $expandedModes)) -or
       $record.maxOtpRequests -ne 1) { throw 'Run record mismatch' }
   $started=[DateTimeOffset]::Parse($record.startedAtUtc).UtcDateTime
   $until=[DateTimeOffset]::Parse($record.expiresAtUtc).UtcDateTime
@@ -108,7 +113,8 @@ try {
     $browserRecord=@{
       revision=$browserRevision; runId=$browserRun; startedAtUtc=$browserStart.ToString('o')
       expiresAtUtc=$browserUntil.ToString('o'); maxOtpRequests=1; fixture='local-01@example.test'
-      profileMode='enabled'; profileDomainMode='full-v1'; responseLossReplay='planned'; closeRequired=$true
+      profileMode='enabled'; profileDomainMode='full-v1'; recordsMode='manual-v1'; transferMode='reviewed-v1'
+      responseLossReplay='planned'; closeRequired=$true
     } | ConvertTo-Json -Compress
     Write-ExclusiveUtf8 $browserRecordPath $browserRecord
     $recordBytes=(New-Object Text.UTF8Encoding($false)).GetBytes($browserRecord)
@@ -126,7 +132,7 @@ try {
     $browserSecret=[Convert]::ToBase64String($browserSecretBytes)
     $browserValues=@{
       GROUND_ENV='local'; GROUND_PROFILE_MODE='enabled'; GROUND_LOGIN_MODE='session-check'
-      GROUND_PROFILE_DOMAIN_MODE='full-v1'
+      GROUND_PROFILE_DOMAIN_MODE='full-v1'; GROUND_PROFILE_RECORDS_MODE='manual-v1'; GROUND_PROFILE_TRANSFER_MODE='reviewed-v1'
       GROUND_PROFILE_DATABASE_URL=$browserUrl; GROUND_DATABASE_HOST=$browserUri.Host
       GROUND_DATABASE_BRANCH_ID='br-rough-flower-b8lerkcf'
       GROUND_AUTH_ISSUER='https://ep-calm-sound-b8s8ckur.neonauth.c-14.us-east-1.aws.neon.tech/groundbnb/auth'

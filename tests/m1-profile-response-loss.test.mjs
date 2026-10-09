@@ -8,8 +8,12 @@ import test from 'node:test';
 import { createResponseLossHandler, parseArguments, validateAttemptEvidence, validatePerRunRecordPath } from '../scripts/m1-profile-response-loss.mjs';
 
 const now = Date.parse('2026-10-08T01:40:00.000Z');
+const accountId = '10000000-0000-4000-8000-000000000001';
 const ack = (operationId, revision = 1, savedAt = '2026-10-08T01:39:00.000Z') => Buffer.from(JSON.stringify({
-  ok: true, operationId, savedAt, profile: { revision },
+  ok: true, operationId, savedAt, profile: { accountId, revision },
+}));
+const statusAck = (operationId, revision = 1, savedAt = '2026-10-08T01:39:00.000Z', owner = accountId) => Buffer.from(JSON.stringify({
+  ok: true, status: 'saved', operationId, savedAt, profile: { accountId: owner, revision },
 }));
 const makeRequest = (method, url, body = '', headers = {}) => Object.assign(Readable.from(
   body ? [Buffer.from(body)] : [],
@@ -103,6 +107,75 @@ test('records a replay mismatch without hiding its normal response', async () =>
   assert.equal(first.destroyed, true);
   assert.equal(retry.statusCode, 200);
   assert.equal(events[1].replayEquality, 'mismatch');
+});
+
+test('records matching committed status recovery without treating it as a PATCH replay', async () => {
+  const operationId = '00000000-0000-4000-8000-000000000011';
+  const patch = JSON.stringify({ operationId, expectedRevision: 0, patch: {} });
+  const events = [];
+  let calls = 0;
+  const handler = createResponseLossHandler({ expiresAt: now + 60_000, now: () => now, emit: event => events.push(event),
+    forward: async request => {
+      calls++;
+      return request.method === 'PATCH'
+        ? { statusCode: 200, headers: {}, body: ack(operationId, 4, '2026-10-08T01:39:00.000Z') }
+        : { statusCode: 200, headers: {}, body: statusAck(operationId, 4, '2026-10-08T01:39:00.000Z') };
+    },
+  });
+  const dropped = makeResponse();
+  await handler(makeRequest('PATCH', '/api/account/profile', patch), dropped);
+  const recovered = makeResponse();
+  await handler(makeRequest('GET', `/api/account/profile/operations/${operationId}`), recovered);
+  assert.equal(dropped.destroyed, true);
+  assert.equal(recovered.statusCode, 200);
+  assert.equal(calls, 2);
+  assert.equal(events.filter(event => event.event === 'profile_response_loss_replay').length, 0);
+  const statusEvent = events.find(event => event.event === 'profile_response_loss_status_recovery');
+  assert.equal(statusEvent.statusReconciliation, 'pass');
+  assert.equal(statusEvent.accountBinding, 'match');
+  assert.equal(statusEvent.revision, 4);
+  assert.equal(statusEvent.savedAt, '2026-10-08T01:39:00.000Z');
+  assert.equal(JSON.stringify(statusEvent).includes(accountId), false);
+  await handler(makeRequest('GET', `/api/account/profile/operations/${operationId}`), makeResponse());
+  assert.equal(events.filter(event => event.event === 'profile_response_loss_status_recovery').length, 1);
+});
+
+test('status reconciliation mismatch is visible without emitting owner identifiers', async () => {
+  for (const mismatch of [
+    { owner: '10000000-0000-4000-8000-000000000002', revision: 4, savedAt: '2026-10-08T01:39:00.000Z', binding: 'mismatch' },
+    { owner: accountId, revision: 5, savedAt: '2026-10-08T01:39:00.000Z', binding: 'match' },
+    { owner: accountId, revision: 4, savedAt: '2026-10-08T01:39:01.000Z', binding: 'match' },
+  ]) {
+    const operationId = '00000000-0000-4000-8000-000000000012';
+    const events = [];
+    const handler = createResponseLossHandler({ expiresAt: now + 60_000, now: () => now, emit: event => events.push(event),
+      forward: async request => request.method === 'PATCH'
+        ? { statusCode: 200, headers: {}, body: ack(operationId, 4, '2026-10-08T01:39:00.000Z') }
+        : { statusCode: 200, headers: {}, body: statusAck(operationId, mismatch.revision, mismatch.savedAt, mismatch.owner) },
+    });
+    await handler(makeRequest('PATCH', '/api/account/profile', JSON.stringify({ operationId, expectedRevision: 0, patch: {} })), makeResponse());
+    await handler(makeRequest('GET', `/api/account/profile/operations/${operationId}`), makeResponse());
+    const event = events.find(item => item.event === 'profile_response_loss_status_recovery');
+    assert.equal(event.statusReconciliation, 'mismatch');
+    assert.equal(event.accountBinding, mismatch.binding);
+    assert.equal(JSON.stringify(event).includes(mismatch.owner), false);
+  }
+});
+
+test('status telemetry ignores unbounded or noncanonical operation paths', async () => {
+  const operationId = '00000000-0000-4000-8000-000000000013';
+  const events = [];
+  const handler = createResponseLossHandler({ expiresAt: now + 60_000, now: () => now, emit: event => events.push(event),
+    forward: async request => request.method === 'PATCH'
+      ? { statusCode: 200, headers: {}, body: ack(operationId) }
+      : { statusCode: 200, headers: {}, body: statusAck(operationId) },
+  });
+  await handler(makeRequest('PATCH', '/api/account/profile', JSON.stringify({ operationId, expectedRevision: 0, patch: {} })), makeResponse());
+  for (const path of ['/api/account/profile/operations/not-a-uuid', `/api/account/profile/operations/${operationId}/extra`,
+    `/api/account/profile/operations/${operationId}?other=1`]) {
+    await handler(makeRequest('GET', path), makeResponse());
+  }
+  assert.equal(events.filter(event => event.event === 'profile_response_loss_status_recovery').length, 0);
 });
 
 test('proxies other paths unchanged, streams large static responses, and bounds API bodies', async () => {

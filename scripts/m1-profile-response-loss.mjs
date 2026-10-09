@@ -13,6 +13,7 @@ const REQUEST_LIMIT = 16 * 1024;
 const RESPONSE_LIMIT = 32 * 1024;
 const UPSTREAM_TIMEOUT_MS = 30_000;
 const NO_STORE = { 'Cache-Control': 'no-store, private', Pragma: 'no-cache' };
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const operationHash = (value) => createHash('sha256').update(value).digest('hex');
 const safeEmit = (emit, event) => {
@@ -24,13 +25,29 @@ function readProfileAck(body) {
     const value = JSON.parse(body.toString('utf8'));
     const operationId = value?.operationId;
     const revision = value?.profile?.revision;
+    const accountId = value?.profile?.accountId;
     const savedAt = value?.savedAt;
     if (typeof operationId !== 'string' || !operationId || !Number.isSafeInteger(revision) || revision < 0 ||
-        typeof savedAt !== 'string' || !Number.isFinite(Date.parse(savedAt))) return null;
+        typeof accountId !== 'string' || !accountId || typeof savedAt !== 'string' || !Number.isFinite(Date.parse(savedAt))) return null;
     const idHash = operationHash(operationId);
-    return { operationIdHash: idHash, revision, savedAt,
-      acknowledgmentHash: operationHash(`${idHash}\0${revision}\0${savedAt}`) };
+    const accountBindingHash = operationHash(accountId);
+    return { operationIdHash: idHash, accountBindingHash, revision, savedAt,
+      acknowledgmentHash: operationHash(`${idHash}\0${accountBindingHash}\0${revision}\0${savedAt}`) };
   } catch { return null; }
+}
+
+function readStatusAck(body) {
+  try {
+    const value = JSON.parse(body.toString('utf8'));
+    if (value?.ok !== true || value.status !== 'saved' || typeof value.operationId !== 'string') return null;
+    return readProfileAck(body);
+  } catch { return null; }
+}
+
+function readStatusOperationHash(method, target) {
+  if (method !== 'GET' || target.includes('?')) return null;
+  const match = /^\/api\/account\/profile\/operations\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.exec(target);
+  return match && UUID.test(match[1]) ? operationHash(match[1].toLowerCase()) : null;
 }
 
 function readRequestOperationHash(method, target, body) {
@@ -145,7 +162,7 @@ function forwardToLocalApp({ method, target, headers, body }) {
 
 export function createResponseLossHandler({ expiresAt, forward, now = Date.now, emit = (event) => console.log(JSON.stringify(event)) }) {
   if (!Number.isFinite(expiresAt) || typeof forward !== 'function') throw new TypeError('Invalid local proxy configuration.');
-  const state = { dropCount: 0, firstAck: null, replayObserved: false };
+  const state = { dropCount: 0, firstAck: null, replayObserved: false, statusRecoveryObserved: false };
 
   return async function handle(request, response) {
     if (now() >= expiresAt) return safeResponse(response, 410, { ok: false });
@@ -160,6 +177,7 @@ export function createResponseLossHandler({ expiresAt, forward, now = Date.now, 
     if (body === null) return safeResponse(response, 413, { ok: false });
 
     const requestOperationIdHash = readRequestOperationHash(request.method, request.url, body);
+    const statusOperationIdHash = readStatusOperationHash(request.method, request.url);
     let upstream;
     try {
       upstream = await forward({ method: request.method, target: request.url, headers: request.headers, body });
@@ -216,6 +234,28 @@ export function createResponseLossHandler({ expiresAt, forward, now = Date.now, 
         savedAt: replayAck?.savedAt ?? null, replayEquality: equal ? 'pass' : 'mismatch',
         acknowledgmentHash: replayAck?.acknowledgmentHash ?? null,
       });
+    }
+
+    if (statusOperationIdHash && statusOperationIdHash === state.firstAck?.operationIdHash &&
+        state.dropCount === 1 && !state.statusRecoveryObserved && upstream.statusCode === 200) {
+      const statusBody = (() => {
+        try { return JSON.parse(responseBody.toString('utf8')); } catch { return null; }
+      })();
+      if (statusBody?.ok === true && statusBody.status === 'saved') {
+        state.statusRecoveryObserved = true;
+        const statusAck = readStatusAck(responseBody);
+        const sameOperation = statusAck?.operationIdHash === state.firstAck.operationIdHash;
+        const sameAccount = statusAck?.accountBindingHash === state.firstAck.accountBindingHash;
+        const sameSnapshot = sameOperation && sameAccount && statusAck.revision === state.firstAck.revision &&
+          statusAck.savedAt === state.firstAck.savedAt && statusAck.acknowledgmentHash === state.firstAck.acknowledgmentHash;
+        safeEmit(emit, {
+          event: 'profile_response_loss_status_recovery', dropCount: state.dropCount, status: upstream.statusCode,
+          operationIdHash: statusOperationIdHash, revision: statusAck?.revision ?? null,
+          savedAt: statusAck?.savedAt ?? null, accountBinding: sameAccount ? 'match' : 'mismatch',
+          statusReconciliation: sameSnapshot ? 'pass' : 'mismatch',
+          acknowledgmentHash: statusAck?.acknowledgmentHash ?? null,
+        });
+      }
     }
 
     if (response.destroyed || response.writableEnded) return;
