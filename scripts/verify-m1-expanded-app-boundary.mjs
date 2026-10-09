@@ -34,10 +34,11 @@ try {
     (SELECT count(*) FROM groundbnb.schema_migrations WHERE version=ANY(ARRAY[
       '0001_environment','0002_profile_foundation','0003_profile_domain','0004_profile_operation_status',
       '0005_profile_records','0006_profile_transfer','0007_membership_foundation',
-      '0008_provider_reservations','0009_privileged_factors'])) AS known_receipt_count,
+      '0008_provider_reservations','0009_privileged_factors','0010_factor_recovery_activity',
+      '0011_membership_reader','0012_factor_service'])) AS known_receipt_count,
     r.rolcanlogin AND NOT (r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR
       r.rolbypassrls OR r.rolinherit) AND r.rolconnlimit=4 AND
-      r.rolconfig @> ARRAY['default_transaction_read_only=on','statement_timeout=5s'] AND
+      (r.rolconfig @> ARRAY['default_transaction_read_only=on','statement_timeout=5s']) IS TRUE AND
       NOT EXISTS(SELECT 1 FROM pg_auth_members m WHERE m.member=r.oid) AS attributes_safe,
     has_table_privilege(r.oid,'groundbnb.environment_identity','SELECT') AND
       has_table_privilege(r.oid,'groundbnb.schema_migrations','SELECT') AND
@@ -76,7 +77,7 @@ try {
   const row = rows?.[0];
   const targetMatches = row?.kind === kind && row?.branch_id === target.branch &&
     row?.database_name === 'groundbnb' && row?.role_name === target.role;
-  const exactReceipts = [row?.receipt_count, row?.known_receipt_count].every(value => value === 9 || value === '9');
+  const exactReceipts = [row?.receipt_count, row?.known_receipt_count].every(value => value === 12 || value === '12');
   const checks = ['attributes_safe','metadata_select_only','private_tables_denied','sequences_denied',
     'five_functions_allowed','no_extra_functions','create_denied'];
   const ok = rows?.length === 1 && targetMatches && exactReceipts && checks.every(key => row[key] === true);

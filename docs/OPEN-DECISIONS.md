@@ -11,7 +11,7 @@
 | Q-007 | Closed, October 7 | Restricted M1 app roles | D-008 provisioning plus D-010 private existing credential reuse complete; later permissions tracked separately. |
 | Q-008 | Closed, October 7 | Profile foundation and bounded functions | D-009 migration0002 and restricted read/save grants committed; operator and direct credentials pass. |
 | Q-009 | Closed, October 8 | Approved migrations0003-0009 on pinned local/preview | D-013; all committed. Profile/factor/financial rollback checks and direct app ACL pass. Broader browser/service/concurrency acceptance remains open. |
-| Q-010 | Open, awaiting client | Prepared migrations0010-0011 on same pinned local/preview | Specific approval requested; no app grants, login/key/factor enrollment/dispatch activation. Keep staged until the client answers. |
+| Q-010 | Closed, client approved October9 | Migrations0010-0011 on pinned local/preview | D-014; committed both. Rollback acceptance and restricted app checks pass. |
 
 Q-006 — **Closed, October 6**: client reported done to the two-test-branch removal request. D-007 records approval and completed preview/local read-backs: Google absent, existing synthetic email sign-in retained; production Google unchanged. Full M0 exit is recorded in `docs/qa/2026-10-06-M0-complete.md`. Q-005 role/connectivity and later production-session/SMTP handoffs are also complete; do not repeat them.
 
@@ -24,4 +24,6 @@ D-010 — **Approved and completed existing app credential reuse**: client expre
 
 Q-009 — **Approved and applied, October 8**: client expressly approved 0003–0009 on pinned local br-rough-flower-b8lerkcf and preview br-bitter-hall-b8ibnrfy; D-013 records scope. All seven committed after bounded compile repairs. Profile/factor/financial rollback-only checks and restricted app ACL/catalog pass after narrow owner/ACL-preserving repairs; concurrent/browser/service acceptance remains open. Dispatch stays Paused; app login modes stay disabled. 0010–0011 remain outside this batch. See docs/qa/2026-10-08-M1-pinned-migration-approval.md.
 
-Q-010 — **Specific approval requested, October 8**: prepared dormant migrations 0010 factor recovery/activity/enrollment guard and 0011 private membership reader on the same pinned local/preview only. No app grants, login, key, factor enrollment or dispatch activation. Client answer pending; keep outside completed Q-009 batch.
+Q-010 — **Closed, October9**: D-014 records client authorization. Both private migrations committed on pinned local/preview; recovery/activity and membership rollback checks and restricted app checks pass. Reader repair preserved owner/permissions. Standing authorization applies where allowed; mandatory action-time confirmations and credential handoffs remain applicable. See docs/qa/2026-10-09-M1-0010-0011-live.md.
+
+Q-011 — **Prepared, confirmation pending October9**: grant only EXECUTE on groundbnb.read_membership(text,text) to existing pinned local/preview app roles, exact0012 baseline. No table/helper/factor/role/password/production access. Reviewed guarded script SHA2562F93A96ECB9BD83DF9E7D0CAD88A54FAC2E286D4BA8728FAABB8CBA7C9DFC26D is staged but not executed. Browser action-time confirmation policy applies to new app access despite standing authorization.
