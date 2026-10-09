@@ -1,0 +1,11 @@
+{
+  "id": "D-013",
+  "source": "Client",
+  "decision": "Apply migrations 0003–0009 to Groundbnb's pinned local and preview databases.",
+  "rationale": "Client explicitly approved this exact batch, and separately approved similar requests and autonomous continuation through checkpoints.",
+  "impact": "Only groundbnb on local br-rough-flower-b8lerkcf and preview br-bitter-hall-b8ibnrfy. New app EXECUTE remains limited to read_profile_operation, save_profile_records and save_profile_transfer. No production/recovery, new identity, credentials, login window, factor enrollment or paid dispatch. 0010–0011 are outside this batch.",
+  "requirementIds": ["SYS-02", "DATA-02", "MEM-01", "MEM-09", "ACC-08"],
+  "taskId": "M1-01R",
+  "date": "2026-10-08",
+  "implementationStatus": "0003–0009 committed on both pinned branches after bounded compile repairs. Three narrow guarded financial maintenance repairs committed on both under standing continuation authority, preserving owner/ACL/security configuration and configured caps. Profile, factor and financial rollback-only checks plus restricted app ACL/catalog checks pass; concurrent/browser/service acceptance remains open. See docs/qa/2026-10-08-M1-pinned-migration-approval.md."
+}

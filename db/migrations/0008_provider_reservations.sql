@@ -423,7 +423,7 @@ BEGIN
   day_key:=(clock_timestamp() AT TIME ZONE 'UTC')::date;
   month_key:=date_trunc('month',day_key::timestamp)::date;
   IF operation_row.operation_id IS NOT NULL AND operation_row.account_period_key<>
-      CASE WHEN plan_row.account_period='day' THEN day_key ELSE month_key END THEN
+      (CASE WHEN plan_row.account_period='day' THEN day_key ELSE month_key END) THEN
     RETURN jsonb_build_object('ok',false,'category','period_conflict');
   END IF;
   SELECT count(*) INTO active_jobs FROM groundbnb.provider_operations
@@ -614,8 +614,8 @@ BEGIN
   END IF;
   dispatch_day:=(clock_timestamp() AT TIME ZONE 'UTC')::date;
   dispatch_month:=date_trunc('month',dispatch_day::timestamp)::date;
-  IF operation_row.account_period_key<>CASE WHEN operation_row.account_period='day'
-      THEN dispatch_day ELSE dispatch_month END OR
+  IF operation_row.account_period_key<>(CASE WHEN operation_row.account_period='day'
+      THEN dispatch_day ELSE dispatch_month END) OR
      EXISTS(SELECT 1 FROM jsonb_to_recordset(attempt_row.window_keys) AS w(kind text,period date)
        WHERE (w.kind='day' AND w.period<>dispatch_day) OR
          (w.kind='calendar_month' AND w.period<>dispatch_month)) THEN

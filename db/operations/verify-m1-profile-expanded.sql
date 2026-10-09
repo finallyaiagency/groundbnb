@@ -277,7 +277,9 @@ DO $failure_rollback$
 DECLARE binding record; before_profile jsonb; after_profile jsonb; expected_revision bigint;
   v_operation_id uuid:=gen_random_uuid(); v_note_id uuid:=gen_random_uuid(); failed boolean:=false;
 BEGIN
-  SELECT * INTO STRICT binding FROM groundbnb.account_identities WHERE revoked_at IS NULL;
+  SELECT * INTO STRICT binding FROM groundbnb.account_identities
+    WHERE revoked_at IS NULL AND verified_email=(
+      SELECT e.kind || '-01@example.test' FROM groundbnb.environment_identity e WHERE e.singleton);
   before_profile:=groundbnb.read_profile(binding.issuer,binding.subject)->'profile';
   expected_revision:=(before_profile->>'revision')::bigint;
   BEGIN

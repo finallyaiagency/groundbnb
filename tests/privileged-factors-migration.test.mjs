@@ -51,7 +51,8 @@ test('factor tables bind owner, epoch, factor, step, identity, and session with 
 
 test('enrollment uses the closed v1 encrypted envelope and recovery records match salted digest storage', () => {
   assert.match(up, /encrypted_secret jsonb NOT NULL/);
-  assert.match(up, /jsonb_object_length\(encrypted_secret\)=5/);
+  assert.ok(up.includes("(encrypted_secret - ARRAY['version','keyId','nonce','ciphertext','tag'])='{}'::jsonb"));
+  assert.doesNotMatch(up, /jsonb_object_length/);
   assert.match(up, /encrypted_secret \?& ARRAY\['version','keyId','nonce','ciphertext','tag'\]/);
   assert.match(up, /encrypted_secret->'version'='1'::jsonb/);
   assert.match(up, /encrypted_secret->>'keyId'=envelope_key_id/);

@@ -16,6 +16,15 @@ test('forward migration is the exact deterministic generator output', () => {
   assert.match(up, /Generated validator registry is frozen below with its source hash/);
 });
 
+test('generated catalog-list validator closes both ANY and EXISTS predicates', () => {
+  assert.match(up, /IF EXISTS \(SELECT 1 FROM jsonb_array_elements\(answer_value\) AS e\(v\)[\s\S]*?OR NOT \(\(v #>> '\{\}'\) = ANY\(ARRAY\[[^\n]*\]::text\[\]\)\)\) THEN RETURN false; END IF;/);
+});
+
+test('generated empty-list CASE is parenthesized inside the validator IF condition', () => {
+  assert.match(up, /AND\s+NOT \(CASE WHEN value_type='array' THEN jsonb_array_length\(answer_value\)=0 ELSE false END\) THEN RETURN false; END IF;/);
+  assert.doesNotMatch(up, /NOT CASE WHEN value_type='array'/);
+});
+
 test('frozen SQL registry snapshot matches the current v1 source registry and hash', () => {
   const snapshotStart = up.indexOf('-- Frozen profile-domain registry snapshot:\n') + '-- Frozen profile-domain registry snapshot:\n'.length;
   const snapshotEnd = up.indexOf('\n\nCREATE OR REPLACE FUNCTION groundbnb._valid_profile_patch', snapshotStart);
@@ -61,7 +70,7 @@ test('forward database allowlist and validator fields match the full v1 account 
   assert.match(functionBody, /jsonb_object_keys\(item\.value\)\)<>2/);
   assert.match(functionBody, /item\.value \? 'value' AND item\.value \? 'answered'/);
   assert.doesNotMatch(functionBody, /item\.value \? 'scope'|item\.value \? 'updatedAt'/);
-  assert.match(functionBody, /NOT CASE WHEN value_type='array' THEN jsonb_array_length\(answer_value\)=0 ELSE false END/);
+  assert.match(functionBody, /NOT \(CASE WHEN value_type='array' THEN jsonb_array_length\(answer_value\)=0 ELSE false END\)/);
   assert.match(functionBody, /jsonb_typeof\(v\) IS DISTINCT FROM 'string'/);
   assert.match(functionBody, /Resolved home points remain read-only until a provenance-bound resolver path exists/);
   assert.match(functionBody, /IF value_type='object' THEN RETURN false; END IF/);

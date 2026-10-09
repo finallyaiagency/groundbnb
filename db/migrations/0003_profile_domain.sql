@@ -646,7 +646,7 @@ BEGIN
       jsonb_typeof(item.value->'answered')<>'boolean' THEN RETURN false; END IF;
     answer_value := item.value->'value'; value_type := jsonb_typeof(answer_value);
     IF item.value->'answered'='false'::jsonb AND value_type<>'null' AND
-      NOT CASE WHEN value_type='array' THEN jsonb_array_length(answer_value)=0 ELSE false END THEN RETURN false; END IF;
+      NOT (CASE WHEN value_type='array' THEN jsonb_array_length(answer_value)=0 ELSE false END) THEN RETURN false; END IF;
     CASE
       WHEN item.key='homeAddress' THEN
         IF value_type NOT IN ('null','string') THEN RETURN false; END IF;
@@ -670,7 +670,7 @@ BEGIN
       WHEN item.key='ageGroups' THEN
         IF value_type<>'array' THEN RETURN false; END IF;
         IF EXISTS (SELECT 1 FROM jsonb_array_elements(answer_value) AS e(v)
-          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Children 0–12','Teens 13–17','Adults 18–64','Seniors 65+']::text[])) THEN RETURN false; END IF;
+          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Children 0–12','Teens 13–17','Adults 18–64','Seniors 65+']::text[]))) THEN RETURN false; END IF;
         IF (SELECT count(*) FROM jsonb_array_elements(answer_value) AS e(v)) <>
            (SELECT count(DISTINCT v) FROM jsonb_array_elements(answer_value) AS e(v)) THEN RETURN false; END IF;
       WHEN item.key='hasPets' THEN
@@ -678,7 +678,7 @@ BEGIN
       WHEN item.key='petTypes' THEN
         IF value_type<>'array' THEN RETURN false; END IF;
         IF EXISTS (SELECT 1 FROM jsonb_array_elements(answer_value) AS e(v)
-          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Dog','Small Dog','Large Dog','Cat','Other']::text[])) THEN RETURN false; END IF;
+          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Dog','Small Dog','Large Dog','Cat','Other']::text[]))) THEN RETURN false; END IF;
         IF (SELECT count(*) FROM jsonb_array_elements(answer_value) AS e(v)) <>
            (SELECT count(DISTINCT v) FROM jsonb_array_elements(answer_value) AS e(v)) THEN RETURN false; END IF;
       WHEN item.key='preferredRegions' THEN
@@ -698,7 +698,7 @@ BEGIN
       WHEN item.key='travelModes' THEN
         IF value_type<>'array' THEN RETURN false; END IF;
         IF EXISTS (SELECT 1 FROM jsonb_array_elements(answer_value) AS e(v)
-          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['RV','Van/Class B','Car/SUV','On Foot/Transit','Hike/Backpack','Plane/Flight','Train/Rail','Rental Car','Bicycle','Truck Camper','Travel Trailer','Fifth Wheel','Class A','Class C','Boat/Yacht']::text[])) THEN RETURN false; END IF;
+          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['RV','Van/Class B','Car/SUV','On Foot/Transit','Hike/Backpack','Plane/Flight','Train/Rail','Rental Car','Bicycle','Truck Camper','Travel Trailer','Fifth Wheel','Class A','Class C','Boat/Yacht']::text[]))) THEN RETURN false; END IF;
         IF (SELECT count(*) FROM jsonb_array_elements(answer_value) AS e(v)) <>
            (SELECT count(DISTINCT v) FROM jsonb_array_elements(answer_value) AS e(v)) THEN RETURN false; END IF;
       WHEN item.key='travelSeason' THEN
@@ -715,7 +715,7 @@ BEGIN
       WHEN item.key='activities' THEN
         IF value_type<>'array' THEN RETURN false; END IF;
         IF EXISTS (SELECT 1 FROM jsonb_array_elements(answer_value) AS e(v)
-          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['hiking/backpacking','camping','climbing','scuba/snorkeling','skiing/snowboarding','extreme sports','sailing/boating','fishing','kayaking','biking','off-roading','nature walks','spa/hot springs','beach leisure','scenic cruises','wellness','swimming','stargazing','guided tours','historical sites','local food','festivals','bowling','volunteer travel','photography','wildlife watching','community meals','local resources']::text[])) THEN RETURN false; END IF;
+          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['hiking/backpacking','camping','climbing','scuba/snorkeling','skiing/snowboarding','extreme sports','sailing/boating','fishing','kayaking','biking','off-roading','nature walks','spa/hot springs','beach leisure','scenic cruises','wellness','swimming','stargazing','guided tours','historical sites','local food','festivals','bowling','volunteer travel','photography','wildlife watching','community meals','local resources']::text[]))) THEN RETURN false; END IF;
         IF (SELECT count(*) FROM jsonb_array_elements(answer_value) AS e(v)) <>
            (SELECT count(DISTINCT v) FROM jsonb_array_elements(answer_value) AS e(v)) THEN RETURN false; END IF;
       WHEN item.key='drivingPace' THEN
@@ -770,7 +770,7 @@ BEGIN
       WHEN item.key='splurgeTypes' THEN
         IF value_type<>'array' THEN RETURN false; END IF;
         IF EXISTS (SELECT 1 FROM jsonb_array_elements(answer_value) AS e(v)
-          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Accommodation','Experience','Comfort','Transportation upgrade']::text[])) THEN RETURN false; END IF;
+          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Accommodation','Experience','Comfort','Transportation upgrade']::text[]))) THEN RETURN false; END IF;
         IF (SELECT count(*) FROM jsonb_array_elements(answer_value) AS e(v)) <>
            (SELECT count(DISTINCT v) FROM jsonb_array_elements(answer_value) AS e(v)) THEN RETURN false; END IF;
       WHEN item.key='needsFoodAccess' THEN
@@ -812,7 +812,7 @@ BEGIN
       WHEN item.key='preferredTransport' THEN
         IF value_type<>'array' THEN RETURN false; END IF;
         IF EXISTS (SELECT 1 FROM jsonb_array_elements(answer_value) AS e(v)
-          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Flight','Train','Bus','Car Rental','RV','Boat']::text[])) THEN RETURN false; END IF;
+          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Flight','Train','Bus','Car Rental','RV','Boat']::text[]))) THEN RETURN false; END IF;
         IF (SELECT count(*) FROM jsonb_array_elements(answer_value) AS e(v)) <>
            (SELECT count(DISTINCT v) FROM jsonb_array_elements(answer_value) AS e(v)) THEN RETURN false; END IF;
       WHEN item.key='travelScope' THEN
@@ -842,7 +842,7 @@ BEGIN
       WHEN item.key='terrain' THEN
         IF value_type<>'array' THEN RETURN false; END IF;
         IF EXISTS (SELECT 1 FROM jsonb_array_elements(answer_value) AS e(v)
-          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Coastal','Mountains','Forest','Urban','Mixed']::text[])) THEN RETURN false; END IF;
+          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Coastal','Mountains','Forest','Urban','Mixed']::text[]))) THEN RETURN false; END IF;
         IF (SELECT count(*) FROM jsonb_array_elements(answer_value) AS e(v)) <>
            (SELECT count(DISTINCT v) FROM jsonb_array_elements(answer_value) AS e(v)) THEN RETURN false; END IF;
       WHEN item.key='incomeOffsets' THEN
@@ -855,13 +855,13 @@ BEGIN
       WHEN item.key='legalSafety' THEN
         IF value_type<>'array' THEN RETURN false; END IF;
         IF EXISTS (SELECT 1 FROM jsonb_array_elements(answer_value) AS e(v)
-          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Legal Camping Only','Permit Alerts Required','Insurance Recommendations','No Special Requirements']::text[])) THEN RETURN false; END IF;
+          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Legal Camping Only','Permit Alerts Required','Insurance Recommendations','No Special Requirements']::text[]))) THEN RETURN false; END IF;
         IF (SELECT count(*) FROM jsonb_array_elements(answer_value) AS e(v)) <>
            (SELECT count(DISTINCT v) FROM jsonb_array_elements(answer_value) AS e(v)) THEN RETURN false; END IF;
       WHEN item.key='emotionalGoals' THEN
         IF value_type<>'array' THEN RETURN false; END IF;
         IF EXISTS (SELECT 1 FROM jsonb_array_elements(answer_value) AS e(v)
-          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Recharge/Rest','Family Bonding','Achievement/Challenge','Escape/Reset','Status/Premium','Simplicity/Minimalism']::text[])) THEN RETURN false; END IF;
+          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(ARRAY['Recharge/Rest','Family Bonding','Achievement/Challenge','Escape/Reset','Status/Premium','Simplicity/Minimalism']::text[]))) THEN RETURN false; END IF;
         IF (SELECT count(*) FROM jsonb_array_elements(answer_value) AS e(v)) <>
            (SELECT count(DISTINCT v) FROM jsonb_array_elements(answer_value) AS e(v)) THEN RETURN false; END IF;
       ELSE RETURN false;

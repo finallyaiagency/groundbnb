@@ -64,6 +64,10 @@ test('records and transfer assertions cover atomic saves, tombstones, status rep
 });
 
 test('acknowledgment failure injection checks full rollback without disabling any guard', () => {
+  const rollbackBlock = sql.match(/DO \$failure_rollback\$([\s\S]*?)\$failure_rollback\$;/)?.[1];
+  assert.ok(rollbackBlock, 'failure rollback block exists');
+  assert.match(rollbackBlock, /verified_email=\(\s*SELECT e\.kind \|\| '-01@example\.test' FROM groundbnb\.environment_identity e WHERE e\.singleton\)/);
+  assert.doesNotMatch(rollbackBlock, /LIMIT\s+1/i);
   assert.match(sql, /CREATE FUNCTION pg_temp\.reject_expanded_profile_ack\(\)/);
   assert.match(sql, /CREATE TRIGGER synthetic_expanded_profile_ack_failure BEFORE INSERT ON groundbnb\.profile_operations/);
   assert.match(sql, /EXCEPTION WHEN SQLSTATE 'P0001'/);

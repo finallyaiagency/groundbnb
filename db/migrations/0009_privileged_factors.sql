@@ -86,7 +86,8 @@ CREATE TABLE groundbnb.privileged_factor_enrollments (
     (state='verified' AND verified_at IS NOT NULL AND revoked_at IS NULL) OR
     (state='revoked' AND revoked_at IS NOT NULL AND revoked_at>=created_at AND
       (verified_at IS NULL OR revoked_at>=verified_at))),
-  CHECK (jsonb_typeof(encrypted_secret)='object' AND jsonb_object_length(encrypted_secret)=5 AND
+  CHECK (jsonb_typeof(encrypted_secret)='object' AND
+    (encrypted_secret - ARRAY['version','keyId','nonce','ciphertext','tag'])='{}'::jsonb AND
     encrypted_secret ?& ARRAY['version','keyId','nonce','ciphertext','tag'] AND
     encrypted_secret->'version'='1'::jsonb AND encrypted_secret->>'keyId'=envelope_key_id AND
     encrypted_secret->>'keyId' ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$' AND

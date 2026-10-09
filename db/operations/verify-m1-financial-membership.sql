@@ -150,7 +150,7 @@ BEGIN
   receipt:=groundbnb.reserve_provider_attempt(identity_issuer,identity_subject,operation_one,attempt_one,
     'm1r_test_arithmetic','synthetic_units_v1',rate_uuid,requested_units);
   IF receipt->>'ok' IS DISTINCT FROM 'true' OR receipt->>'status' IS DISTINCT FROM 'reserved' OR receipt->>'dispatched' IS DISTINCT FROM 'false' OR
-     receipt->>'maximumCostUsd' IS DISTINCT FROM '0.002' OR NOT EXISTS(SELECT 1 FROM groundbnb.provider_operations
+     (receipt->>'maximumCostUsd')::numeric IS DISTINCT FROM 0.002::numeric OR NOT EXISTS(SELECT 1 FROM groundbnb.provider_operations
        WHERE account_id=account_uuid AND operation_id=operation_one AND plan_version_id=plus_plan) THEN
     RAISE EXCEPTION 'Lifetime overlay did not pin the expected Plus plan and reserve receipt';
   END IF;
@@ -165,7 +165,8 @@ BEGIN
   replay:=groundbnb.mark_provider_attempt_dispatched(identity_issuer,identity_subject,attempt_one);
   IF replay->>'dispatchAuthorized' IS DISTINCT FROM 'false' THEN RAISE EXCEPTION 'Dispatch replay authorized a second attempt'; END IF;
   receipt:=groundbnb.settle_provider_attempt(identity_issuer,identity_subject,attempt_one,actual_units,false);
-  IF receipt->>'ok' IS DISTINCT FROM 'true' OR receipt->>'status' IS DISTINCT FROM 'settled' OR receipt->>'actualCostUsd' IS DISTINCT FROM '0.001' THEN
+  IF receipt->>'ok' IS DISTINCT FROM 'true' OR receipt->>'status' IS DISTINCT FROM 'settled' OR
+     (receipt->>'actualCostUsd')::numeric IS DISTINCT FROM 0.001::numeric THEN
     RAISE EXCEPTION 'Known synthetic actual usage did not settle';
   END IF;
   expected:=receipt;

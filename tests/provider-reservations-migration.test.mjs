@@ -100,6 +100,8 @@ test('dispatch marking counts a logical prompt once; settlement replay is stable
   assert.match(dispatch, /dispatchAuthorized',true/);
   assert.match(dispatch, /\{dispatchAuthorized\}','false'::jsonb/);
   assert.match(dispatch, /jsonb_to_recordset\(attempt_row\.window_keys\)[\s\S]*?w\.kind='day'[\s\S]*?w\.kind='calendar_month'/);
+  assert.match(dispatch, /account_period_key<>\(CASE WHEN operation_row\.account_period='day'[\s\S]*?THEN dispatch_day ELSE dispatch_month END\) OR/);
+  assert.doesNotMatch(dispatch, /account_period_key<>CASE WHEN operation_row\.account_period=/);
   const orderedLocks = [
     'FROM groundbnb.financial_dispatch_control WHERE singleton FOR SHARE',
     'WHERE policy_version_id=control_row.policy_version_id AND status=\'active\' FOR SHARE',
@@ -174,6 +176,8 @@ test('dispatch scaffolding starts paused and all financial functions/helpers hav
 test('closing a never-dispatched released operation makes it terminal', () => {
   const reserve = up.split('CREATE FUNCTION groundbnb.reserve_provider_attempt')[1].split('CREATE FUNCTION groundbnb.mark_provider_attempt_dispatched')[0];
   const close = up.split('CREATE FUNCTION groundbnb.close_provider_operation')[1].split('ALTER TABLE groundbnb.financial_policy_versions')[0];
+  assert.match(reserve, /account_period_key<>\s*\(CASE WHEN plan_row\.account_period='day' THEN day_key ELSE month_key END\) THEN/);
+  assert.doesNotMatch(reserve, /account_period_key<>\s*CASE WHEN plan_row\.account_period=/);
   assert.match(reserve, /operation_row\.status NOT IN \('active','needs_reconciliation'\)[\s\S]*?operation_row\.status='released' AND operation_row\.dispatched_at IS NULL/);
   assert.match(close, /UPDATE groundbnb\.provider_operations SET status='complete',closed_at=clock_timestamp\(\)[\s\S]*?status<>'complete'/);
   assert.doesNotMatch(close, /status NOT IN \('complete','released'\)/);

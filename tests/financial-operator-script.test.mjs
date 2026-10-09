@@ -45,6 +45,12 @@ test('script covers paused mode, reserve and dispatch replay, uncertainty, relea
   assert.match(sql, /not official vendor pricing/i);
 });
 
+test('synthetic monetary receipts compare numeric values without requiring a text scale', () => {
+  assert.match(executable, /\(receipt->>'maximumCostUsd'\)::numeric IS DISTINCT FROM 0\.002::numeric/);
+  assert.match(executable, /\(receipt->>'actualCostUsd'\)::numeric IS DISTINCT FROM 0\.001::numeric/);
+  assert.doesNotMatch(executable, /receipt->>'(?:maximumCostUsd|actualCostUsd)' IS DISTINCT FROM '\d+\.\d+'/);
+});
+
 test('script asserts nonfinite and provenance failures in nested savepoints', () => {
   assert.match(executable, /'NaN'::numeric/);
   assert.match(executable, /Expected active rate provenance rejection/);

@@ -38,7 +38,7 @@ function validatorCase(field, definition) {
   if (type === 'choiceList') return `WHEN item.key=${key} THEN
         IF value_type<>'array' THEN RETURN false; END IF;
         IF EXISTS (SELECT 1 FROM jsonb_array_elements(answer_value) AS e(v)
-          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(${sqlArray(PROFILE_CATALOGS[definition.catalog])})) THEN RETURN false; END IF;
+          WHERE jsonb_typeof(v) IS DISTINCT FROM 'string' OR length(v #>> '{}')=0 OR NOT ((v #>> '{}') = ANY(${sqlArray(PROFILE_CATALOGS[definition.catalog])}))) THEN RETURN false; END IF;
         IF (SELECT count(*) FROM jsonb_array_elements(answer_value) AS e(v)) <>
            (SELECT count(DISTINCT v) FROM jsonb_array_elements(answer_value) AS e(v)) THEN RETURN false; END IF;`;
   if (type === 'textList') return `WHEN item.key=${key} THEN
@@ -104,7 +104,7 @@ BEGIN
       jsonb_typeof(item.value->'answered')<>'boolean' THEN RETURN false; END IF;
     answer_value := item.value->'value'; value_type := jsonb_typeof(answer_value);
     IF item.value->'answered'='false'::jsonb AND value_type<>'null' AND
-      NOT CASE WHEN value_type='array' THEN jsonb_array_length(answer_value)=0 ELSE false END THEN RETURN false; END IF;
+      NOT (CASE WHEN value_type='array' THEN jsonb_array_length(answer_value)=0 ELSE false END) THEN RETURN false; END IF;
     CASE
       ${cases}
       ELSE RETURN false;
