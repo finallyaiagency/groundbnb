@@ -1,6 +1,6 @@
 # M1 expanded app boundary check
 
-Status: **not verified**
+Status: **direct restricted-role ACL/catalog verified on both pinned branches**. Initial failures below are retained history and superseded by the final read-only PASS result; browser/MFA acceptance remains open.
 
 The restricted check was prepared against the two pinned synthetic targets and invoked using the existing user-scoped DPAPI bindings. The verifier requests a read-only transaction with a 10-second statement/request timeout and checks only catalog metadata. It does not query application rows or authentication-user counts.
 

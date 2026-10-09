@@ -1,5 +1,7 @@
 # M1-01V — Private factor repository boundary
 
+Status: In progress — offline protocol prepared; database adapter and live acceptance pending.
+
 ## Purpose and limits
 
 Define the next offline-only implementation slice: a private PostgreSQL boundary for factor challenge state, one-use challenge consumption, and privileged-read context. This packet does not enroll or reset a factor, enable authentication, add routes, provision keys, grant EXECUTE/table privileges, execute SQL, or claim live MFA.
@@ -58,3 +60,13 @@ The current service interface must be revised in a coordinated slice with exact 
 The packet is ready when the service/adapter protocol is reviewed and its unresolved rate policy and receipt semantics are decided before code. The subsequent offline adapter slice passes focused tests, lint, typecheck, and build while remaining unreachable from routes or active configuration.
 
 This packet and its mock/static checks do not verify ACC-08/ACC-09 and do not establish MFA. PostgreSQL transaction/locking, function ACLs, rate-limit durability, commit-uncertainty resolution, live session expiry, activity advancement, factor reset/revocation, enrollment, owner transfer, and browser enforcement remain unproven until their separately approved runtime gates pass.
+
+## Offline protocol preparation (2026-10-08)
+
+`lib/factor-service-protocol.mjs` now defines an additive two-phase challenge contract without changing `lib/factor-service.mjs` or assuming a live SQL function. It resolves managed identity, reads a closed owner/session/epoch/factor snapshot, verifies TOTP/recovery candidates in application code, then issues exactly one atomic consume or failure-audit call. The writer receives the full observed binding for database revalidation. No open transaction spans cryptographic verification and no generic database callback or reader is exposed.
+
+An unknown writer result gets one owner/session/method-bound operation-receipt read; the protocol never retries the writer. Accepted results, including accepted receipts, are returned only after a fresh managed-session read and current owner/factor/epoch/revocation/rate-state read. A stale or expired context withholds success. The operation UUID is generated inside the service and never accepted from request input.
+
+The frozen source requires rate limiting but gives no attempt threshold/window. This implementation exports a proposed bounded 5-failure/900-second policy and requires the trusted caller to supply a valid explicit policy; it is not a source-spec amendment or a production setting. The policy is copied/frozen during construction. Focused tests use synthetic fixtures only. This contract is not integrated with `factor-service.mjs`, a route, SQL, grants, or runtime configuration and makes no MFA claim.
+
+Independent read-only review found no actionable defect in this offline contract candidate. The repository adapter gate remains incomplete until the receipt schema, proposed rate policy, SQL function contracts, and effective ACLs receive parent review and separate approval.
