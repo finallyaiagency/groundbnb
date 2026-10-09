@@ -1,6 +1,6 @@
 # M1-01W — Dormant factor-service SQL candidate
 
-**Status:** Prepared and independently reviewed. No SQL executed; no grant, key, route, environment binding, login, OTP, or MFA activation occurred.
+**Status:** Private0012 committed on both pinned local/preview; closed-path operator checks rolled back successfully both. No app grant, key, route, login, OTP or MFA activation. Preparation paragraphs below are historical; live continuation supersedes them.
 
 ## Scope
 
@@ -15,11 +15,11 @@ Identity resolution pins the synthetic branch issuer and derives the active owne
 - Independent review found and the candidate corrected: missing explicit TOTP method; repeated same-session activity inserts instead of guarded upserts; relkind-unsafe privilege checks; and trigger-returning functions incorrectly included in callable-function scans. Final reviewer found no remaining blocker in the candidate.
 - Parent reports the committed 0010/0011 baseline and rollback-only 0011 membership-reader acceptance passed on both pinned branches under D-014. The new 0012 operator script is prepared only; it has not been executed and uses an unmapped synthetic subject plus an absent fixed session marker. It does not create or query an actual provider session or handle credentials.
 
-The tests inspect SQL text and closed contract markers only. They do not prove SQL parsing, function ownership/effective ACLs, transaction behavior, locking, provider session revocation semantics, or live MFA. The operator script has not been run. Migration 0012 remains unexecuted, ungranted, and unapplied.
+The tests inspect SQL text and closed contract markers only. They do not prove SQL parsing, function ownership/effective ACLs, transaction behavior, locking, provider session revocation semantics, or live MFA. The later live continuation records actual compilation and closed-path acceptance; successful challenge/session/concurrency remains unverified.
 
 ## Open gates
 
-- Run the prepared rollback-only 0012 closed-path operator acceptance on both pinned branches under its own exact action-time gate, then obtain separate approval before applying migration 0012.
+- Private0012 and closed-path operator checks complete on both under standing routine authorization; new app permissions remain separately gated.
 - Inspect Neon Auth revocation/deletion semantics and verify same-database session-row behavior before claiming immediate provider revocation.
 - After separate grant approval, perform bounded synthetic runtime tests for function compilation, app-role ACLs, expiry, concurrency, one-use sources, UTC boundary and alias aggregation, audit atomicity, and uncertain-receipt recovery.
 - Keep browser/service activation, key provision, enrollment, real OTP/recovery, and production access separately gated.

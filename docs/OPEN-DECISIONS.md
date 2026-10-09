@@ -12,6 +12,7 @@
 | Q-008 | Closed, October 7 | Profile foundation and bounded functions | D-009 migration0002 and restricted read/save grants committed; operator and direct credentials pass. |
 | Q-009 | Closed, October 8 | Approved migrations0003-0009 on pinned local/preview | D-013; all committed. Profile/factor/financial rollback checks and direct app ACL pass. Broader browser/service/concurrency acceptance remains open. |
 | Q-010 | Closed, client approved October9 | Migrations0010-0011 on pinned local/preview | D-014; committed both. Rollback acceptance and restricted app checks pass. |
+| Q-011 | Open, awaiting action-time confirmation | Membership-reader-only app EXECUTE on pinned local/preview | Reviewed guarded script prepared; no table/helper/factor access. Independent offline work continues. |
 
 Q-006 — **Closed, October 6**: client reported done to the two-test-branch removal request. D-007 records approval and completed preview/local read-backs: Google absent, existing synthetic email sign-in retained; production Google unchanged. Full M0 exit is recorded in `docs/qa/2026-10-06-M0-complete.md`. Q-005 role/connectivity and later production-session/SMTP handoffs are also complete; do not repeat them.
 
