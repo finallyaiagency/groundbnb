@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { resolveManagedSessionIdentity, resolveSessionIdentity, sessionConfiguration } from '../lib/session-identity.mjs';
 
 const env = {
@@ -16,6 +17,19 @@ const fixture = {
   user: { id: 'synthetic-subject', emailVerified: true, role: 'owner', email: 'local-01@example.test' },
   session: { id: 'synthetic-session', userId: 'synthetic-subject', expiresAt: '2026-10-07T16:00:00.000Z', token: 'synthetic-token' },
 };
+
+test('native Node environment retains the pinned configuration without accepting other exotic objects', () => {
+  const moduleUrl = new URL('../lib/session-identity.mjs', import.meta.url).href;
+  const script = `import { sessionConfiguration } from ${JSON.stringify(moduleUrl)};
+    const accepted = sessionConfiguration(process.env);
+    const rejected = sessionConfiguration(Object.create({ ...process.env }));
+    console.log(JSON.stringify({ accepted: Boolean(accepted), rejected: rejected === null }));`;
+  const child = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+    env: { ...env }, encoding: 'utf8', timeout: 10000,
+  });
+  assert.equal(child.status, 0);
+  assert.deepEqual(JSON.parse(child.stdout), { accepted: true, rejected: true });
+});
 
 test('disabled, foreign issuer, wrong cookie namespace and unsafe environment refuse provider contact', async () => {
   for (const change of [
@@ -164,4 +178,22 @@ test('legacy resolver keeps its narrow issuer/subject output while sharing stric
   const result = await resolveSessionIdentity(env, 'groundbnb_local_session=synthetic-token',
     async () => ({ data: fixture }), now);
   assert.deepEqual(result, { ok: true, identity: { issuer: env.GROUND_AUTH_ISSUER, subject: fixture.user.id } });
+});
+
+test('both resolvers recheck the server clock after awaiting the provider', async () => {
+  for (const resolve of [resolveManagedSessionIdentity, resolveSessionIdentity]) {
+    for (const completedAt of [new Date(fixture.session.expiresAt), new Date(NaN)]) {
+      let clock = now;
+      const result = await resolve(env, 'groundbnb_local_session=synthetic-token', async () => {
+        clock = completedAt;
+        return { data: fixture };
+      }, () => clock);
+      assert.deepEqual(result, { ok: false, category: Number.isFinite(completedAt.getTime()) ? 'auth' : 'unavailable' });
+    }
+    let called = false;
+    assert.deepEqual(await resolve(env, 'groundbnb_local_session=synthetic-token', async () => {
+      called = true;
+    }, () => { throw new Error('private clock failure'); }), { ok: false, category: 'unavailable' });
+    assert.equal(called, false);
+  }
 });

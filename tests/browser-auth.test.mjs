@@ -10,7 +10,7 @@ const databaseUrl = new URL(`postgresql://${target.host}/groundbnb?sslmode=requi
 databaseUrl.username = target.role;
 databaseUrl.password = 'synthetic-test-only';
 const env = {
-  GROUND_ENV: 'local', GROUND_LOGIN_MODE: 'session-check', GROUND_PROFILE_MODE: 'enabled',
+  GROUND_ENV: 'local', GROUND_LOGIN_MODE: 'session-check', GROUND_PROFILE_MODE: 'enabled', GROUND_PROFILE_DOMAIN_MODE: 'full-v1',
   GROUND_PROFILE_DATABASE_URL: databaseUrl.href, GROUND_DATABASE_HOST: target.host,
   GROUND_DATABASE_BRANCH_ID: target.branch,
   GROUND_AUTH_ISSUER: 'https://ep-calm-sound-b8s8ckur.neonauth.c-14.us-east-1.aws.neon.tech/groundbnb/auth',
@@ -89,6 +89,20 @@ test('send is fixture-only and response never claims email delivery or reflects 
   assert.equal(JSON.stringify(body).includes('provider detail'), false);
   assert.equal(response.headers.get('cache-control'), 'no-store, private');
   assert.equal(response.headers.get('vary'), 'Cookie');
+});
+
+test('one synthetic run admits only one send even when the browser repeats the request', async () => {
+  const settings = freshEnv();
+  let calls = 0;
+  const upstream = async () => { calls++; return ok({ success: true }); };
+  const first = await handleBrowserAuth(request({ action: 'send', email: fixtureEmail }), settings, upstream,
+    async () => {}, async () => {}, clock);
+  const repeated = await handleBrowserAuth(request({ action: 'send', email: fixtureEmail }), settings, upstream,
+    async () => {}, async () => {}, clock);
+  assert.equal(first.status, 200);
+  assert.equal(repeated.status, 429);
+  assert.equal((await repeated.json()).category, 'throttled');
+  assert.equal(calls, 1);
 });
 
 test('pinned provider transport uses only the approved send endpoint and rejects oversized response data privately', async () => {

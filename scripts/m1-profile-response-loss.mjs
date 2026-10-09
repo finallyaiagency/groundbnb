@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createServer, request as httpRequest } from 'node:http';
-import { readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { readFile, realpath, stat } from 'node:fs/promises';
+import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -225,19 +225,19 @@ export function createResponseLossHandler({ expiresAt, forward, now = Date.now, 
   };
 }
 
-function parseArguments(args) {
+export function parseArguments(args) {
   const values = new Map();
   for (let index = 0; index < args.length; index += 2) {
     const key = args[index];
     const value = args[index + 1];
-    if (!['--run-id', '--until'].includes(key) || !value || values.has(key)) return null;
+    if (!['--run-id', '--until', '--run-record'].includes(key) || !value || values.has(key)) return null;
     values.set(key, value);
   }
-  if (values.size !== 2) return null;
-  return { runId: values.get('--run-id'), untilText: values.get('--until') };
+  if (!values.has('--run-id') || !values.has('--until')) return null;
+  return { runId: values.get('--run-id'), untilText: values.get('--until'), runRecordPath: values.get('--run-record') ?? null };
 }
 
-export function validateAttemptEvidence(contents, runId, untilText, now = Date.now()) {
+export function validateAttemptEvidence(contents, runId, untilText, now = Date.now(), { singleOtp = false } = {}) {
   try {
     const evidence = JSON.parse(contents.replace(/^\uFEFF/, ''));
     const until = Date.parse(untilText);
@@ -246,8 +246,35 @@ export function validateAttemptEvidence(contents, runId, untilText, now = Date.n
     if (evidence.runId !== runId || evidence.fixture !== 'local-01@example.test' || evidence.profileMode !== 'enabled' ||
         !Number.isFinite(until) || until !== recordedUntil || !Number.isFinite(started) ||
         !Number.isFinite(recordedUntil) || started > now || recordedUntil <= now || recordedUntil <= started ||
-        recordedUntil - started > 30 * 60 * 1000) return null;
+        recordedUntil - started > 30 * 60 * 1000 ||
+        (singleOtp && (evidence.maxOtpRequests !== 1 || evidence.profileDomainMode !== 'full-v1'))) return null;
     return { expiresAt: recordedUntil };
+  } catch { return null; }
+}
+
+export async function validatePerRunRecordPath(suppliedPath, runId) {
+  if (typeof suppliedPath !== 'string' || !/^[0-9a-f]{32}$/.test(runId)) return null;
+  const evidenceRoot = resolve(ROOT, '.tmp/evidence');
+  const runRoot = resolve(evidenceRoot, 'm1-browser-runs');
+  const expectedRunDir = resolve(runRoot, runId);
+  const expectedRecord = resolve(expectedRunDir, 'run.json');
+  const expectedIntegrity = resolve(expectedRunDir, 'run-integrity.dpapi');
+  const suppliedAbsolute = resolve(ROOT, suppliedPath);
+  if (suppliedAbsolute !== expectedRecord) return null;
+  try {
+    const [realEvidenceRoot, realRunRoot, realRunDir, realRecord, realIntegrity] = await Promise.all([
+      realpath(evidenceRoot), realpath(runRoot), realpath(expectedRunDir), realpath(expectedRecord), realpath(expectedIntegrity),
+    ]);
+    const inside = (base, path) => {
+      const child = relative(base, path);
+      return child !== '' && child !== '..' && !child.startsWith(`..${sep}`);
+    };
+    if (!inside(realEvidenceRoot, realRunRoot) || !inside(realRunRoot, realRunDir) ||
+        realRecord !== resolve(realRunDir, 'run.json') || realIntegrity !== resolve(realRunDir, 'run-integrity.dpapi')) return null;
+    const [recordInfo, integrityInfo] = await Promise.all([stat(realRecord), stat(realIntegrity)]);
+    if (!recordInfo.isFile() || recordInfo.size < 1 || recordInfo.size > 4096 ||
+        !integrityInfo.isFile() || integrityInfo.size < 1 || integrityInfo.size > 4096) return null;
+    return realRecord;
   } catch { return null; }
 }
 
@@ -259,13 +286,22 @@ async function main() {
     return;
   }
   let evidenceContents;
-  try { evidenceContents = await readFile(EVIDENCE, 'utf8'); }
+  let evidencePath = EVIDENCE;
+  if (args.runRecordPath) {
+    evidencePath = await validatePerRunRecordPath(args.runRecordPath, args.runId);
+    if (!evidencePath) {
+      console.log(JSON.stringify({ event: 'profile_response_loss_proxy_error', status: 403 }));
+      process.exitCode = 2;
+      return;
+    }
+  }
+  try { evidenceContents = await readFile(evidencePath, 'utf8'); }
   catch {
     console.log(JSON.stringify({ event: 'profile_response_loss_proxy_error', status: 403 }));
     process.exitCode = 2;
     return;
   }
-  const validated = validateAttemptEvidence(evidenceContents, args.runId, args.untilText);
+  const validated = validateAttemptEvidence(evidenceContents, args.runId, args.untilText, Date.now(), { singleOtp: Boolean(args.runRecordPath) });
   if (!validated) {
     console.log(JSON.stringify({ event: 'profile_response_loss_proxy_error', status: 403 }));
     process.exitCode = 2;

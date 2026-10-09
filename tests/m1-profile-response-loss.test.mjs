@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Readable, Writable } from 'node:stream';
 import test from 'node:test';
-import { createResponseLossHandler, validateAttemptEvidence } from '../scripts/m1-profile-response-loss.mjs';
+import { createResponseLossHandler, parseArguments, validateAttemptEvidence, validatePerRunRecordPath } from '../scripts/m1-profile-response-loss.mjs';
 
 const now = Date.parse('2026-10-08T01:40:00.000Z');
 const ack = (operationId, revision = 1, savedAt = '2026-10-08T01:39:00.000Z') => Buffer.from(JSON.stringify({
@@ -176,4 +180,46 @@ test('accepts a BOM-prefixed attempt record only when run ID and expiry exactly 
   assert.deepEqual(validateAttemptEvidence(`\uFEFF${record}`, 'run-12345678', '2026-10-08T01:50:00.000Z', now),
     { expiresAt: Date.parse('2026-10-08T01:50:00.000Z') });
   assert.equal(validateAttemptEvidence(`\uFEFF${record}`, 'run-12345678', '2026-10-08T01:51:00.000Z', now), null);
+});
+
+test('per-run record loader accepts only the exact isolated record path with one-OTP metadata', async () => {
+  const runId = randomUUID().replaceAll('-', '');
+  const runsRoot = resolve(fileURLToPath(new URL('../.tmp/evidence/m1-browser-runs/', import.meta.url)));
+  const runDir = resolve(runsRoot, runId);
+  if (!runDir.startsWith(`${runsRoot}${sep}`)) throw new Error('Test run directory escaped its evidence root.');
+  const recordFile = resolve(runDir, 'run.json');
+  const integrityFile = resolve(runDir, 'run-integrity.dpapi');
+  const until = '2026-10-08T01:50:00.000Z';
+  const record = JSON.stringify({ runId, startedAtUtc: '2026-10-08T01:20:00.000Z', expiresAtUtc: until,
+    fixture: 'local-01@example.test', profileMode: 'enabled', profileDomainMode: 'full-v1', maxOtpRequests: 1 });
+  try {
+    await mkdir(runDir, { recursive: true });
+    await writeFile(recordFile, record, { flag: 'wx' });
+    await writeFile(integrityFile, Buffer.from('synthetic-seal-placeholder'), { flag: 'wx' });
+    const path = await validatePerRunRecordPath(recordFile, runId);
+    assert.equal(path, resolve(recordFile));
+    assert.deepEqual(validateAttemptEvidence(`\uFEFF${record}`, runId, until, now, { singleOtp: true }),
+      { expiresAt: Date.parse(until) });
+    assert.equal(await validatePerRunRecordPath(resolve(runDir, '..', 'run.json'), runId), null);
+    assert.equal(await validatePerRunRecordPath(recordFile, `${runId}x`), null);
+    assert.equal(validateAttemptEvidence(record.replace('"maxOtpRequests":1', '"maxOtpRequests":2'), runId, until, now,
+      { singleOtp: true }), null);
+  } finally {
+    if (runDir !== resolve(runsRoot, runId) || !runDir.startsWith(`${runsRoot}${sep}`)) {
+      throw new Error('Refusing to remove a test directory outside its evidence root.');
+    }
+    await rm(runDir, { recursive: true, force: true });
+  }
+});
+
+test('proxy arguments preserve the legacy default while allowing one explicit per-run record', () => {
+  assert.deepEqual(parseArguments(['--run-id', 'run-12345678', '--until', '2026-10-08T01:50:00.000Z']), {
+    runId: 'run-12345678', untilText: '2026-10-08T01:50:00.000Z', runRecordPath: null,
+  });
+  assert.deepEqual(parseArguments(['--run-id', '0123456789abcdef0123456789abcdef', '--until', '2026-10-08T01:50:00.000Z',
+    '--run-record', '.tmp/evidence/m1-browser-runs/0123456789abcdef0123456789abcdef/run.json']), {
+    runId: '0123456789abcdef0123456789abcdef', untilText: '2026-10-08T01:50:00.000Z',
+    runRecordPath: '.tmp/evidence/m1-browser-runs/0123456789abcdef0123456789abcdef/run.json',
+  });
+  assert.equal(parseArguments(['--run-id', 'run-12345678', '--until', 'x', '--run-id', 'again']), null);
 });

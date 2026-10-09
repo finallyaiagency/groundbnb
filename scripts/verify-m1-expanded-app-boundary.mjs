@@ -1,6 +1,12 @@
 import { neon } from '@neondatabase/serverless';
 import { PROFILE_TARGETS } from '../lib/profile-persistence.mjs';
 
+const MEMBERSHIP_PROBE_ISSUERS = Object.freeze({
+  local: 'https://ep-calm-sound-b8s8ckur.neonauth.c-14.us-east-1.aws.neon.tech/groundbnb/auth',
+  preview: 'https://ep-red-night-b8pf2mdl.neonauth.c-14.us-east-1.aws.neon.tech/groundbnb/auth',
+});
+const UNMAPPED_SUBJECT = 'm1-q011-unmapped-subject-boundary-probe';
+
 let input = '';
 let phase = 'input';
 let result = { ok: false, phase, category: 'input' };
@@ -17,7 +23,8 @@ try {
   let password = parsed?.password;
   parsed.password = '';
   const target = PROFILE_TARGETS[kind];
-  if (!target || typeof password !== 'string' || password.length < 1 || password.length > 2048) throw new Error();
+  const issuer = MEMBERSHIP_PROBE_ISSUERS[kind];
+  if (!target || !issuer || typeof password !== 'string' || password.length < 1 || password.length > 2048) throw new Error();
 
   const url = new URL(`postgresql://${target.host}/groundbnb?sslmode=require&channel_binding=require`);
   url.username = target.role;
@@ -57,7 +64,8 @@ try {
       has_function_privilege(r.oid,'groundbnb.save_profile(text,text,uuid,bigint,jsonb)','EXECUTE') AND
       has_function_privilege(r.oid,'groundbnb.read_profile_operation(text,text,uuid)','EXECUTE') AND
       has_function_privilege(r.oid,'groundbnb.save_profile_records(text,text,uuid,bigint,jsonb,jsonb)','EXECUTE') AND
-      has_function_privilege(r.oid,'groundbnb.save_profile_transfer(text,text,uuid,bigint,jsonb,jsonb)','EXECUTE') AS five_functions_allowed,
+      has_function_privilege(r.oid,'groundbnb.save_profile_transfer(text,text,uuid,bigint,jsonb,jsonb)','EXECUTE') AND
+      has_function_privilege(r.oid,'groundbnb.read_membership(text,text)','EXECUTE') AS six_functions_allowed,
     NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
       WHERE n.nspname='groundbnb' AND p.prorettype NOT IN ('trigger'::regtype,'event_trigger'::regtype)
         AND has_function_privilege(r.oid,p.oid,'EXECUTE') AND p.oid NOT IN (
@@ -65,12 +73,17 @@ try {
         to_regprocedure('groundbnb.save_profile(text,text,uuid,bigint,jsonb)'),
         to_regprocedure('groundbnb.read_profile_operation(text,text,uuid)'),
         to_regprocedure('groundbnb.save_profile_records(text,text,uuid,bigint,jsonb,jsonb)'),
-        to_regprocedure('groundbnb.save_profile_transfer(text,text,uuid,bigint,jsonb,jsonb)'))) AS no_extra_functions,
+        to_regprocedure('groundbnb.save_profile_transfer(text,text,uuid,bigint,jsonb,jsonb)'),
+        to_regprocedure('groundbnb.read_membership(text,text)'))) AS no_extra_functions,
     NOT has_database_privilege(r.oid,current_database(),'CREATE') AND
-      NOT has_schema_privilege(r.oid,'groundbnb','CREATE') AS create_denied
+      NOT has_schema_privilege(r.oid,'groundbnb','CREATE') AS create_denied,
+    groundbnb.read_membership($1,$2)=jsonb_build_object('ok',false,'category','auth') AS unmapped_subject_denied
     FROM groundbnb.environment_identity e JOIN pg_roles r ON r.rolname=current_user WHERE e.singleton`;
-  const [rows] = await sql.transaction([sql.query(query)], {
-    readOnly: true,
+  const [, rows] = await sql.transaction([
+    sql.query('SET TRANSACTION READ WRITE'),
+    sql.query(query, [issuer, UNMAPPED_SUBJECT]),
+  ], {
+    readOnly: false,
     fetchOptions: { signal: AbortSignal.timeout(10000), cache: 'no-store' },
   });
   phase = 'catalog';
@@ -79,7 +92,7 @@ try {
     row?.database_name === 'groundbnb' && row?.role_name === target.role;
   const exactReceipts = [row?.receipt_count, row?.known_receipt_count].every(value => value === 12 || value === '12');
   const checks = ['attributes_safe','metadata_select_only','private_tables_denied','sequences_denied',
-    'five_functions_allowed','no_extra_functions','create_denied'];
+    'six_functions_allowed','no_extra_functions','create_denied','unmapped_subject_denied'];
   const ok = rows?.length === 1 && targetMatches && exactReceipts && checks.every(key => row[key] === true);
   result = {
     ok,
@@ -88,7 +101,7 @@ try {
     role: target.role,
     phase: ok ? 'complete' : 'catalog',
     category: ok ? undefined : 'boundary',
-    checks: ok ? 'read_only_app_acl_catalog' : 'failed',
+      checks: ok ? 'nonmutating_app_acl_catalog_membership_probe' : 'failed',
     failedChecks: ok ? [] : [
       ...(!targetMatches ? ['target_pin'] : []), ...(!exactReceipts ? ['receipt_count'] : []),
       ...checks.filter(key => row?.[key] !== true),
@@ -96,11 +109,12 @@ try {
   };
 } catch (error) {
   const category = phase === 'input' ? 'input' : error?.code === '28P01' ? 'auth' :
+    error?.code === '25006' ? 'query' :
     error?.code === '42501' ? 'permission' : error?.code === '57014' || error?.name === 'TimeoutError' ? 'timeout' :
     error?.code?.startsWith('42') ? 'query' :
     ['ENOTFOUND','ECONNREFUSED','ECONNRESET','ETIMEDOUT'].includes(error?.cause?.code) ? 'network' : 'unknown';
   result = { ok: false, phase, category,
-    sqlState: ['42883','42703','42P01','42601','42702','42809','42704'].includes(error?.code) ? error.code : undefined };
+    sqlState: ['25006','42883','42703','42P01','42601','42702','42809','42704'].includes(error?.code) ? error.code : undefined };
 } finally {
   input = '';
 }

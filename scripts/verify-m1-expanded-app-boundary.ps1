@@ -22,6 +22,8 @@ foreach ($verifyKind in @('local','preview')) {
   $verifyPhase = 'binding_read'
   $verifyCategory = 'binding'
   $verifyPass = $false
+  $verifySafeSqlState = ''
+  $verifySafeFailedChecks = ''
   try {
     $verifyBindingPath = Join-Path $verifyRoot ".env.m1-profile-$verifyKind.dpapi"
     $verifyCipherBytes = [IO.File]::ReadAllBytes($verifyBindingPath)
@@ -68,9 +70,16 @@ foreach ($verifyKind in @('local','preview')) {
     $verifyOutputText = $verifyChild.StandardOutput.ReadToEnd()
     try { $verifyOutput = $verifyOutputText | ConvertFrom-Json -ErrorAction Stop }
     catch { throw 'Worker response invalid' }
+    $verifySafeSqlState = if ($verifyOutput.sqlState -in @('25006','42883','42703','42P01','42601','42702','42809','42704')) {
+      ' SQLSTATE '+$verifyOutput.sqlState
+    } else { '' }
+    $verifySafeFailedChecks = @($verifyOutput.failedChecks | Where-Object {
+      $_ -in @('target_pin','receipt_count','attributes_safe','metadata_select_only','private_tables_denied',
+        'sequences_denied','six_functions_allowed','no_extra_functions','create_denied','unmapped_subject_denied')
+    }) -join ','
     $verifyPass = $verifyChild.ExitCode -eq 0 -and $verifyOutput.ok -eq $true -and
       $verifyOutput.kind -eq $verifyKind -and $verifyOutput.branchId -eq $verifyExpected.branch -and
-      $verifyOutput.role -eq $verifyExpected.role -and $verifyOutput.checks -eq 'read_only_app_acl_catalog'
+      $verifyOutput.role -eq $verifyExpected.role -and $verifyOutput.checks -eq 'nonmutating_app_acl_catalog_membership_probe'
     if (-not $verifyPass) {
       $verifyPhase = if ($verifyOutput.phase -in @('input','connection','catalog')) { $verifyOutput.phase } else { 'worker_response' }
       $verifyCategory = if ($verifyOutput.category -in @('auth','permission','timeout','network','query','boundary','input','unknown')) {
@@ -85,6 +94,7 @@ foreach ($verifyKind in @('local','preview')) {
     else { $verifyCategory='helper' }
   } finally {
     $verifyPayload = $null
+    $verifyOutput = $null
     $verifyOutputText = $null
     $verifyConnectionText = $null
     $verifyPassword = $null
@@ -95,8 +105,6 @@ foreach ($verifyKind in @('local','preview')) {
   $verifyResults += [pscustomobject]@{ kind=$verifyKind; branch=$verifyTargets[$verifyKind].branch;
     ok=[bool]$verifyPass; phase=$(if ($verifyPass) { 'complete' } else { $verifyPhase });
     category=$(if ($verifyPass) { 'none' } else { $verifyCategory }) }
-  $verifySafeSqlState = if ($verifyOutput.sqlState -in @('42883','42703','42P01','42601','42702','42809','42704')) { ' SQLSTATE '+$verifyOutput.sqlState } else { '' }
-  $verifySafeFailedChecks = @($verifyOutput.failedChecks | Where-Object { $_ -in @('target_pin','receipt_count','attributes_safe','metadata_select_only','private_tables_denied','sequences_denied','five_functions_allowed','no_extra_functions','create_denied') }) -join ','
   Write-Host ($verifyKind + ': ' + $(if ($verifyPass) { 'PASS' } else { 'FAIL ('+$verifyPhase+'/'+$verifyCategory+')'+$verifySafeSqlState+' '+$verifySafeFailedChecks }))
 }
 

@@ -1,5 +1,7 @@
 import { publicEncrypt, constants } from 'node:crypto';
-import { writeFile } from 'node:fs/promises';
+import { realpath, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 
@@ -8,11 +10,22 @@ let client;
 try {
   let input = '';
   for await (const chunk of process.stdin) { input += chunk; if (input.length > 10000) throw Error(); }
-  const { account, sentAt, publicKey } = JSON.parse(input); input = '';
+  const { account, sentAt, publicKey, runId, outputPath } = JSON.parse(input); input = '';
   const sent = Date.parse(sentAt);
   if (account.kind !== 'local' || account.host !== 'smtp.ethereal.email' || account.port !== 587 ||
       !account.user?.endsWith('@ethereal.email') || !account.pass || !Number.isFinite(sent) ||
       sent > Date.now() || Date.now() - sent > 300000 || !publicKey?.startsWith('-----BEGIN PUBLIC KEY-----')) throw Error();
+  let target = new URL('../.tmp/evidence/m1-browser-code.encrypted', import.meta.url);
+  if (runId !== undefined || outputPath !== undefined) {
+    const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+    const expectedRunId = typeof runId === 'string' && /^[0-9a-f]{32}$/.test(runId) ? runId : null;
+    const expectedOutput = expectedRunId && resolve(root, '.tmp/evidence/m1-browser-runs', expectedRunId, 'code.encrypted');
+    if (!expectedOutput || typeof outputPath !== 'string' || resolve(root, outputPath) !== expectedOutput) throw Error();
+    const evidenceRoot = resolve(root, '.tmp/evidence/m1-browser-runs');
+    const [realEvidenceRoot, realRunDir] = await Promise.all([realpath(evidenceRoot), realpath(dirname(expectedOutput))]);
+    if (realRunDir !== resolve(realEvidenceRoot, expectedRunId)) throw Error();
+    target = expectedOutput;
+  }
   client = new ImapFlow({ host: 'imap.ethereal.email', port: 993, secure: true,
     auth: { user: account.user, pass: account.pass }, tls: { rejectUnauthorized: true },
     logger: false, logRaw: false, emitLogs: false, disableAutoIdle: true,
@@ -36,7 +49,7 @@ try {
     if (codes.size !== 1) throw Error();
     const encrypted = publicEncrypt({ key: publicKey, padding: constants.RSA_PKCS1_OAEP_PADDING,
       oaepHash: 'sha256' }, Buffer.from([...codes][0]));
-    await writeFile(new URL('../.tmp/evidence/m1-browser-code.encrypted', import.meta.url), encrypted, { flag: 'wx' });
+    await writeFile(target, encrypted, { flag: 'wx' });
   } finally { lock.release(); }
   process.stdout.write('Captured');
 } catch { process.exitCode = 1; }
