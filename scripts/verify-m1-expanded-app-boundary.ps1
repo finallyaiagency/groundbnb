@@ -1,5 +1,8 @@
 [CmdletBinding()]
-param()
+param(
+  [ValidateSet('12','13')]
+  [string]$Baseline = '12'
+)
 $ErrorActionPreference = 'Stop'
 $verifyRoot = Split-Path -Parent $PSScriptRoot
 $verifyNode = (Get-Command node -ErrorAction Stop).Source
@@ -40,7 +43,7 @@ foreach ($verifyKind in @('local','preview')) {
     $verifyPassword = [Uri]::UnescapeDataString($verifyUserInfoParts[1])
     if (-not $verifyPassword -or $verifyPassword.Length -gt 2048) { throw 'Pinned binding check failed' }
 
-    $verifyPayload = @{ kind=$verifyKind; password=$verifyPassword } | ConvertTo-Json -Compress
+    $verifyPayload = @{ kind=$verifyKind; password=$verifyPassword; baseline=$Baseline } | ConvertTo-Json -Compress
     $verifyStart = [Diagnostics.ProcessStartInfo]::new()
     $verifyStart.FileName = $verifyNode
     $verifyStart.Arguments = '"' + $verifyWorker + '"'
@@ -75,11 +78,14 @@ foreach ($verifyKind in @('local','preview')) {
     } else { '' }
     $verifySafeFailedChecks = @($verifyOutput.failedChecks | Where-Object {
       $_ -in @('target_pin','receipt_count','attributes_safe','metadata_select_only','private_tables_denied',
-        'sequences_denied','six_functions_allowed','no_extra_functions','create_denied','unmapped_subject_denied')
+        'sequences_denied','six_functions_allowed','no_extra_functions','create_denied','unmapped_subject_denied',
+        'factor_receipt','factor_principal_present','factor_principal_absent','factor_principal_attributes',
+        'factor_principal_unmembered','factor_five_functions','factor_no_extra_functions','factor_no_data_privileges')
     }) -join ','
     $verifyPass = $verifyChild.ExitCode -eq 0 -and $verifyOutput.ok -eq $true -and
       $verifyOutput.kind -eq $verifyKind -and $verifyOutput.branchId -eq $verifyExpected.branch -and
-      $verifyOutput.role -eq $verifyExpected.role -and $verifyOutput.checks -eq 'nonmutating_app_acl_catalog_membership_probe'
+      $verifyOutput.role -eq $verifyExpected.role -and $verifyOutput.baseline -eq $Baseline -and
+      $verifyOutput.checks -eq 'nonmutating_app_acl_catalog_membership_probe'
     if (-not $verifyPass) {
       $verifyPhase = if ($verifyOutput.phase -in @('input','connection','catalog')) { $verifyOutput.phase } else { 'worker_response' }
       $verifyCategory = if ($verifyOutput.category -in @('auth','permission','timeout','network','query','boundary','input','unknown')) {
@@ -105,7 +111,7 @@ foreach ($verifyKind in @('local','preview')) {
   $verifyResults += [pscustomobject]@{ kind=$verifyKind; branch=$verifyTargets[$verifyKind].branch;
     ok=[bool]$verifyPass; phase=$(if ($verifyPass) { 'complete' } else { $verifyPhase });
     category=$(if ($verifyPass) { 'none' } else { $verifyCategory }) }
-  Write-Host ($verifyKind + ': ' + $(if ($verifyPass) { 'PASS' } else { 'FAIL ('+$verifyPhase+'/'+$verifyCategory+')'+$verifySafeSqlState+' '+$verifySafeFailedChecks }))
+  Write-Host ($verifyKind + ' baseline ' + $Baseline + ': ' + $(if ($verifyPass) { 'PASS' } else { 'FAIL ('+$verifyPhase+'/'+$verifyCategory+')'+$verifySafeSqlState+' '+$verifySafeFailedChecks }))
 }
 
 if (@($verifyResults | Where-Object { -not $_.ok }).Count -gt 0) { exit 1 }

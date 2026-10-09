@@ -531,12 +531,12 @@ export default function ProfileEditor() {
           <h2 id="profile-pdf-unavailable-heading">Download profile PDF</h2>
           <p>Reload your saved profile to prepare a PDF with its confirmed save time.</p>
         </section>}
-      <ProfileTransferControls key={profile.accountId} profile={profileTransferView ?? profile} transferMode={transferMode}
+      <ProfileTransferControls key={`profile-transfer:${profile.accountId}`} profile={profileTransferView ?? profile} transferMode={transferMode}
         disabled={busy || !!pending || !!conflict || recordsPending || recordsDraftDirty} canStartWrite={canStartTransferWrite}
         registerController={registerRequestController} getSessionGeneration={getSessionGeneration} onBusyChange={handleChildBusyChange}
         onOperationPendingChange={setRecordsPendingState} onProfileUpdate={value => acceptRecordsProfile(value as Profile)}
         onSessionExpired={handleChildSessionExpired} onApplyPatch={applyImportedPatch} />
-      <ProfileRecordsControls key={profile.accountId} profile={profile} recordsMode={recordsMode}
+      <ProfileRecordsControls key={`profile-records:${profile.accountId}`} profile={profile} recordsMode={recordsMode}
         disabled={busy || !!pending || !!conflict || recordsPending || signedOut} canStartWrite={canStartRecordWrite}
         registerController={registerRequestController} getSessionGeneration={getSessionGeneration} onBusyChange={handleChildBusyChange}
         onOperationPendingChange={setRecordsPendingState} onDraftDirtyChange={setRecordsDraftDirtyState}

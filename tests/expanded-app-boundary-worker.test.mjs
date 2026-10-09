@@ -23,8 +23,10 @@ test('worker pins the six ordinary app functions and denies all other ordinary G
   assert.match(worker, /AS six_functions_allowed/);
   assert.match(worker, /AS no_extra_functions/);
   assert.match(worker, /p\.prorettype NOT IN \('trigger'::regtype,'event_trigger'::regtype\)/);
-  assert.match(worker, /checks = \['attributes_safe','metadata_select_only','private_tables_denied','sequences_denied',\s*'six_functions_allowed','no_extra_functions','create_denied','unmapped_subject_denied'\]/);
-  assert.doesNotMatch(worker, /five_functions_allowed|has_function_privilege\([^\n]*_factor_|to_regprocedure\([^\n]*_factor_/);
+  assert.match(worker, /const commonChecks = \['attributes_safe','metadata_select_only','private_tables_denied','sequences_denied'/);
+  assert.match(worker, /'six_functions_allowed','no_extra_functions','create_denied','unmapped_subject_denied'/);
+  assert.match(worker, /to_regprocedure\('groundbnb\.read_membership\(text,text\)'\)/);
+  assert.doesNotMatch(worker, /five_functions_allowed/);
 });
 
 test('worker checks only catalog ACLs and denies private tables, sequences, helpers, and create rights', () => {
@@ -34,7 +36,7 @@ test('worker checks only catalog ACLs and denies private tables, sequences, help
   assert.match(worker, /has_sequence_privilege\(r\.oid,c\.oid,'USAGE,SELECT,UPDATE'\)/);
   assert.match(worker, /NOT has_database_privilege\(r\.oid,current_database\(\),'CREATE'\)/);
   assert.match(worker, /NOT has_schema_privilege\(r\.oid,'groundbnb','CREATE'\)/);
-  assert.match(worker, /sql\.query\('SET TRANSACTION READ WRITE'\),\s*sql\.query\(query, \[issuer, UNMAPPED_SUBJECT\]\)/);
+  assert.match(worker, /sql\.query\('SET TRANSACTION READ WRITE'\),\s*sql\.query\(query, \[issuer, UNMAPPED_SUBJECT, factorRole\]\)/);
   assert.match(worker, /const \[, rows\] = await sql\.transaction\(/);
   assert.match(worker, /readOnly: false/);
   assert.match(worker, /AbortSignal\.timeout\(10000\)/);
@@ -46,13 +48,16 @@ test('membership probe is parameterized to the exact pinned issuer and a fixed u
   assert.match(worker, /preview: 'https:\/\/ep-red-night-b8pf2mdl\.neonauth\.c-14\.us-east-1\.aws\.neon\.tech\/groundbnb\/auth'/);
   assert.match(worker, /const UNMAPPED_SUBJECT = 'm1-q011-unmapped-subject-boundary-probe'/);
   assert.match(worker, /groundbnb\.read_membership\(\$1,\$2\)=jsonb_build_object\('ok',false,'category','auth'\)/);
-  assert.match(worker, /sql\.query\(query, \[issuer, UNMAPPED_SUBJECT\]\)/);
+  assert.match(worker, /sql\.query\(query, \[issuer, UNMAPPED_SUBJECT, factorRole\]\)/);
   assert.doesNotMatch(worker, /groundbnb\.accounts|neon_auth\."user"|account_uuid|synthetic-user-[0-9]/);
 });
 
 test('PowerShell wrapper reuses only the pinned CurrentUser DPAPI bindings and prints sanitized results', () => {
   assert.match(wrapper, /\.env\.m1-profile-\$verifyKind\.dpapi/);
   assert.match(wrapper, /DataProtectionScope\]::CurrentUser/);
+  assert.match(wrapper, /\[ValidateSet\('12','13'\)\]/);
+  assert.match(wrapper, /\[string\]\$Baseline = '12'/);
+  assert.match(wrapper, /baseline=\$Baseline/);
   assert.match(wrapper, /nonmutating_app_acl_catalog_membership_probe/);
   assert.match(wrapper, /six_functions_allowed/);
   assert.match(wrapper, /unmapped_subject_denied/);
@@ -63,6 +68,27 @@ test('PowerShell wrapper reuses only the pinned CurrentUser DPAPI bindings and p
     'capture only allowlisted diagnostics before clearing the worker response');
   assert.match(wrapper, /\$verifyOutput = \$null/);
   assert.doesNotMatch(worker + wrapper, /read_only_app_acl_catalog_membership_probe|readOnly: true/);
-  assert.match(wrapper, /Write-Host \(\$verifyKind \+ ': ' \+/);
+  assert.match(wrapper, /Write-Host \(\$verifyKind \+ ' baseline ' \+ \$Baseline \+ ': ' \+/);
   assert.doesNotMatch(wrapper, /Write-Host[^\n]*(password|connectionText|rawError|exception\.Message)/i);
+});
+
+test('baseline 13 is explicit and checks only the dormant NOLOGIN factor principal ACL boundary', () => {
+  assert.match(worker, /const RECEIPTS_12 = Object\.freeze\(/);
+  assert.match(worker, /baseline === '13' \? \[\.\.\.RECEIPTS_12, '0013_factor_service_principal'\]/);
+  assert.match(worker, /baseline === '13' \? 13 : 12/);
+  assert.match(worker, /FACTOR_ROLES = Object\.freeze\(/);
+  assert.match(worker, /groundbnb_local_factor_service/);
+  assert.match(worker, /groundbnb_preview_factor_service/);
+  assert.match(worker, /factor_principal_attributes/);
+  assert.match(worker, /f\.rolcanlogin IS FALSE/);
+  assert.match(worker, /factor_principal_unmembered/);
+  assert.match(worker, /m\.member=f\.oid OR m\.roleid=f\.oid/);
+  assert.match(worker, /factor_five_functions/);
+  assert.match(worker, /factor_no_extra_functions/);
+  assert.match(worker, /factor_no_data_privileges/);
+  assert.match(worker, /factor_receipt_count/);
+  assert.match(worker, /checks\.every\(key => row\[key\] === true\)/);
+  assert.match(wrapper, /factor_principal_unmembered/);
+  assert.match(wrapper, /\$verifyOutput\.baseline -eq \$Baseline/);
+  assert.doesNotMatch(worker, /result\s*:=\s*groundbnb\./i);
 });

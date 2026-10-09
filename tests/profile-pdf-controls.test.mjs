@@ -20,6 +20,13 @@ test('dirty, pending, conflicted, and record edits disable PDF controls', () => 
   assert.match(controls, /if\s*\(disabled\s*\|\|\s*working\s*\|\|\s*!preview\s*\|\|\s*!acknowledgment\)/);
 });
 
+test('profile transfer and record controls use distinct stable sibling keys', () => {
+  assert.match(editor, /<ProfileTransferControls key=\{`profile-transfer:\$\{profile\.accountId\}`\}/);
+  assert.match(editor, /<ProfileRecordsControls key=\{`profile-records:\$\{profile\.accountId\}`\}/);
+  assert.doesNotMatch(editor, /<ProfileTransferControls key=\{profile\.accountId\}/);
+  assert.doesNotMatch(editor, /<ProfileRecordsControls key=\{profile\.accountId\}/);
+});
+
 test('local font and deferred PDF code are generation-guarded and controller-cancellable with a timeout', () => {
   assert.match(controls, /await import\('@\/lib\/profile-pdf\.mjs'\)/);
   assert.match(controls, /registerController\(controller\)/);

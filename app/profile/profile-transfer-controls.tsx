@@ -44,7 +44,7 @@ type TransferPreview = {
   requiresSensitiveConfirmation: boolean;
 };
 const buildExportFile = buildProfileExport as unknown as (profile: Profile, options: Record<string, unknown>) => {
-  bytes: Uint8Array; contentType: string;
+  bytes: Uint8Array; contentType: string; text: string;
 };
 const proposeMerge = createProfileMergeProposal as unknown as (preview: TransferPreview, profile: Profile, options: {
   selectedFields: string[]; selectedNotes: number[]; confirmSensitive: boolean;
@@ -99,6 +99,9 @@ export default function ProfileTransferControls({ profile, transferMode, disable
   const [includeImportQuotes, setIncludeImportQuotes] = useState(false);
   const [confirmSensitive, setConfirmSensitive] = useState(false);
   const [exportPreview, setExportPreview] = useState<ReturnType<typeof createProfileExportPreview> | null>(null);
+  const [exportContent, setExportContent] = useState<{
+    text: string; accountId: string; revision: number; sessionGeneration: number; sourceBinding: string;
+  } | null>(null);
   const [importSource, setImportSource] = useState<'native' | 'readable'>('native');
   const [importText, setImportText] = useState('');
   const [importPreview, setImportPreview] = useState<TransferPreview | null>(null);
@@ -116,6 +119,13 @@ export default function ProfileTransferControls({ profile, transferMode, disable
   const busyRef = useRef(false);
   const ownedControllers = useRef(new Set<AbortController>());
   const sessionIsCurrent = (captured: number) => captured === getSessionGeneration();
+  const sessionGeneration = getSessionGeneration();
+  const exportSourceBinding = JSON.stringify({ answers: profile.answers, profileNotes: profile.profileNotes ?? [] });
+  if (exportContent && (exportContent.accountId !== profile.accountId || exportContent.revision !== profile.revision ||
+      exportContent.sessionGeneration !== sessionGeneration || exportContent.sourceBinding !== exportSourceBinding)) setExportContent(null);
+  const exportTextVisible = typeof profile.accountId === 'string' && !disabled && !busy && exportContent !== null &&
+    exportContent.accountId === profile.accountId && exportContent.revision === profile.revision &&
+    exportContent.sessionGeneration === sessionGeneration && exportContent.sourceBinding === exportSourceBinding;
   const notesAvailable = Array.isArray(profile.profileNotes);
 
   function setPendingOperation(operation: Operation | null) {
@@ -130,7 +140,12 @@ export default function ProfileTransferControls({ profile, transferMode, disable
     ownedControllers.current.clear();
   }, []);
 
+  function clearExportText() {
+    setExportContent(null);
+  }
+
   function clearPreview() {
+    clearExportText();
     setExportPreview(null);
     setImportPreview(null);
     setSelectedFields([]);
@@ -141,6 +156,7 @@ export default function ProfileTransferControls({ profile, transferMode, disable
   }
 
   function reviewExport() {
+    clearExportText();
     try {
       const preview = createProfileExportPreview({ ...profile, profileNotes: profile.profileNotes ?? [] }, {
         includeHome: includeExportHome, includeQuotes: includeExportQuotes,
@@ -167,8 +183,23 @@ export default function ProfileTransferControls({ profile, transferMode, disable
       anchor.click();
       anchor.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setMessage('Profile file downloaded.');
+      setMessage('Profile file download started.');
     } catch (error) { setMessage(errorText(error)); }
+  }
+
+  function showExportJsonToCopy() {
+    if (!profile.accountId || !exportPreview || disabled || busy || sessionGeneration !== getSessionGeneration() ||
+        (exportPreview.requiresSensitiveConfirmation && !confirmSensitive)) return;
+    try {
+      const options = { includeHome: includeExportHome, includeQuotes: includeExportQuotes };
+      const exportSource = { ...profile, profileNotes: profile.profileNotes ?? [] };
+      const sourceBinding = JSON.stringify({ answers: exportSource.answers, profileNotes: exportSource.profileNotes });
+      const result = buildExportFile(exportSource, {
+        preview: exportPreview, ...options, confirmSensitive, exportedAt: new Date().toISOString(),
+      });
+      setExportContent({ text: result.text, accountId: profile.accountId, revision: profile.revision, sessionGeneration, sourceBinding });
+      setMessage('Reviewed profile JSON is ready to select and copy.');
+    } catch (error) { clearExportText(); setMessage(errorText(error)); }
   }
 
   async function loadFile(file: File | undefined) {
@@ -447,8 +478,18 @@ export default function ProfileTransferControls({ profile, transferMode, disable
         {exportPreview.profileNotes.length ? <ul>{exportPreview.profileNotes.map((quote: string, index: number) => <li key={`${index}-${quote}`}>{quote}</li>)}</ul> : <p>None.</p>}
         {(exportPreview.warnings as readonly { code: string; field: string | null; message: string }[]).map((warning, index) => <p key={`${warning.code}-${index}`}>{warningText(warning)}</p>)}
         {exportPreview.requiresSensitiveConfirmation && <label><input type="checkbox" style={{ width: 'auto' }} disabled={disabled}
-          checked={confirmSensitive} onChange={event => setConfirmSensitive(event.target.checked)} />I reviewed these home details and quotes and want them in the file.</label>}
+          checked={confirmSensitive} onChange={event => { setConfirmSensitive(event.target.checked); clearExportText(); }} />I reviewed these home details and quotes and want them in the file.</label>}
         <button type="button" disabled={disabled || (exportPreview.requiresSensitiveConfirmation && !confirmSensitive)} onClick={downloadExport}>Download profile file</button>
+        <button type="button" disabled={disabled || busy || !profile.accountId || (exportPreview.requiresSensitiveConfirmation && !confirmSensitive)}
+          onClick={exportTextVisible ? clearExportText : showExportJsonToCopy}>
+          {exportTextVisible ? 'Hide profile JSON' : 'Show JSON to copy'}
+        </button>
+        {exportTextVisible && <div aria-label="Profile JSON to copy">
+          <p>Select and copy this reviewed text if the file download is unavailable. It stays in this page only.</p>
+          <label htmlFor="profile-export-json">Reviewed profile JSON</label>
+          <textarea id="profile-export-json" value={exportContent?.text ?? ''} readOnly rows={12}
+            onFocus={event => event.currentTarget.select()} />
+        </div>}
       </div>}
     </section>
 
