@@ -13,7 +13,7 @@ All ten Groundbnb alerts in the supplied inventory were reviewed against their e
 | `38064255` | `.env.example`, `11a1299` and `84e2805`, line 3 | Not a secret | Example `GROUND_DATABASE_URL` uses a labeled placeholder; not a provisioned connection. |
 | `38064256` | `tests/profile-operation-request.test.mjs`, `6b24f81`, lines 7–8 | Test credential | Explicit test-only database fixture. |
 | `38064257` | `tests/factor-verifier.test.mjs`, `8792ccd`, line 6 | Test credential | Public RFC 6238 TOTP test vector. |
-| `38064258` | `scripts/verify-m1-profile-credential.mjs`, `2585b8b`, QA JSON line 4 | Not a secret | Reported working-tree hash equals the reviewed script source hash; the alert is the deterministic integrity hash. |
+| `38064258` | `docs/qa/2026-10-07-M1-01D-credential-bindings.json`, `2585b8b`, line 4 | Not a secret | The flagged value is the deterministic working-tree hash; it equals the reviewed source hash for `scripts/verify-m1-profile-credential.mjs`. |
 | `38064259` | `tests/browser-auth.test.mjs`, `3516804`, line 27 | Not a secret | Browser-auth run-ID template with a generated counter, not an authentication credential. |
 | `38064260` | `tests/browser-auth-transport.test.mjs`, `80be863`, line 18 | Test credential | Pinned database connection appears as a test fixture. A later source revision split the fixture string; that edit was not treated as remediation. |
 | `38064261` | `tests/membership-service.test.mjs`, `a86bc61`, lines 14–15 | Test credential | Synthetic unit-test identity and password fixture. |
