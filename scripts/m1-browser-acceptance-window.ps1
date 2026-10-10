@@ -19,6 +19,8 @@ $browserCaptureBytes=$null
 $browserSecretBytes=$null
 $browserRunDir=$null
 $browserEnvWriteStarted=$false
+$captureFailureCategory='setup_failed'
+$captureStartedThisInvocation=$false
 Add-Type -AssemblyName System.Security
 
 function Write-ExclusiveUtf8([string]$Path,[string]$Value) {
@@ -194,9 +196,12 @@ try {
           (Test-Path -LiteralPath (Join-Path $browserRunDir 'closed.json'))) { throw 'Capture is not admissible' }
       $sendRecord=[IO.File]::ReadAllText($sendPath) | ConvertFrom-Json
       Write-ExclusiveUtf8 $captureStart (@{event='capture_started';atUtc=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json -Compress)
+      $captureStartedThisInvocation=$true
+      $captureFailureCategory='binding_unavailable'
       $browserCaptureBytes=[Security.Cryptography.ProtectedData]::Unprotect(
         [IO.File]::ReadAllBytes($captureBinding),$null,[Security.Cryptography.DataProtectionScope]::CurrentUser)
       $browserAccount=[Text.Encoding]::UTF8.GetString($browserCaptureBytes) | ConvertFrom-Json
+      $captureFailureCategory='binding_invalid'
       if ($browserAccount.kind -ne 'local' -or $browserAccount.host -ne 'smtp.ethereal.email' -or
           $browserAccount.port -ne 587 -or -not $browserAccount.user.EndsWith('@ethereal.email')) {
         throw 'Pinned local capture binding check failed'
@@ -210,12 +215,44 @@ try {
       $browserInfo.Arguments='"'+(Join-Path $PSScriptRoot 'capture-m1-browser-otp.mjs')+'"'
       $browserInfo.WorkingDirectory=$browserRoot; $browserInfo.UseShellExecute=$false; $browserInfo.CreateNoWindow=$true
       $browserInfo.RedirectStandardInput=$true; $browserInfo.RedirectStandardOutput=$true; $browserInfo.RedirectStandardError=$true
+      $captureFailureCategory='runtime_start_failed'
       $browserChild=[Diagnostics.Process]::Start($browserInfo)
       try {
         $browserChild.StandardInput.Write($browserInput); $browserChild.StandardInput.Close()
-        if (-not $browserChild.WaitForExit(25000)) { $browserChild.Kill(); throw 'Capture timeout' }
-        if ($browserChild.ExitCode -ne 0) { throw 'Capture failed' }
+        $captureFailureCategory='child_failure'
+        if (-not $browserChild.WaitForExit(25000)) {
+          $captureFailureCategory='timeout'
+          $browserChild.Kill(); $browserChild.WaitForExit()
+          throw 'Capture timeout'
+        }
+        $browserChildOutput=$browserChild.StandardOutput.ReadToEnd().Trim()
+        $browserChildError=$browserChild.StandardError.ReadToEnd().Trim()
+        if ($browserChild.ExitCode -ne 0) {
+          $childCategories=@{
+            'CAPTURE_FAILURE:invalid_request'='invalid_request'
+            'CAPTURE_FAILURE:output_path_invalid'='output_path_invalid'
+            'CAPTURE_FAILURE:transport_unavailable'='transport_unavailable'
+            'CAPTURE_FAILURE:mailbox_unavailable'='mailbox_unavailable'
+            'CAPTURE_FAILURE:message_lookup_failed'='message_lookup_failed'
+            'CAPTURE_FAILURE:message_not_unique'='message_not_unique'
+            'CAPTURE_FAILURE:encryption_failed'='encryption_failed'
+            'CAPTURE_FAILURE:output_write_failed'='output_write_failed'
+            'CAPTURE_FAILURE:timeout'='timeout'
+          }
+          if ($childCategories.ContainsKey($browserChildError)) { $captureFailureCategory=$childCategories[$browserChildError] }
+          throw 'Capture failed'
+        }
+        if ($browserChildOutput -ne 'Captured') {
+          $captureFailureCategory='child_protocol_invalid'
+          throw 'Capture failed'
+        }
       } finally { $browserChild.Dispose() }
+      $captureFailureCategory='output_missing'
+      $outputFile=Join-Path $browserRunDir 'code.encrypted'
+      if (-not (Test-Path -LiteralPath $outputFile -PathType Leaf) -or (Get-Item -LiteralPath $outputFile).Length -le 0) {
+        throw 'Capture output unavailable'
+      }
+      $captureFailureCategory='completion_marker_failed'
       $captureEvent=@{event='capture_completed';atUtc=[DateTime]::UtcNow.ToString('o');artifact='code.encrypted'} | ConvertTo-Json -Compress
       Write-ExclusiveUtf8 -Path (Join-Path $browserRunDir 'capture-completed.json') -Value $captureEvent
       Write-Host 'Synthetic OTP captured to a per-run encrypted file; code value suppressed.'
@@ -231,12 +268,30 @@ try {
       }
     } catch { Write-Host 'Automatic restore failed; use the per-run DPAPI backup before continuing.' }
   }
-  Write-Host ('Browser window operation failed at '+$Mode+'; details suppressed. Preserve the run directory.')
+  if ($Mode -eq 'Capture' -and $captureStartedThisInvocation -and $browserRunDir -and
+      (Test-Path -LiteralPath (Join-Path $browserRunDir 'capture-started.json') -PathType Leaf) -and
+      -not (Test-Path -LiteralPath (Join-Path $browserRunDir 'capture-completed.json') -PathType Leaf) -and
+      -not (Test-Path -LiteralPath (Join-Path $browserRunDir 'capture-failed.json') -PathType Leaf)) {
+    $allowedCaptureCategories=@('setup_failed','binding_unavailable','binding_invalid','runtime_start_failed','child_failure',
+      'timeout','invalid_request','output_path_invalid','transport_unavailable','mailbox_unavailable',
+      'message_lookup_failed','message_not_unique','encryption_failed','output_write_failed',
+      'child_protocol_invalid','output_missing','completion_marker_failed')
+    if ($captureFailureCategory -notin $allowedCaptureCategories) { $captureFailureCategory='capture_failed' }
+    try {
+      $failureEvent=@{event='capture_failed';atUtc=[DateTime]::UtcNow.ToString('o');category=$captureFailureCategory} | ConvertTo-Json -Compress
+      Write-ExclusiveUtf8 -Path (Join-Path $browserRunDir 'capture-failed.json') -Value $failureEvent
+    } catch { }
+  }
+  if ($Mode -eq 'Capture' -and $captureStartedThisInvocation -and $captureFailureCategory -in @('setup_failed','binding_unavailable','binding_invalid','runtime_start_failed','child_failure',
+      'timeout','invalid_request','output_path_invalid','transport_unavailable','mailbox_unavailable','message_lookup_failed',
+      'message_not_unique','encryption_failed','output_write_failed','child_protocol_invalid','output_missing','completion_marker_failed','capture_failed')) {
+    Write-Host ('Browser window operation failed at Capture; category='+$captureFailureCategory+'; details suppressed. Preserve the run directory.')
+  } else { Write-Host ('Browser window operation failed at '+$Mode+'; details suppressed. Preserve the run directory.') }
   exit 1
 } finally {
   foreach ($browserBuffer in @($browserOriginal,$browserBindingBytes,$browserCaptureBytes,$browserSecretBytes)) {
     if ($browserBuffer -is [byte[]] -and $browserBuffer.Length -gt 0) { [Array]::Clear($browserBuffer,0,$browserBuffer.Length) }
   }
   $browserUrl=$null; $browserValues=$null; $browserLines=$null; $browserSecret=$null
-  $browserAccount=$null; $browserInput=$null; $browserRecord=$null
+  $browserAccount=$null; $browserInput=$null; $browserRecord=$null; $browserChildOutput=$null; $browserChildError=$null
 }
