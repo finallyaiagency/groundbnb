@@ -1,10 +1,14 @@
 # M1-01AB — Profile records and native transfer browser acceptance
 
-Status: Implemented locally; acceptance preparation only. Use the client's existing continuation authorization for a new bounded local window after M1-01Z has been closed and its environment restored. No browser run is claimed by this packet. M1 remains in progress.
+Status: Implemented locally; partial authenticated synthetic-local browser evidence is recorded below. The complete acceptance checklist remains open and M1 remains in progress.
 
 Read `AGENTS.md`, `docs/STATE.md`, `docs/tasks/M1-01-foundation.md`, `docs/tasks/M1-01E-browser-profile.md`, `docs/tasks/M1-01F-profile-domain.md`, `docs/tasks/M1-01Z-browser-acceptance-window.md`, `docs/spec/00-overview.md`, `docs/spec/01-ui-nav.md`, `docs/spec/07-data-ops.md`, `docs/spec/12-membership.md`, `docs/spec/15-shared-safeguards.md`, the exact ledger rows below, and frozen source Sections 11.3 and 11.22 before activation. Preserve the frozen specification and A-001.
 
 Binding requirement portions: ACC-02, DATA-02, FILE-10, OP-02, RULE-05, RULE-06, SYS-02, SYS-07, and the profile-transfer portion of Section 11.22. This packet can establish only authenticated local browser behavior for the profile records and transfer paths. It cannot verify complete ACC-02/DATA-02/FILE-10, M1 exit, preview isolation, account linking, AI integration, calendar behavior, or other release gates.
+
+## Partial browser evidence — 2026-10-10
+
+This supersedes the earlier statement that no browser run was claimed, for the completed slices only. On source `fd099080ae061a93b2908c3b286140cdf945492c`, run `672e29ab2f8e44bf850a933c60033480` imported one selected field from the previously downloaded JSON. The UI showed Saved for operation `f5015494-3d22-449d-8347-1d71293ab2f7`; canonical reload confirmed the selected traveler-count value and preserved the unselected preference and existing vehicle/note records. The artifact had empty `profileNotes`, so note import is not claimed. The same run observed local sign-out clearing profile controls and a sign-in prompt after reload; upstream session revocation is not established. See [the partial browser evidence record](../qa/2026-10-10-M1-01AB-browser-partial.md) for the complete bounded observations and remaining limits. This does not close the remaining acceptance gates or promote requirement statuses.
 
 ## Scope and entry conditions
 
