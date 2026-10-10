@@ -35,3 +35,14 @@ After the browser run, the validator parsed the retained 464-byte artifact. Its 
 - The owned foreground server was stopped and its listener confirmed absent. The run closed at `2026-10-10T06:03:06.9660247Z`, restoring the exact prior environment. The encrypted code artifact and copied PDF metadata/artifact remain in run evidence.
 
 No browser import, PDF content/layout pass, upstream session revocation, preview/two-account isolation, or complete M1 acceptance is claimed. Requirement statuses remain unchanged.
+
+## Third bounded run — selective field import
+
+- Source revision: `fd099080ae061a93b2908c3b286140cdf945492c`. Run `672e29ab2f8e44bf850a933c60033480` used the pinned local synthetic fixture and modes. One ordinary sign-in request was accepted and one elevated read-only capture produced a 512-byte encrypted artifact.
+- After the user enabled local file URL access for the Chrome extension, the native file chooser selected the previously downloaded and offline-validated JSON artifact. The import preview showed one selectable field delta. Only that checkbox was selected; no notes or other fields were selected.
+- Applying the selection once produced a visible Saved acknowledgment for operation `f5015494-3d22-449d-8347-1d71293ab2f7`. A subsequent canonical profile reload showed the selected number-of-travelers field at the imported value; the other reviewed preference fields were preserved. Existing vehicle and note records remained present, including the removed note state and two active notes. The artifact had empty `profileNotes`, so no note import is claimed.
+- Ordinary UI sign-out cleared the profile controls. Reloading the profile returned to the sign-in prompt; the profile request was refused. This is local app evidence and does not establish upstream managed-session revocation.
+- Evidence screenshots: `C:\Users\17044\Documents\Codex\groundbnb-downloaded-file-import-saved-2026-10-10.png` and `C:\Users\17044\Documents\Codex\groundbnb-import-run-signed-out-2026-10-10.png`.
+- The owned server was stopped and the listener confirmed absent. The exact run closed at `2026-10-10T06:40:43.5687691Z`, restoring the prior environment. No tests were run for this browser-only acceptance slice.
+
+This run demonstrates a single-field native JSON import acknowledgment and canonical reload for the synthetic local account. It does not establish note import, file export correctness beyond the separate offline validator, PDF text/layout acceptance, upstream logout revocation, preview/two-account isolation, or complete M1 acceptance. Requirement statuses remain unchanged.
