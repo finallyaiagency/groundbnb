@@ -34,6 +34,7 @@ test('worker checks only catalog ACLs and denies private tables, sequences, help
   assert.match(worker, /has_table_privilege\(r\.oid,c\.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER'\)/);
   assert.match(worker, /n\.nspname='groundbnb' AND c\.relkind='S'/);
   assert.match(worker, /has_sequence_privilege\(r\.oid,c\.oid,'USAGE,SELECT,UPDATE'\)/);
+  assert.match(worker, /acldefault\(\(CASE WHEN c\.relkind='S' THEN 'S' ELSE 'r' END\)::"char",c\.relowner\)/);
   assert.match(worker, /NOT has_database_privilege\(r\.oid,current_database\(\),'CREATE'\)/);
   assert.match(worker, /NOT has_schema_privilege\(r\.oid,'groundbnb','CREATE'\)/);
   assert.match(worker, /sql\.query\('SET TRANSACTION READ WRITE'\),\s*sql\.query\(query, \[issuer, UNMAPPED_SUBJECT, factorRole\]\)/);

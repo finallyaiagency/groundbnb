@@ -173,4 +173,5 @@ test('principal acceptance script is a rollback-only 0013 metadata check and pre
   assert.match(operatorCheck, /_factor_lock_identity/);
   assert.match(operatorCheck, /M1_FACTOR_SERVICE_PRINCIPAL_0013_ROLLBACK_PENDING/);
   assert.doesNotMatch(operatorCheck, /^\s*(?:SET ROLE|INSERT\s+INTO|UPDATE\s+groundbnb|DELETE\s+FROM|CREATE ROLE|GRANT EXECUTE|ALTER ROLE)\b/im);
+  for (const sql of [up, down, operatorCheck]) assert.doesNotMatch(sql, /acldefault\s*\(\s*CASE\b/i);
 });

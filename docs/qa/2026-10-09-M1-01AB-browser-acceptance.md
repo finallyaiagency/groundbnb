@@ -13,7 +13,7 @@ Source revision: `55acba5e02c42eb857984d23096d596096a2f688`; exact CI `379599759
 
 ## Limits
 
-No raw request inspection or account-ID scope proof was performed. There was no downloaded-file round-trip, cross-account test, preview-environment test, or complete M1 acceptance. The browser observations do not establish full account isolation or promote any requirement to Verified. M1 remains open.
+No raw request inspection or account-ID scope proof was performed. There was no downloaded-file round-trip, cross-account test, preview-environment test, or complete M1 acceptance. A later manual-copy/import partial round-trip is recorded below; it does not establish full account isolation or promote any requirement to Verified. M1 remains open.
 
 ## Post-run offline preparation
 
@@ -22,3 +22,14 @@ After the run was closed, the export status message was corrected to “Profile 
 The copy fallback and source-binding behavior pass the focused source-contract tests (2/2), targeted ESLint, and TypeScript check. These offline checks do not verify the UI in a browser, a real download, or an export/import round-trip. They were run after closure and did not rebuild or restart the browser run. The separate synthetic native-import fixture result above is not a downloaded-file round-trip.
 
 Ignored screenshots: `m1-01ab-record-conflict.png`, `m1-01ab-imported-profile.png`.
+
+## Fresh reviewed-copy and import run
+
+Exact source revision `fec44a0011a48955b1b91d7d8bcb859a0cd565f`; exact CI `37961737235` succeeded. Fresh local run `15c0a7d148964233b53cab32104ff0c0`, fixed expiry `2026-10-09T17:19:59.0036897Z`, same synthetic local fixture, full-v1 mode, direct loopback port 3000, and one OTP. This follow-up preserves the earlier failed expected-download observation above.
+
+- The reviewed native `groundbnb` v1 JSON defaulted to excluding home and notes. Changing the export option cleared prior copied text; opting into notes required confirmation and disabled “Show JSON” until confirmed. The shown copy reflected the canonical saved profile. An unsaved draft change correctly left the earlier saved-profile copy visible. After a durable source change (traveler count 5 and `Couple`, request `e8147888-d565-4e6f-a03d-87cc906919c6`), the stale copied text cleared.
+- The reviewed JSON was manually copied and pasted into the native importer. It contained one active note, omitted the removed note and contained no authority keys. The user selected only traveler count 5→4 and the note, leaving party `Couple` unselected despite a proposed `Family` value; confirmation and apply followed. The UI displayed Saved for request `dd89001a-cf15-47da-a7e9-18cf96c38bd6` before reload. Reload then showed count 4, party `Couple`, the prior removed note still removed, two distinct active notes, and blank vehicle fuel still blank. Importing a note created a distinct note identity. This is a manual native-copy/profile-import partial round-trip; it does not verify a downloaded file or prove request/account-ID scope.
+- Transfer and PDF section counts each remained one after revision changes, verifying the stable-key fix in this build. PDF preview showed final revision 15 and savedAt `2026-10-09T16:52:38.327519+00:00`.
+- Genuine UI logout reached Signed out and the copied JSON disappeared. Owned PID 32892 was verified loopback-only and stopped; Close restored the exact prior environment and retained history.
+
+Ignored screenshots: `m1-01ab-reviewed-json.png`, `m1-01ab-copy-import-confirmed.png`.

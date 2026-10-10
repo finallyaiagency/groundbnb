@@ -138,7 +138,7 @@ try {
         aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) acl WHERE acl.grantee=f.oid AND
           NOT (p.oid IN (${FACTOR_FUNCTIONS.map(signature => `to_regprocedure('${signature}')`).join(',')}))) AND
       NOT EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL
-        aclexplode(COALESCE(c.relacl,acldefault(CASE WHEN c.relkind='S' THEN 'S' ELSE 'r' END,c.relowner))) acl
+        aclexplode(COALESCE(c.relacl,acldefault((CASE WHEN c.relkind='S' THEN 'S' ELSE 'r' END)::"char",c.relowner))) acl
         WHERE acl.grantee=f.oid) AND
       NOT EXISTS(SELECT 1 FROM pg_namespace s CROSS JOIN LATERAL
         aclexplode(COALESCE(s.nspacl,acldefault('n',s.nspowner))) acl WHERE acl.grantee=f.oid AND
