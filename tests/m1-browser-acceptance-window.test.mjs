@@ -88,8 +88,12 @@ test('packet specifies same-origin loopback production proxy and explicit replay
 });
 
 test('records and transfer browser packet is separate, bounded, and mode-gated', () => {
-  assert.match(recordsPacket, /Status: Implemented locally; acceptance preparation only/);
-  assert.match(recordsPacket, /existing continuation authorization/);
+  assert.match(recordsPacket, /Status: Implemented locally; partial authenticated synthetic-local browser evidence is recorded below/);
+  assert.match(recordsPacket, /## Partial browser evidence — 2026-10-10/);
+  assert.match(recordsPacket, /672e29ab2f8e44bf850a933c60033480/);
+  assert.match(recordsPacket, /artifact had empty `profileNotes`, so note import is not claimed/);
+  assert.match(recordsPacket, /complete acceptance checklist remains open and M1 remains in progress/);
+  assert.match(recordsPacket, /This does not close the remaining acceptance gates or promote requirement statuses/);
   assert.match(recordsPacket, /recordsMode=manual-v1/);
   assert.match(recordsPacket, /transferMode=reviewed-v1/);
   assert.match(recordsPacket, /one OTP request/);
