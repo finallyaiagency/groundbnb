@@ -1,0 +1,23 @@
+{
+  "id": "D-016",
+  "questionId": "Q-012",
+  "source": "Client",
+  "decision": "Apply db/migrations/0013_factor_service_principal.sql at SHA-256 9F4DC52B313B1C34FBB65919D7A9D82991D496F3A0DDC6D7BC80EB015B59B0C1 to only the pinned local and preview Groundbnb databases.",
+  "rationale": "The client explicitly replied ‘Approve Q-012’ on 2026-10-10 for the reviewed migration and exact two-branch scope.",
+  "alternatives": [
+    "Keep migration 0013 unapplied until the guarded preflight succeeds on both branches."
+  ],
+  "impact": "Only local br-rough-flower-b8lerkcf and preview br-bitter-hall-b8ibnrfy. The migration creates each matching factor-service principal as NOLOGIN with only CONNECT, groundbnb schema USAGE, and EXECUTE on the five exact factor functions, and extends only the exact caller helper. No LOGIN activation, credential, key, enrollment, admin/bootstrap assignment, production or recovery access is authorized.",
+  "requirementIds": [
+    "ACC-08",
+    "ACC-09",
+    "ADM-01",
+    "ADM-06",
+    "SYS-07",
+    "SYS-11",
+    "LEG-12"
+  ],
+  "taskId": "M1-01AA",
+  "date": "2026-10-10",
+  "implementationStatus": "The original SHA approval is recorded; application is incomplete. The local transaction reached BEGIN, then its guarded DO block raised SQLSTATE P0001 and was rolled back. Read-only metadata on both branches identified one membership row where the matching app role is the granted role and neondb_owner is the member; cloud_admin is the grantor, with admin_option true and inherit/set options false. This is the platform creator/admin edge rejected by the original guard, not evidence that the app role can inherit or SET another role. A narrowly revised baseline12 app-boundary checker passed read-only on both targets and accepted only that edge; no factor-principal or 0013 receipt was established. Preview migration was not attempted. Corrected candidate SHA-256 85F614B7D5DEBD1792E72B00079FE7798EFF5AE3A4F7DD32EDCC5FB2380B04D5 requires separate review and fresh exact-hash action-time confirmation; this D-016 approval does not extend to it. See docs/qa/2026-10-10-Q012-0013-application-attempt.md."
+}

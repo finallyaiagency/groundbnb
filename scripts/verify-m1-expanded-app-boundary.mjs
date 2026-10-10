@@ -67,6 +67,13 @@ try {
       r.rolbypassrls OR r.rolinherit) AND r.rolconnlimit=4 AND
       (r.rolconfig @> ARRAY['default_transaction_read_only=on','statement_timeout=5s']) IS TRUE AND
       NOT EXISTS(SELECT 1 FROM pg_auth_members m WHERE m.member=r.oid) AS attributes_safe,
+    (SELECT count(*) FROM pg_auth_members m WHERE m.roleid=r.oid)=1 AND
+      EXISTS(SELECT 1 FROM pg_auth_members m
+        JOIN pg_roles owner_role ON owner_role.rolname='neondb_owner'
+        JOIN pg_roles grantor_role ON grantor_role.rolname='cloud_admin'
+        WHERE m.member=owner_role.oid AND m.roleid=r.oid AND m.grantor=grantor_role.oid AND
+          m.admin_option IS TRUE AND m.inherit_option IS FALSE AND m.set_option IS FALSE)
+      AS ordinary_app_creator_membership_exact,
     has_table_privilege(r.oid,'groundbnb.environment_identity','SELECT') AND
       has_table_privilege(r.oid,'groundbnb.schema_migrations','SELECT') AND
       NOT has_table_privilege(r.oid,'groundbnb.environment_identity','INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') AND
@@ -108,7 +115,13 @@ try {
       NOT has_database_privilege(f.oid,current_database(),'CREATE') AND
       has_schema_privilege(f.oid,'groundbnb','USAGE') AND NOT has_schema_privilege(f.oid,'groundbnb','CREATE')) AS factor_principal_attributes,
     EXISTS(SELECT 1 FROM pg_roles f WHERE f.rolname=$3 AND
-      NOT EXISTS(SELECT 1 FROM pg_auth_members m WHERE m.member=f.oid OR m.roleid=f.oid)) AS factor_principal_unmembered,
+      NOT EXISTS(SELECT 1 FROM pg_auth_members m WHERE m.member=f.oid) AND
+      (SELECT count(*) FROM pg_auth_members m WHERE m.roleid=f.oid)=1 AND
+      EXISTS(SELECT 1 FROM pg_auth_members m
+        JOIN pg_roles owner_role ON owner_role.rolname='neondb_owner'
+        JOIN pg_roles grantor_role ON grantor_role.rolname='cloud_admin'
+        WHERE m.member=owner_role.oid AND m.roleid=f.oid AND m.grantor=grantor_role.oid AND
+          m.admin_option IS TRUE AND m.inherit_option IS FALSE AND m.set_option IS FALSE)) AS factor_creator_membership_exact,
     EXISTS(SELECT 1 FROM pg_roles f WHERE f.rolname=$3 AND
       ${FACTOR_FUNCTIONS.map(signature => `has_function_privilege(f.oid,'${signature}','EXECUTE')`).join(' AND ')} AND
       (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
@@ -168,10 +181,10 @@ try {
   const expectedReceiptCount = baseline === '13' ? 13 : 12;
   const exactReceipts = [row?.receipt_count, row?.known_receipt_count].every(value =>
     value === expectedReceiptCount || value === String(expectedReceiptCount));
-  const commonChecks = ['attributes_safe','metadata_select_only','private_tables_denied','sequences_denied',
+  const commonChecks = ['attributes_safe','ordinary_app_creator_membership_exact','metadata_select_only','private_tables_denied','sequences_denied',
     'six_functions_allowed','no_extra_functions','create_denied','unmapped_subject_denied'];
   const factorChecks = baseline === '13'
-    ? ['factor_receipt','factor_principal_present','factor_principal_attributes','factor_principal_unmembered','factor_five_functions',
+    ? ['factor_receipt','factor_principal_present','factor_principal_attributes','factor_creator_membership_exact','factor_five_functions',
       'factor_no_extra_functions','factor_no_data_privileges']
     : ['factor_principal_absent'];
   const factorStateMatches = baseline === '13'

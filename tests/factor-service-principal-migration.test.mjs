@@ -78,7 +78,9 @@ test('creates only the pinned passwordless NOLOGIN factor capability role', () =
   assert.match(up, /role_record\.rolreplication OR role_record\.rolbypassrls OR role_record\.rolinherit/);
   assert.match(up, /role_record\.rolconnlimit IS DISTINCT FROM 2/);
   assert.match(up, /role_record\.rolconfig IS NOT NULL/);
-  assert.match(up, /WHERE member=role_record\.oid OR roleid=role_record\.oid/);
+  assert.match(up, /WHERE member=role_record\.oid\)/);
+  assert.match(up, /count\(\*\) FROM pg_auth_members WHERE roleid=role_record\.oid\) IS DISTINCT FROM 1/);
+  assert.match(up, /member=owner_oid AND roleid=role_record\.oid AND\s+grantor=cloud_admin_oid AND admin_option IS TRUE AND inherit_option IS FALSE AND set_option IS FALSE/);
   assert.match(up, /CREATE ROLE %I[\s\S]*?GRANT CONNECT ON DATABASE groundbnb TO %I/);
   assert.match(up, /GRANT USAGE ON SCHEMA groundbnb TO %I/);
   assert.match(up, /GRANT EXECUTE ON FUNCTION[\s\S]*?read_factor_operation_receipt\(text,text,text,timestamptz,uuid,text\) TO %I/);
@@ -98,6 +100,11 @@ test('app ACL is exact six and factor role gets exactly five callable functions'
   assert.match(up, /has_schema_privilege\(app_oid,'groundbnb','CREATE'\)/);
   assert.match(up, /has_table_privilege\(app_oid,'groundbnb\.environment_identity','SELECT'\) IS DISTINCT FROM true/);
   assert.match(up, /has_table_privilege\(app_oid,'groundbnb\.schema_migrations','SELECT'\) IS DISTINCT FROM true/);
+  for (const sql of [up, down, operatorCheck]) {
+    assert.match(sql, /WHERE member=app_oid\)/);
+    assert.match(sql, /count\(\*\) FROM pg_auth_members WHERE roleid=app_oid\) IS DISTINCT FROM 1/);
+    assert.match(sql, /member=owner_oid AND roleid=app_oid AND\s+grantor=cloud_admin_oid AND admin_option IS TRUE AND inherit_option IS FALSE AND set_option IS FALSE/);
+  }
   for (const [name, args] of factorFunctions) {
     const signature = `groundbnb.${name}(${args})`;
     assert.ok(up.includes(signature), `missing exact factor signature ${signature}`);
@@ -128,7 +135,9 @@ test('rollback refuses activation, membership, and any factor history before rev
   assert.match(down, /role_record\.rolcanlogin IS DISTINCT FROM false/);
   assert.match(down, /app_record\.rolcanlogin IS DISTINCT FROM true/);
   assert.match(down, /app_record\.rolconfig @> ARRAY\['default_transaction_read_only=on','statement_timeout=5s'\]/);
-  assert.match(down, /WHERE member=role_record\.oid OR roleid=role_record\.oid/);
+  assert.match(down, /WHERE member=role_record\.oid\)/);
+  assert.match(down, /count\(\*\) FROM pg_auth_members WHERE roleid=role_record\.oid\) IS DISTINCT FROM 1/);
+  assert.match(down, /member=owner_oid AND roleid=role_record\.oid AND\s+grantor=cloud_admin_oid AND admin_option IS TRUE AND inherit_option IS FALSE AND set_option IS FALSE/);
   for (const table of [
     'factor_challenge_operations', 'account_security_epochs', 'security_epoch_events',
     'privileged_factor_enrollments', 'privileged_recovery_records', 'accepted_factor_steps',
@@ -167,7 +176,9 @@ test('principal acceptance script is a rollback-only 0013 metadata check and pre
   assert.match(operatorCheck, /has_function_privilege\(factor_oid,'groundbnb\.read_factor_challenge_state/);
   assert.match(operatorCheck, /factor_function_count IS DISTINCT FROM 5/);
   assert.match(operatorCheck, /WHERE acl\.grantee=factor_oid\) IS DISTINCT FROM 5/);
-  assert.match(operatorCheck, /EXISTS\(SELECT 1 FROM pg_auth_members WHERE member=factor_oid OR roleid=factor_oid\)/);
+  assert.match(operatorCheck, /WHERE member=factor_oid\)/);
+  assert.match(operatorCheck, /count\(\*\) FROM pg_auth_members WHERE roleid=factor_oid\) IS DISTINCT FROM 1/);
+  assert.match(operatorCheck, /member=owner_oid AND roleid=factor_oid AND\s+grantor=cloud_admin_oid AND admin_option IS TRUE AND inherit_option IS FALSE AND set_option IS FALSE/);
   assert.match(operatorCheck, /has_table_privilege\(factor_oid,c\.oid/);
   assert.match(operatorCheck, /has_sequence_privilege\(factor_oid,c\.oid/);
   assert.match(operatorCheck, /_factor_lock_identity/);

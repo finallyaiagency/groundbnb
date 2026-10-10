@@ -5,7 +5,7 @@
 BEGIN;
 DO $$
 DECLARE
-  e record; app_role text; factor_role text; app_oid oid; factor_oid oid; owner_oid oid;
+  e record; app_role text; factor_role text; app_oid oid; factor_oid oid; owner_oid oid; cloud_admin_oid oid;
   app_record record; factor_record record; app_functions text[]; factor_function_count integer;
   helper_oid oid; helper_owner oid; helper_config text[];
 BEGIN
@@ -38,6 +38,7 @@ BEGIN
   SELECT * INTO STRICT factor_record FROM pg_roles WHERE rolname=factor_role;
   app_oid:=app_record.oid; factor_oid:=factor_record.oid;
   SELECT oid INTO STRICT owner_oid FROM pg_roles WHERE rolname='neondb_owner';
+  SELECT oid INTO STRICT cloud_admin_oid FROM pg_roles WHERE rolname='cloud_admin';
   SELECT array_agg(p.oid::regprocedure::text ORDER BY p.oid::regprocedure::text)
     INTO app_functions FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
     WHERE n.nspname='groundbnb' AND p.prorettype NOT IN ('trigger'::regtype,'event_trigger'::regtype)
@@ -54,7 +55,10 @@ BEGIN
      app_record.rolreplication OR app_record.rolbypassrls OR app_record.rolinherit OR
      app_record.rolconnlimit IS DISTINCT FROM 4 OR
      (app_record.rolconfig @> ARRAY['default_transaction_read_only=on','statement_timeout=5s']) IS DISTINCT FROM true OR
-     EXISTS(SELECT 1 FROM pg_auth_members WHERE member=app_oid OR roleid=app_oid) OR
+     EXISTS(SELECT 1 FROM pg_auth_members WHERE member=app_oid) OR
+     (SELECT count(*) FROM pg_auth_members WHERE roleid=app_oid) IS DISTINCT FROM 1 OR
+     NOT EXISTS(SELECT 1 FROM pg_auth_members WHERE member=owner_oid AND roleid=app_oid AND
+       grantor=cloud_admin_oid AND admin_option IS TRUE AND inherit_option IS FALSE AND set_option IS FALSE) OR
      has_database_privilege(app_oid,current_database(),'CREATE') OR has_schema_privilege(app_oid,'groundbnb','CREATE') OR
      app_functions IS DISTINCT FROM ARRAY[
        'groundbnb.read_membership(text,text)',
@@ -82,7 +86,10 @@ BEGIN
   IF factor_record.rolcanlogin IS DISTINCT FROM false OR factor_record.rolsuper OR factor_record.rolcreatedb OR
      factor_record.rolcreaterole OR factor_record.rolreplication OR factor_record.rolbypassrls OR factor_record.rolinherit OR
      factor_record.rolconnlimit IS DISTINCT FROM 2 OR factor_record.rolconfig IS NOT NULL OR
-     EXISTS(SELECT 1 FROM pg_auth_members WHERE member=factor_oid OR roleid=factor_oid) OR
+     EXISTS(SELECT 1 FROM pg_auth_members WHERE member=factor_oid) OR
+     (SELECT count(*) FROM pg_auth_members WHERE roleid=factor_oid) IS DISTINCT FROM 1 OR
+     NOT EXISTS(SELECT 1 FROM pg_auth_members WHERE member=owner_oid AND roleid=factor_oid AND
+       grantor=cloud_admin_oid AND admin_option IS TRUE AND inherit_option IS FALSE AND set_option IS FALSE) OR
      has_database_privilege(factor_oid,current_database(),'CONNECT') IS DISTINCT FROM true OR
      has_database_privilege(factor_oid,current_database(),'CREATE') OR
      has_schema_privilege(factor_oid,'groundbnb','USAGE') IS DISTINCT FROM true OR

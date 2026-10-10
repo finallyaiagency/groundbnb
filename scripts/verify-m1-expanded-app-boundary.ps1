@@ -80,7 +80,8 @@ foreach ($verifyKind in @('local','preview')) {
       $_ -in @('target_pin','receipt_count','attributes_safe','metadata_select_only','private_tables_denied',
         'sequences_denied','six_functions_allowed','no_extra_functions','create_denied','unmapped_subject_denied',
         'factor_receipt','factor_principal_present','factor_principal_absent','factor_principal_attributes',
-        'factor_principal_unmembered','factor_five_functions','factor_no_extra_functions','factor_no_data_privileges')
+        'ordinary_app_creator_membership_exact','factor_creator_membership_exact','factor_five_functions',
+        'factor_no_extra_functions','factor_no_data_privileges')
     }) -join ','
     $verifyPass = $verifyChild.ExitCode -eq 0 -and $verifyOutput.ok -eq $true -and
       $verifyOutput.kind -eq $verifyKind -and $verifyOutput.branchId -eq $verifyExpected.branch -and

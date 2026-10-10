@@ -1,5 +1,7 @@
 # Groundbnb execution state
 
+October 10 Q-012 update: The client approved original 0013 SHA-256 `9F4DC52B313B1C34FBB65919D7A9D82991D496F3A0DDC6D7BC80EB015B59B0C1`, but its local guarded attempt rolled back at SQLSTATE P0001; preview was not attempted. Read-only metadata isolated the platform `neondb_owner` creator/admin edge on both ordinary app roles, with no INHERIT or SET option. The revised baseline12 app-boundary checker passes both targets; this proves no factor principal or migration receipt. Corrected candidate SHA-256 `85F614B7D5DEBD1792E72B00079FE7798EFF5AE3A4F7DD32EDCC5FB2380B04D5` requires fresh exact-hash action-time confirmation. No factor principal, credential, login, key, enrollment, or MFA activation is established. M1 remains open. See `docs/qa/2026-10-10-Q012-0013-application-attempt.md` and `docs/decisions/D-016.json`.
+
 Updated: 2026-10-09 (M0 complete; M1 in progress)
 
 October 10 security review: all ten supplied Groundbnb GitGuardian alerts were reviewed at their reported source locations and ignored as six test credentials and four non-secrets/false positives. The reported QA-script hash matches its source; test vectors, labeled examples, and synthetic fixtures were classified without exposing values. No rotation, history rewrite, or rule change occurred. This is limited to the ten reported occurrences; findings in other repositories remain outside scope, and no claim is made that all repository secrets have been audited. See `docs/qa/2026-10-10-gitguardian-alert-review.md`.

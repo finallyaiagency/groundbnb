@@ -1,8 +1,8 @@
 -- Remove only an unused 0013 passwordless factor service principal.
--- Refuses credential activation, membership, or any factor history.
+-- Refuses credential activation, any non-platform membership, or factor history.
 BEGIN;
 DO $$
-DECLARE e record; app_role text; factor_role text; app_oid oid; owner_oid oid;
+DECLARE e record; app_role text; factor_role text; app_oid oid; owner_oid oid; cloud_admin_oid oid;
   role_record record; app_record record; helper_oid oid; helper_owner oid; helper_acl aclitem[]; helper_config text[];
   receipt_count integer; callable_functions text[];
 BEGIN
@@ -32,6 +32,7 @@ BEGIN
     RAISE EXCEPTION 'Requires the sole verified synthetic Auth fixture';
   END IF;
   SELECT oid INTO STRICT owner_oid FROM pg_roles WHERE rolname='neondb_owner';
+  SELECT oid INTO STRICT cloud_admin_oid FROM pg_roles WHERE rolname='cloud_admin';
   SELECT oid INTO STRICT app_oid FROM pg_roles WHERE rolname=app_role;
   SELECT * INTO STRICT app_record FROM pg_roles WHERE oid=app_oid;
   SELECT * INTO STRICT role_record FROM pg_roles WHERE rolname=factor_role;
@@ -49,7 +50,10 @@ BEGIN
      app_record.rolcreaterole OR app_record.rolreplication OR app_record.rolbypassrls OR app_record.rolinherit OR
      app_record.rolconnlimit IS DISTINCT FROM 4 OR
      (app_record.rolconfig @> ARRAY['default_transaction_read_only=on','statement_timeout=5s']) IS DISTINCT FROM true OR
-     EXISTS(SELECT 1 FROM pg_auth_members WHERE member=app_oid OR roleid=app_oid) OR
+     EXISTS(SELECT 1 FROM pg_auth_members WHERE member=app_oid) OR
+     (SELECT count(*) FROM pg_auth_members WHERE roleid=app_oid) IS DISTINCT FROM 1 OR
+     NOT EXISTS(SELECT 1 FROM pg_auth_members WHERE member=owner_oid AND roleid=app_oid AND
+       grantor=cloud_admin_oid AND admin_option IS TRUE AND inherit_option IS FALSE AND set_option IS FALSE) OR
      has_database_privilege(app_oid,current_database(),'CREATE') OR has_schema_privilege(app_oid,'groundbnb','CREATE') OR
      has_schema_privilege(app_oid,'groundbnb','USAGE') IS DISTINCT FROM true OR
      has_table_privilege(app_oid,'groundbnb.environment_identity','SELECT') IS DISTINCT FROM true OR
@@ -59,7 +63,10 @@ BEGIN
      role_record.rolcanlogin IS DISTINCT FROM false OR role_record.rolsuper OR role_record.rolcreatedb OR
      role_record.rolcreaterole OR role_record.rolreplication OR role_record.rolbypassrls OR role_record.rolinherit OR
      role_record.rolconnlimit IS DISTINCT FROM 2 OR role_record.rolconfig IS NOT NULL OR
-     EXISTS(SELECT 1 FROM pg_auth_members WHERE member=role_record.oid OR roleid=role_record.oid) OR
+     EXISTS(SELECT 1 FROM pg_auth_members WHERE member=role_record.oid) OR
+     (SELECT count(*) FROM pg_auth_members WHERE roleid=role_record.oid) IS DISTINCT FROM 1 OR
+     NOT EXISTS(SELECT 1 FROM pg_auth_members WHERE member=owner_oid AND roleid=role_record.oid AND
+       grantor=cloud_admin_oid AND admin_option IS TRUE AND inherit_option IS FALSE AND set_option IS FALSE) OR
      callable_functions IS DISTINCT FROM ARRAY[
        'groundbnb.read_membership(text,text)','groundbnb.read_profile(text,text)',
        'groundbnb.read_profile_operation(text,text,uuid)','groundbnb.save_profile(text,text,uuid,bigint,jsonb)',
