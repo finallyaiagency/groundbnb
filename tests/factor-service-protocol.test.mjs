@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { encryptFactorSecret, createRecoveryCodeDigest } from '../lib/factor-storage.mjs';
 import { createFactorServiceProtocol, PROPOSED_FACTOR_RATE_POLICY } from '../lib/factor-service-protocol.mjs';
+import { validateFactorEnrollmentAcknowledgment, validateFactorEnrollmentRequest } from '../lib/factor-enrollment-contract.mjs';
 
 const ACCOUNT = '00000000-0000-4000-8000-000000000001';
 const FACTOR = '00000000-0000-4000-8000-000000000002';
@@ -254,4 +255,58 @@ test('closed inputs and malformed session environment fail without provider or r
   assert.equal((await h.service.challengeTOTP({ requestContext: {}, token: TOKEN })).outcome, 'unavailable');
   assert.equal(resolves, 1);
   assert.deepEqual(h.calls, []);
+
+  const enrollmentOperationId = '00000000-0000-4000-8000-000000000003';
+  const begin = validateFactorEnrollmentRequest('begin', { operationId: enrollmentOperationId });
+  assert.deepEqual(begin, { ok: true, operationId: enrollmentOperationId });
+  assert.equal(Object.isFrozen(begin), true);
+  assert.equal(validateFactorEnrollmentRequest('begin', { operationId: enrollmentOperationId, role: 'owner' }).ok, false);
+  assert.equal(validateFactorEnrollmentRequest('begin', { operationId: 'not-a-uuid' }).ok, false);
+  assert.equal(validateFactorEnrollmentRequest('begin', { operationId: `${enrollmentOperationId}\n` }).ok, false);
+  assert.equal(validateFactorEnrollmentRequest('begin', { operationId: `${enrollmentOperationId}\r\n` }).ok, false);
+
+  const verify = validateFactorEnrollmentRequest('verify', { operationId: enrollmentOperationId, code: TOKEN });
+  assert.equal(verify.ok, true);
+  assert.equal(verify.operationId, enrollmentOperationId);
+  assert.equal(verify.code, TOKEN);
+  assert.equal(Object.isFrozen(verify), true);
+  assert.deepEqual(Object.keys(verify), ['ok', 'operationId']);
+  assert.equal(JSON.stringify(verify).includes(TOKEN), false);
+  assert.equal(validateFactorEnrollmentRequest('verify', { operationId: enrollmentOperationId, code: '12x' }).ok, false);
+  assert.equal(validateFactorEnrollmentRequest('verify', { operationId: enrollmentOperationId, code: `${TOKEN}\n` }).ok, false);
+  assert.equal(validateFactorEnrollmentRequest('verify', { operationId: enrollmentOperationId, code: `${TOKEN}\r\n` }).ok, false);
+  assert.equal(validateFactorEnrollmentRequest('verify', { operationId: enrollmentOperationId, code: TOKEN, factorId: FACTOR }).ok, false);
+  assert.equal(validateFactorEnrollmentRequest('verify', { operationId: enrollmentOperationId, code: TOKEN, expiresAt: Infinity }).ok, false);
+
+  assert.deepEqual(validateFactorEnrollmentAcknowledgment('begin', enrollmentOperationId,
+    { operationId: enrollmentOperationId, outcome: 'pending' }),
+    { ok: true, operationId: enrollmentOperationId, outcome: 'pending' });
+  assert.equal(validateFactorEnrollmentAcknowledgment('begin', enrollmentOperationId,
+    { operationId: enrollmentOperationId, outcome: 'verified' }).ok, false);
+  assert.equal(validateFactorEnrollmentAcknowledgment('verify', enrollmentOperationId,
+    { operationId: enrollmentOperationId, outcome: 'pending' }).ok, false);
+  assert.equal(validateFactorEnrollmentAcknowledgment('verify', enrollmentOperationId,
+    { operationId: '00000000-0000-4000-8000-000000000004', outcome: 'verified' }).ok, false);
+  assert.equal(validateFactorEnrollmentAcknowledgment('verify', `${enrollmentOperationId}\n`,
+    { operationId: enrollmentOperationId, outcome: 'verified' }).ok, false);
+  assert.equal(validateFactorEnrollmentAcknowledgment('verify', enrollmentOperationId,
+    { operationId: `${enrollmentOperationId}\r\n`, outcome: 'verified' }).ok, false);
+  const unknownAck = validateFactorEnrollmentAcknowledgment('verify', enrollmentOperationId,
+    { operationId: enrollmentOperationId, outcome: 'unknown' });
+  assert.deepEqual(unknownAck, { ok: true, operationId: enrollmentOperationId, outcome: 'unknown',
+    mutationRetryAllowed: false, resolution: 'status_lookup_required' });
+  assert.equal(Object.isFrozen(unknownAck), true);
+  assert.equal(validateFactorEnrollmentAcknowledgment('verify', enrollmentOperationId,
+    { operationId: enrollmentOperationId, outcome: 'verified', code: TOKEN, accountId: ACCOUNT, securityEpoch: 4 }).ok, false);
+  assert.equal(JSON.stringify(unknownAck).includes(TOKEN), false);
+
+  let getterCalled = false;
+  const getterInput = Object.defineProperty({}, 'operationId', { get() {
+    getterCalled = true;
+    return enrollmentOperationId;
+  } });
+  assert.equal(validateFactorEnrollmentRequest('begin', getterInput).ok, false);
+  assert.equal(getterCalled, false);
+  const symbolInput = { operationId: enrollmentOperationId, [Symbol('extra')]: true };
+  assert.equal(validateFactorEnrollmentRequest('begin', symbolInput).ok, false);
 });

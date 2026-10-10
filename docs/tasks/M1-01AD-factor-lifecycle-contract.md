@@ -1,6 +1,6 @@
 # M1-01AD — Privileged-factor enrollment, recovery, and reset contract
 
-Status: offline preparation plan only. This packet does not authorize SQL execution, role activation, credential or key provisioning, MFA enrollment, route exposure, or privileged access. The frozen specification and its hash remain authoritative; this packet proposes implementation boundaries for existing requirements and creates no new product requirement.
+Status: offline preparation contract with a pure request/acknowledgment validator candidate. This packet does not authorize SQL execution, role activation, credential or key provisioning, MFA enrollment, route exposure, or privileged access. The frozen specification and its hash remain authoritative; this packet proposes implementation boundaries for existing requirements and creates no new product requirement.
 
 ## Read first and authority
 
@@ -14,6 +14,10 @@ Read `AGENTS.md`, `docs/STATE.md`, `docs/tasks/M1-01AA-factor-runtime-boundary.m
 - `lib/factor-storage.mjs` provides context-bound AES-256-GCM envelope operations and salted recovery-code digest helpers. It does not select/provision a key, issue recovery codes, or persist enrollment. `lib/factor-verifier.mjs`, `lib/factor-service-protocol.mjs`, `lib/factor-postgres-repository.mjs`, and `lib/privileged-access.mjs` are offline candidates, not an active route or live service.
 - There is no factor enrollment/reset/recovery issuance route, no configured key provider, no factor database connection, and no proof of provider session revocation behavior. `lib/admin-bootstrap.mjs` is only a pure candidate; the live synthetic users are not to be promoted as owners/admins by this task.
 - Corrected migration `0013_factor_service_principal.sql` was applied under D-017 on the pinned local and preview branches; both exact NOLOGIN principals expose only the five existing 0012 factor functions, and the direct baseline-13 app boundary and rollback-only verifier passed on both. Lifecycle functions still require a separate exact function-grant contract and action gate. Ordinary app roles retain their exact allowlist and receive no factor function/table/helper access.
+
+## Offline enrollment request/acknowledgment validator candidate (2026-10-10)
+
+`lib/factor-enrollment-contract.mjs` is a pure shape validator for future `begin` and `verify` enrollment requests and their minimal acknowledgments. It accepts a canonical fixed-length operation UUID; `verify` also requires exactly six ASCII digits. Closed own-data-property validation rejects unknown keys, symbols, and accessors without invoking getters. The returned verification code is non-enumerable. Acknowledgments bind the exact expected operation UUID and a small operation-specific outcome set; an unknown outcome forbids mutation retry and requires status lookup. The module does not resolve identity/session/role, check a durable receipt, write a factor, verify a code, or grant access. The extended existing protocol test remains offline evidence only; see `docs/qa/2026-10-10-M1-01AD-enrollment-validator.md`.
 
 ## Proposed bounded implementation after prerequisites
 
@@ -84,4 +88,4 @@ Separate future gates are required for (a) approved 0013 NOLOGIN migration, (b) 
 - Verify 12-hour factor freshness, 30-minute inactivity, and five-minute sensitive step-up edges; all denials, unavailable/unknown outcomes, and errors reveal no protected data or secret and do not retry consumes.
 - Run protected-route browser checks before enrollment, while pending, after valid challenge, after idle/freshness expiry, and after reset/revocation. Close the bounded window and restore exact prior local configuration.
 
-No acceptance gate in this packet is claimed complete. No code, migration, grant, key, login credential, route, or live factor operation is authorized by this task packet.
+No acceptance gate in this packet is claimed complete. The pure request/acknowledgment validator is offline preparation only; it does not authenticate a caller, persist lifecycle state, verify a factor, or grant access. No migration, grant, key, login credential, route, or live factor operation is authorized by this task packet.
