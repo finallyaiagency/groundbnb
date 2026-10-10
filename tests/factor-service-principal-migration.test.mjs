@@ -176,6 +176,7 @@ test('principal acceptance script is a rollback-only 0013 metadata check and pre
   assert.match(operatorCheck, /has_function_privilege\(factor_oid,'groundbnb\.read_factor_challenge_state/);
   assert.match(operatorCheck, /factor_function_count IS DISTINCT FROM 5/);
   assert.match(operatorCheck, /WHERE acl\.grantee=factor_oid\) IS DISTINCT FROM 5/);
+  assert.match(operatorCheck, /groundbnb\.read_factor_operation_receipt\(text,text,text,timestamptz,uuid,text\)'\)\)\)\) OR/);
   assert.match(operatorCheck, /WHERE member=factor_oid\)/);
   assert.match(operatorCheck, /count\(\*\) FROM pg_auth_members WHERE roleid=factor_oid\) IS DISTINCT FROM 1/);
   assert.match(operatorCheck, /member=owner_oid AND roleid=factor_oid AND\s+grantor=cloud_admin_oid AND admin_option IS TRUE AND inherit_option IS FALSE AND set_option IS FALSE/);
