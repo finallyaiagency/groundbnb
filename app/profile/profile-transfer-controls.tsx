@@ -11,6 +11,7 @@ import {
   buildProfileTransferOperation, buildReviewedProfileTransferOperation, isMatchingProfileTransferAcknowledgment,
   preferCurrentCanonicalProfile, selectCanonicalAfterStatusRefresh,
 } from '@/lib/profile-transfer-editor-state.mjs';
+import { startProfileExportDownload } from '@/lib/profile-export-download.mjs';
 import { PROFILE_FIELD_LABELS, type ProfileFieldAnswer } from './profile-fields';
 import { parseReadableProfileDraft } from '@/lib/profile-readable-import.mjs';
 
@@ -42,6 +43,9 @@ type TransferPreview = {
   profileNotes: string[];
   warnings: readonly { code: string; field: string | null; message: string }[];
   requiresSensitiveConfirmation: boolean;
+};
+type ExportPreviewBinding = {
+  accountId: string; revision: number; sessionGeneration: number; sourceBinding: string; optionsBinding: string;
 };
 const buildExportFile = buildProfileExport as unknown as (profile: Profile, options: Record<string, unknown>) => {
   bytes: Uint8Array; contentType: string; text: string;
@@ -99,8 +103,9 @@ export default function ProfileTransferControls({ profile, transferMode, disable
   const [includeImportQuotes, setIncludeImportQuotes] = useState(false);
   const [confirmSensitive, setConfirmSensitive] = useState(false);
   const [exportPreview, setExportPreview] = useState<ReturnType<typeof createProfileExportPreview> | null>(null);
+  const [exportPreviewBinding, setExportPreviewBinding] = useState<ExportPreviewBinding | null>(null);
   const [exportContent, setExportContent] = useState<{
-    text: string; accountId: string; revision: number; sessionGeneration: number; sourceBinding: string;
+    text: string; accountId: string; revision: number; sessionGeneration: number; sourceBinding: string; optionsBinding: string;
   } | null>(null);
   const [importSource, setImportSource] = useState<'native' | 'readable'>('native');
   const [importText, setImportText] = useState('');
@@ -121,11 +126,25 @@ export default function ProfileTransferControls({ profile, transferMode, disable
   const sessionIsCurrent = (captured: number) => captured === getSessionGeneration();
   const sessionGeneration = getSessionGeneration();
   const exportSourceBinding = JSON.stringify({ answers: profile.answers, profileNotes: profile.profileNotes ?? [] });
+  const exportOptionsBinding = JSON.stringify({ includeHome: includeExportHome, includeQuotes: includeExportQuotes });
+  const exportPreviewIsCurrent = Boolean(exportPreview && profile.accountId && exportPreviewBinding &&
+    exportPreviewBinding.accountId === profile.accountId && exportPreviewBinding.revision === profile.revision &&
+    exportPreviewBinding.sessionGeneration === sessionGeneration && exportPreviewBinding.sourceBinding === exportSourceBinding &&
+    exportPreviewBinding.optionsBinding === exportOptionsBinding);
+  if (exportPreview && !exportPreviewIsCurrent) {
+    setExportPreview(null);
+    setExportPreviewBinding(null);
+    setConfirmSensitive(false);
+    setExportContent(null);
+  }
+  const currentExportPreview = exportPreviewIsCurrent ? exportPreview : null;
   if (exportContent && (exportContent.accountId !== profile.accountId || exportContent.revision !== profile.revision ||
-      exportContent.sessionGeneration !== sessionGeneration || exportContent.sourceBinding !== exportSourceBinding)) setExportContent(null);
+      exportContent.sessionGeneration !== sessionGeneration || exportContent.sourceBinding !== exportSourceBinding ||
+      exportContent.optionsBinding !== exportOptionsBinding)) setExportContent(null);
   const exportTextVisible = typeof profile.accountId === 'string' && !disabled && !busy && exportContent !== null &&
     exportContent.accountId === profile.accountId && exportContent.revision === profile.revision &&
-    exportContent.sessionGeneration === sessionGeneration && exportContent.sourceBinding === exportSourceBinding;
+    exportContent.sessionGeneration === sessionGeneration && exportContent.sourceBinding === exportSourceBinding &&
+    exportContent.optionsBinding === exportOptionsBinding;
   const notesAvailable = Array.isArray(profile.profileNotes);
 
   function setPendingOperation(operation: Operation | null) {
@@ -147,6 +166,7 @@ export default function ProfileTransferControls({ profile, transferMode, disable
   function clearPreview() {
     clearExportText();
     setExportPreview(null);
+    setExportPreviewBinding(null);
     setImportPreview(null);
     setSelectedFields([]);
     setSelectedNotes([]);
@@ -162,42 +182,48 @@ export default function ProfileTransferControls({ profile, transferMode, disable
         includeHome: includeExportHome, includeQuotes: includeExportQuotes,
       });
       setExportPreview(preview);
+      setExportPreviewBinding({ accountId: profile.accountId ?? '', revision: profile.revision, sessionGeneration,
+        sourceBinding: exportSourceBinding, optionsBinding: exportOptionsBinding });
       setConfirmSensitive(false);
       setMessage('Review the included profile values before downloading.');
     } catch (error) { setMessage(errorText(error)); }
   }
 
+  function canUseReviewedExport() {
+    return Boolean(profile.accountId && currentExportPreview && !disabled && !busy && !pending && !conflict &&
+      sessionGeneration === getSessionGeneration() &&
+      (!currentExportPreview.requiresSensitiveConfirmation || confirmSensitive));
+  }
+
   function downloadExport() {
-    if (!exportPreview) return;
+    if (!canUseReviewedExport()) return;
     try {
       const options = { includeHome: includeExportHome, includeQuotes: includeExportQuotes };
+      const exportedAt = new Date().toISOString();
       const result = buildExportFile({ ...profile, profileNotes: profile.profileNotes ?? [] }, {
-        preview: exportPreview, ...options, confirmSensitive, exportedAt: new Date().toISOString(),
+        preview: currentExportPreview!, ...options, confirmSensitive, exportedAt,
       });
-      const bytes = result.bytes.buffer.slice(result.bytes.byteOffset, result.bytes.byteOffset + result.bytes.byteLength) as ArrayBuffer;
-      const url = URL.createObjectURL(new Blob([bytes], { type: result.contentType }));
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `groundbnb-profile-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.append(anchor);
-      anchor.click();
-      anchor.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (!canUseReviewedExport()) return;
+      startProfileExportDownload({ bytes: result.bytes, contentType: result.contentType, exportedAt,
+        documentPort: document, urlPort: URL, BlobCtor: Blob,
+        schedule: (callback: () => void, delay: number) => window.setTimeout(callback, delay) });
       setMessage('Profile file download started.');
-    } catch (error) { setMessage(errorText(error)); }
+    } catch (error) {
+      setMessage(error instanceof ProfileTransferError ? error.message : 'Could not start the profile download. Try showing the reviewed JSON to copy.');
+    }
   }
 
   function showExportJsonToCopy() {
-    if (!profile.accountId || !exportPreview || disabled || busy || sessionGeneration !== getSessionGeneration() ||
-        (exportPreview.requiresSensitiveConfirmation && !confirmSensitive)) return;
+    if (!canUseReviewedExport()) return;
     try {
       const options = { includeHome: includeExportHome, includeQuotes: includeExportQuotes };
       const exportSource = { ...profile, profileNotes: profile.profileNotes ?? [] };
       const sourceBinding = JSON.stringify({ answers: exportSource.answers, profileNotes: exportSource.profileNotes });
+      const optionsBinding = JSON.stringify(options);
       const result = buildExportFile(exportSource, {
-        preview: exportPreview, ...options, confirmSensitive, exportedAt: new Date().toISOString(),
+        preview: currentExportPreview!, ...options, confirmSensitive, exportedAt: new Date().toISOString(),
       });
-      setExportContent({ text: result.text, accountId: profile.accountId, revision: profile.revision, sessionGeneration, sourceBinding });
+      setExportContent({ text: result.text, accountId: profile.accountId!, revision: profile.revision, sessionGeneration, sourceBinding, optionsBinding });
       setMessage('Reviewed profile JSON is ready to select and copy.');
     } catch (error) { clearExportText(); setMessage(errorText(error)); }
   }
@@ -469,18 +495,18 @@ export default function ProfileTransferControls({ profile, transferMode, disable
         onChange={event => { setIncludeExportQuotes(event.target.checked); clearPreview(); }} />Include personal quotes</label>
       {!notesAvailable && <p>Personal quotes are not available to export from this profile yet.</p>}
       <button type="button" disabled={disabled || busy} onClick={reviewExport}>Review export</button>
-      {exportPreview && <div aria-label="Export preview">
+      {currentExportPreview && <div aria-label="Export preview">
         <h4>Included profile values</h4>
-        {Object.entries(exportPreview.profileFields).length ? <dl>{Object.entries(exportPreview.profileFields).map(([field, value]) => <div key={field}>
+        {Object.entries(currentExportPreview.profileFields).length ? <dl>{Object.entries(currentExportPreview.profileFields).map(([field, value]) => <div key={field}>
           <dt>{PROFILE_FIELD_LABELS[field as keyof typeof PROFILE_FIELD_LABELS] ?? field}</dt><dd>{readable(value as ProfileFieldAnswer['value'])}</dd>
         </div>)}</dl> : <p>No answered profile values are included.</p>}
         <h4>Included personal quotes</h4>
-        {exportPreview.profileNotes.length ? <ul>{exportPreview.profileNotes.map((quote: string, index: number) => <li key={`${index}-${quote}`}>{quote}</li>)}</ul> : <p>None.</p>}
-        {(exportPreview.warnings as readonly { code: string; field: string | null; message: string }[]).map((warning, index) => <p key={`${warning.code}-${index}`}>{warningText(warning)}</p>)}
-        {exportPreview.requiresSensitiveConfirmation && <label><input type="checkbox" style={{ width: 'auto' }} disabled={disabled}
+        {currentExportPreview.profileNotes.length ? <ul>{currentExportPreview.profileNotes.map((quote: string, index: number) => <li key={`${index}-${quote}`}>{quote}</li>)}</ul> : <p>None.</p>}
+        {(currentExportPreview.warnings as readonly { code: string; field: string | null; message: string }[]).map((warning, index) => <p key={`${warning.code}-${index}`}>{warningText(warning)}</p>)}
+        {currentExportPreview.requiresSensitiveConfirmation && <label><input type="checkbox" style={{ width: 'auto' }} disabled={disabled}
           checked={confirmSensitive} onChange={event => { setConfirmSensitive(event.target.checked); clearExportText(); }} />I reviewed these home details and quotes and want them in the file.</label>}
-        <button type="button" disabled={disabled || (exportPreview.requiresSensitiveConfirmation && !confirmSensitive)} onClick={downloadExport}>Download profile file</button>
-        <button type="button" disabled={disabled || busy || !profile.accountId || (exportPreview.requiresSensitiveConfirmation && !confirmSensitive)}
+        <button type="button" disabled={!canUseReviewedExport()} onClick={downloadExport}>Download profile file</button>
+        <button type="button" disabled={exportTextVisible ? false : !canUseReviewedExport()}
           onClick={exportTextVisible ? clearExportText : showExportJsonToCopy}>
           {exportTextVisible ? 'Hide profile JSON' : 'Show JSON to copy'}
         </button>
