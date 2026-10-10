@@ -1,3 +1,27 @@
 allowBuilds:
   core-js: false
   unrs-resolver: false
+
+minimumReleaseAgeExclude:
+  - nodemailer@10.0.15
+  - '@zone-eu/mailsplit@5.4.20'
+  - imapflow@2.2.5
+  - libmime@5.4.7
+  - mailparser@3.9.36
+
+# The plugin's only fast-glob call uses globSync(pattern, { onlyDirectories: true }).
+# tinyglobby implements that API without the unpatched braces dependency.
+# Keep this scoped to the reviewed plugin version; audits catch future changes.
+overrides:
+  '@next/eslint-plugin-next@16.3.8>fast-glob': 'npm:tinyglobby@0.2.17'
+  # GHSA-68fv-2mgg-jv7q: patched compatible source-map-js for this PostCSS version.
+  'postcss@8.5.23>source-map-js': '1.2.2'
+  # Neon Auth 0.5.0-beta pins Better Auth 1.6.23; its bundled UI's floating
+  # API-key plugin otherwise resolves 1.7.x with incompatible core/call/fetch peers.
+  '@better-auth/api-key': '1.6.23'
+  '@better-auth/core': '1.6.23'
+  # This UI bundle does not import better-call; its plugin needs the matching peer.
+  '@daveyplate/better-auth-ui@3.4.0>better-call': '1.3.7'
+
+patchedDependencies:
+  '@next/eslint-plugin-next@16.3.8': patches/@next__eslint-plugin-next@16.3.8.patch

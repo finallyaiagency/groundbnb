@@ -1,0 +1,26 @@
+[
+  {
+    "id": "M0-EXIT",
+    "category": "Milestone gate",
+    "result": "Passed",
+    "revision": "36ce7e889eb3b0fb561fa31a02ae79a81b8ada61",
+    "evidence": "https://github.com/finallyaiagency/groundbnb/blob/36ce7e889eb3b0fb561fa31a02ae79a81b8ada61/docs/qa/2026-10-06-M0-complete.md",
+    "date": "2026-10-06"
+  },
+  {
+    "id": "M1-01D-DB",
+    "category": "Database foundation (operator only)",
+    "result": "Passed",
+    "revision": "b236d01d40d7147c5533dbce8a246f350fe0b62e",
+    "evidence": "https://github.com/finallyaiagency/groundbnb/blob/b236d01d40d7147c5533dbce8a246f350fe0b62e/db/operations/verify-m1-profile-foundation.sql",
+    "date": "2026-10-07"
+  },
+  {
+    "id": "M1-01AB-IMPORT",
+    "category": "Authenticated local browser acceptance (profile import)",
+    "result": "Partial",
+    "revision": "fd099080ae061a93b2908c3b286140cdf945492c",
+    "evidence": "https://github.com/finallyaiagency/groundbnb/blob/bc0887b421c6e4f4762d1cbdc9e6f06162cfa4b1/docs/qa/2026-10-10-M1-01AB-browser-partial.md",
+    "date": "2026-10-10"
+  }
+]

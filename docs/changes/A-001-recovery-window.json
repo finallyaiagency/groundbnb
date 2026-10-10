@@ -1,0 +1,28 @@
+{
+  "id": "A-001",
+  "status": "Approved",
+  "date": "2026-10-03",
+  "source": "Client",
+  "request": "change 7 day launch requirement to 6 hour, unless there's a good reason not to. how do we move on from here",
+  "decisionId": "D-004",
+  "taskId": "M0-01",
+  "requirementIds": ["LEG-10"],
+  "sourceSha256": "E1EA8F9B85E294F81960646DF3DE73F0CD7C4C5A8105781909984DE6D19F775F",
+  "sourceSection": "11.16",
+  "rationale": "Use the client's chosen Neon Free plan at launch. The shorter recovery history is an accepted launch tradeoff: corruption or deletion discovered after six hours may be unrecoverable.",
+  "providerLimit": "Neon Free advertises six hours, capped at 1 GB of change history. The actual oldest recoverable time must be recorded; configuration alone cannot prove six hours of available history. No paid upgrade is authorized.",
+  "preservedConstraints": [
+    "Four-hour operational recovery-time target and dated non-production restore drill before launch.",
+    "LEG-12 deletion/revocation replay, quarantine, and fail-closed recovery; controls remain retained until all capable backups expire plus seven days.",
+    "SYS-11 production, preview, local, and recovery isolation; previews use synthetic data.",
+    "Honest recovery-point granularity and last recoverable time; no promise of zero data loss.",
+    "All other source requirements, release tiers, and preview cleanup deadlines."
+  ],
+  "replacements": [
+    {
+      "views": ["13-launch"],
+      "before": "Set a production recovery window of at least seven days and an operational recovery-time target of four hours for this launch.",
+      "after": "Set a production recovery window of at least six hours and an operational recovery-time target of four hours for this launch."
+    }
+  ]
+}

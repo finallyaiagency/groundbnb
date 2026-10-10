@@ -1,0 +1,11 @@
+{
+  "id": "D-012",
+  "source": "Client",
+  "decision": "Publish checked checkpoint 8792ccd to finallyaiagency/groundbnb's existing codex/m0-01-environment-contract branch and draft PR #1.",
+  "rationale": "Client answered Approve publishing checkpoint after automatic approval review rejected the push for insufficient explicit publication authority.",
+  "impact": "Exact existing review-branch publication only; no production release, merge, login activation, database permission expansion or metered dispatch.",
+  "requirementIds": ["SYS-14"],
+  "taskId": "M1-01F",
+  "date": "2026-10-08",
+  "implementationStatus": "8792ccd09ba67ac667f3ddfe2532439b1adf959f published successfully; exact-revision GitHub CI runs 37799530039 and 37799519604 passed. Q-009 database permission approval remains pending."
+}

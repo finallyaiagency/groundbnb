@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { loadAmendments, amendView } from './spec-amendments.mjs';
 
 const root = process.cwd();
 const sourcePath = join(root, 'docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md');
@@ -8,6 +9,7 @@ const source = readFileSync(sourcePath, 'utf8');
 const lines = source.split(/\r?\n/);
 const hash = createHash('sha256').update(readFileSync(sourcePath)).digest('hex').toUpperCase();
 const generatedAt = '2026-09-29';
+const amendments = loadAmendments(root, source, hash);
 
 const headings = lines.map((line, index) => ({ line, index })).filter(x => /^#{1,4} /.test(x.line));
 function section(prefix) {
@@ -38,8 +40,14 @@ const views = {
 };
 mkdirSync(join(root, 'docs/spec'), { recursive: true });
 for (const [name, prefixes] of Object.entries(views)) {
-  const body = prefixes.map(section).join('\n\n---\n\n');
+  const body = amendView(prefixes.map(section).join('\n\n---\n\n'), name, amendments);
   writeFileSync(join(root, `docs/spec/${name}.md`), `<!-- Generated from docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md; SHA-256 ${hash}; ${generatedAt}. Do not edit directly. -->\n\n${body}\n`);
+}
+
+// Regenerate views without discarding the requirement status/evidence ledger.
+if (process.argv.includes('--views-only')) {
+  console.log(`Generated ${Object.keys(views).length} views; ledger preserved; SHA-256 ${hash}`);
+  process.exit(0);
 }
 
 const milestoneByPrefix = {

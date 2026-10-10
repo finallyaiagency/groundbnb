@@ -1,0 +1,45 @@
+{
+  "checkedAtUtc": "2026-10-07T23:19:39Z",
+  "revision": "b236d01d40d7147c5533dbce8a246f350fe0b62e",
+  "projectId": "divine-resonance-05443204",
+  "database": "groundbnb",
+  "approval": "D-009/Q-008",
+  "method": "Neon SQL Editor as neondb_owner; final COMMIT and rollback/catalog results observed",
+  "results": [
+    {
+      "kind": "preview",
+      "branchId": "br-bitter-hall-b8ibnrfy",
+      "role": "groundbnb_preview_app",
+      "migrationCommitted": true,
+      "operatorInvariantsPassed": true,
+      "verificationRolledBack": true,
+      "canLogin": false,
+      "accounts": 1,
+      "retainedOperations": 0,
+      "profileRead": true,
+      "profileSave": true,
+      "directAccountsDenied": true,
+      "directAnswersDenied": true,
+      "helperDenied": true
+    },
+    {
+      "kind": "local",
+      "branchId": "br-rough-flower-b8lerkcf",
+      "role": "groundbnb_local_app",
+      "migrationCommitted": true,
+      "operatorInvariantsPassed": true,
+      "verificationRolledBack": true,
+      "canLogin": false,
+      "accounts": 1,
+      "retainedOperations": 0,
+      "profileRead": true,
+      "profileSave": true,
+      "directAccountsDenied": true,
+      "directAnswersDenied": true,
+      "helperDenied": true
+    }
+  ],
+  "appCredentialLoginVerified": false,
+  "browserProfileFlowVerified": false,
+  "milestoneComplete": false
+}
