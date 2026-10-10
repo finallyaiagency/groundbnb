@@ -1,6 +1,7 @@
 # Groundbnb execution state
 
 October 10 Q-012 update: The client approved original 0013 SHA-256 `9F4DC52B313B1C34FBB65919D7A9D82991D496F3A0DDC6D7BC80EB015B59B0C1`, but its local guarded attempt rolled back at SQLSTATE P0001; preview was not attempted. Read-only metadata isolated the platform `neondb_owner` creator/admin edge on both ordinary app roles, with no INHERIT or SET option. The revised baseline12 app-boundary checker passes both targets; this proves no factor principal or migration receipt. Corrected candidate SHA-256 `85F614B7D5DEBD1792E72B00079FE7798EFF5AE3A4F7DD32EDCC5FB2380B04D5` requires fresh exact-hash action-time confirmation. No factor principal, credential, login, key, enrollment, or MFA activation is established. M1 remains open. See `docs/qa/2026-10-10-Q012-0013-application-attempt.md` and `docs/decisions/D-016.json`.
+October 10 M1-01AD preparation: drafted an offline contract for owner-scoped factor enrollment, recovery-code issuance/use, revocation/reset, epochs, audit, receipts, and future live acceptance. It maps to existing ACC-08/admin/security/restore requirements and current 0009/0010/0012 structures; it adds no requirement and promotes no status. No code, SQL, credentials, keys, routes, enrollment, or privileged access were changed. Corrected 0013 remains unapplied pending fresh exact-hash confirmation. See `docs/tasks/M1-01AD-factor-lifecycle-contract.md`.
 
 Updated: 2026-10-09 (M0 complete; M1 in progress)
 
