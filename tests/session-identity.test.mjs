@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { resolveManagedSessionIdentity, resolveSessionIdentity, sessionConfiguration } from '../lib/session-identity.mjs';
+import { resolveManagedSessionIdentity, resolveSessionIdentity, resolveSyntheticSeedIdentity, sessionConfiguration } from '../lib/session-identity.mjs';
 
 const env = {
   GROUND_ENV: 'local', GROUND_LOGIN_MODE: 'session-check',
@@ -109,6 +109,74 @@ test('managed identity resolver returns only pinned verified identity and sessio
   assert.equal(JSON.stringify(result).includes('synthetic-token'), false);
   assert.equal(JSON.stringify(result).includes('owner'), false);
   assert.equal(JSON.stringify(result).includes('email'), false);
+
+  const subject = '22222222-2222-4222-8222-222222222222';
+  const sessionId = '33333333-3333-4333-8333-333333333333';
+  const seedData = { data: { user: { id: subject, email: 'local-seed-owner@example.test', emailVerified: true,
+    role: 'owner' }, session: { id: sessionId, userId: subject, expiresAt: '2026-10-07T16:00:00.000000001Z', token: 'hidden' } } };
+  const seedResult = await resolveSyntheticSeedIdentity({ ...env }, 'groundbnb_local_session=synthetic-token',
+    async () => seedData, now);
+  assert.deepEqual(seedResult, { ok: true, identity: { issuer: env.GROUND_AUTH_ISSUER, subject, sessionId,
+    expiresAt: '2026-10-07T16:00:00.000000001Z', email: 'local-seed-owner@example.test', emailVerified: true } });
+  assert.equal(Object.isFrozen(seedResult), true);
+  assert.equal(Object.isFrozen(seedResult.identity), true);
+  assert.deepEqual(Object.keys(seedResult.identity), ['issuer', 'subject', 'sessionId', 'expiresAt', 'email', 'emailVerified']);
+  assert.equal(Object.hasOwn(seedResult.identity, 'role'), false);
+  assert.equal(JSON.stringify(seedResult).includes('hidden'), false);
+
+  let accessorReads = 0;
+  const accessorResult = { data: { user: { id: subject, emailVerified: true,
+    get email() { accessorReads++; return 'local-seed-owner@example.test'; } },
+  session: { id: sessionId, userId: subject, expiresAt: '2026-10-07T16:00:00Z' } } };
+  assert.deepEqual(await resolveSyntheticSeedIdentity({ ...env }, 'groundbnb_local_session=synthetic-token',
+    async () => accessorResult, now), { ok: false, category: 'auth' });
+  assert.equal(accessorReads, 0);
+
+  const mutable = { data: { user: { id: subject, email: 'local-seed-owner@example.test', emailVerified: true },
+    session: { id: sessionId, userId: subject, expiresAt: '2026-10-07T16:00:00Z' } } };
+  let clockCalls = 0;
+  const mutated = await resolveSyntheticSeedIdentity({ ...env }, 'groundbnb_local_session=synthetic-token',
+    async () => mutable, () => {
+      if (++clockCalls === 2) {
+        mutable.data.user.email = 'attacker@example.test';
+        mutable.data.user.emailVerified = false;
+        mutable.data.session.expiresAt = '2026-10-07T14:00:00Z';
+      }
+      return now;
+    });
+  assert.equal(mutated.ok, true, 'the resolver validates the immutable provider snapshot captured before the callback');
+
+  const scopedEnv = { ...env };
+  const capturedSelection = await resolveSyntheticSeedIdentity(scopedEnv, 'groundbnb_local_session=synthetic-token',
+    async () => {
+      scopedEnv.GROUND_ENV = 'preview';
+      return { data: { user: { id: subject, email: 'local-seed-owner@example.test', emailVerified: true },
+        session: { id: sessionId, userId: subject, expiresAt: '2026-10-07T16:00:00Z' } } };
+    }, now);
+  assert.equal(capturedSelection.ok, true, 'provider-await mutation cannot switch the captured environment alias set');
+
+  const previewEnv = { ...env, GROUND_ENV: 'preview',
+    GROUND_AUTH_ISSUER: 'https://ep-red-night-b8pf2mdl.neonauth.c-14.us-east-1.aws.neon.tech/groundbnb/auth',
+    GROUND_AUTH_COOKIE_NAME: 'groundbnb_preview_session', GROUND_PUBLIC_ORIGIN: 'https://preview.example.test',
+    VERCEL_ENV: 'preview' };
+  const previewResult = await resolveSyntheticSeedIdentity(previewEnv, 'groundbnb_preview_session=synthetic-token',
+    async () => ({ data: { user: { id: subject, email: 'preview-seed-admin-b@example.test', emailVerified: true },
+      session: { id: sessionId, userId: subject, expiresAt: '2026-10-07T16:00:00Z' } } }), now);
+  assert.equal(previewResult.ok, true);
+
+  for (const data of [
+    { data: { user: { id: 'synthetic-subject', email: 'local-seed-owner@example.test', emailVerified: true },
+      session: { id: sessionId, userId: 'synthetic-subject', expiresAt: '2026-10-07T16:00:00Z' } } },
+    { data: { user: { id: subject, email: 'preview-seed-owner@example.test', emailVerified: true },
+      session: { id: sessionId, userId: subject, expiresAt: '2026-10-07T16:00:00Z' } } },
+    { data: { user: { id: subject, email: 'local-seed-admin-a@example.test', emailVerified: false },
+      session: { id: sessionId, userId: subject, expiresAt: '2026-10-07T16:00:00Z' } } },
+    { data: { user: { id: subject, email: 'local-seed-admin-a@example.test', emailVerified: true },
+      session: { id: sessionId, userId: '44444444-4444-4444-8444-444444444444', expiresAt: '2026-10-07T16:00:00Z' } } },
+  ]) {
+    assert.deepEqual(await resolveSyntheticSeedIdentity({ ...env }, 'groundbnb_local_session=synthetic-token',
+      async () => data, now), { ok: false, category: 'auth' });
+  }
 });
 
 test('managed identity rejects malformed identity/session identifiers and expiry timestamps', async () => {
@@ -124,6 +192,7 @@ test('managed identity rejects malformed identity/session identifiers and expiry
     { ...fixture, session: { ...fixture.session, expiresAt: '2026-10-07T16:00:00' } },
     { ...fixture, session: { ...fixture.session, expiresAt: '2026-10-07T16:00:00+14:01' } },
     { ...fixture, session: { ...fixture.session, expiresAt: '2026-10-07T16:00:00+01:60' } },
+    { ...fixture, session: { ...fixture.session, expiresAt: '2026-10-07T16:00:00Z\n' } },
     { ...fixture, session: { ...fixture.session, expiresAt: '2026-10-07T16:00:00.1234567890Z' } },
     { ...fixture, session: { ...fixture.session, expiresAt: '2026-10-07T15:00:00.000000000Z' } },
   ];
@@ -196,4 +265,28 @@ test('both resolvers recheck the server clock after awaiting the provider', asyn
     }, () => { throw new Error('private clock failure'); }), { ok: false, category: 'unavailable' });
     assert.equal(called, false);
   }
+
+  for (const resolve of [resolveManagedSessionIdentity, resolveSessionIdentity]) {
+    const mutable = { data: { user: { id: 'snapshot-subject', emailVerified: true },
+      session: { id: 'snapshot-session', userId: 'snapshot-subject', expiresAt: '2026-10-07T16:00:00Z' } } };
+    let calls = 0;
+    const result = await resolve(env, 'groundbnb_local_session=synthetic-token', async () => mutable, () => {
+      if (++calls === 2) {
+        mutable.data.user.id = 'changed-subject';
+        mutable.data.user.emailVerified = false;
+        mutable.data.session.userId = 'different-subject';
+        mutable.data.session.expiresAt = now.toISOString();
+      }
+      return now;
+    });
+    assert.equal(result.ok, true, 'clock callbacks cannot mutate the already-snapshotted provider response');
+    assert.equal(result.identity.subject, 'snapshot-subject');
+  }
+
+  let accessorReads = 0;
+  const accessorData = { data: { user: { get id() { accessorReads++; return 'snapshot-subject'; }, emailVerified: true },
+    session: { id: 'snapshot-session', userId: 'snapshot-subject', expiresAt: '2026-10-07T16:00:00Z' } } };
+  assert.deepEqual(await resolveManagedSessionIdentity(env, 'groundbnb_local_session=synthetic-token',
+    async () => accessorData, now), { ok: false, category: 'auth' });
+  assert.equal(accessorReads, 0);
 });
