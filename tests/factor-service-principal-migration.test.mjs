@@ -170,6 +170,7 @@ test('static artifacts prepare no credential, login, route, or live execution', 
   assert.match(enrollmentUp, /REVOKE ALL ON groundbnb\.factor_enrollment_operations FROM PUBLIC/);
   assert.match(enrollmentUp, /Enrollment receipt table must remain owner-only/);
   assert.match(enrollmentUp, /Enrollment receipt immutability guard differs/);
+  assert.match(enrollmentUp, /acl\.privilege_type<>'EXECUTE' OR acl\.is_grantable\)\)\) THEN/);
   assert.match(enrollmentDown, /Enrollment receipt immutability guard differs/);
   assert.match(enrollmentOperator, /Enrollment receipt immutability guard differs/);
   assert.match(enrollmentUp, /has_table_privilege\(app_oid,'groundbnb\.environment_identity','SELECT'\) IS DISTINCT FROM true/);

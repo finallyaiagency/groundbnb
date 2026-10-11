@@ -676,7 +676,7 @@ BEGIN
           has_function_privilege(factor_role,p.oid,'EXECUTE') OR EXISTS(
             SELECT 1 FROM aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) acl
               WHERE acl.grantee=0 OR acl.grantee<>p.proowner OR
-                acl.privilege_type<>'EXECUTE' OR acl.is_grantable)))) THEN
+                acl.privilege_type<>'EXECUTE' OR acl.is_grantable))) THEN
     RAISE EXCEPTION 'Enrollment functions must remain private and dormant';
   END IF;
   IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
