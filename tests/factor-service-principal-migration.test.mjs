@@ -7,6 +7,9 @@ const down = readFileSync(new URL('../db/migrations/0013_factor_service_principa
 const factor12 = readFileSync(new URL('../db/migrations/0012_factor_service.sql', import.meta.url), 'utf8');
 const profile2 = readFileSync(new URL('../db/migrations/0002_profile_foundation.sql', import.meta.url), 'utf8');
 const operatorCheck = readFileSync(new URL('../db/operations/verify-m1-factor-principal.sql', import.meta.url), 'utf8');
+const enrollmentUp = readFileSync(new URL('../db/migrations/0014_factor_enrollment.sql', import.meta.url), 'utf8');
+const enrollmentDown = readFileSync(new URL('../db/migrations/0014_factor_enrollment_down.sql', import.meta.url), 'utf8');
+const enrollmentOperator = readFileSync(new URL('../db/operations/verify-m1-factor-enrollment.sql', import.meta.url), 'utf8');
 
 const factorFunctions = [
   ['read_factor_challenge_state', 'text,text,text,timestamptz'],
@@ -159,6 +162,35 @@ test('static artifacts prepare no credential, login, route, or live execution', 
   assert.doesNotMatch(up, /^\s*(?:\connect|\set)\b/im);
   assert.match(up, /COMMIT;/);
   assert.match(down, /COMMIT;/);
+  assert.match(enrollmentUp, /receipt_count IS DISTINCT FROM 13/);
+  assert.match(enrollmentUp, /VALUES\('0014_factor_enrollment'\)/);
+  assert.match(enrollmentUp, /FOREIGN KEY\(factor_id,account_id,security_epoch\)[\s\S]*?REFERENCES groundbnb\.privileged_factor_enrollments\(factor_id,account_id,security_epoch\)/);
+  assert.match(enrollmentUp, /operation_kind IN \('begin','verify'\)/);
+  assert.match(enrollmentUp, /request_fingerprint bytea NOT NULL CHECK \(octet_length\(request_fingerprint\)=32\)/);
+  assert.match(enrollmentUp, /REVOKE ALL ON groundbnb\.factor_enrollment_operations FROM PUBLIC/);
+  assert.match(enrollmentUp, /Enrollment receipt table must remain owner-only/);
+  assert.match(enrollmentUp, /Enrollment receipt immutability guard differs/);
+  assert.match(enrollmentDown, /Enrollment receipt immutability guard differs/);
+  assert.match(enrollmentOperator, /Enrollment receipt immutability guard differs/);
+  assert.match(enrollmentUp, /has_table_privilege\(app_oid,'groundbnb\.environment_identity','SELECT'\) IS DISTINCT FROM true/);
+  assert.match(enrollmentUp, /has_table_privilege\(app_oid,'groundbnb\.schema_migrations','SELECT'\) IS DISTINCT FROM true/);
+  for (const functionName of [
+    'read_factor_enrollment_context', 'read_pending_factor_for_enrollment', 'begin_factor_enrollment',
+    'record_factor_enrollment_attempt', 'verify_factor_enrollment', 'read_factor_enrollment_receipt',
+  ]) {
+    assert.match(enrollmentUp, new RegExp(`CREATE FUNCTION groundbnb\\.${functionName}\\(`));
+    assert.match(enrollmentUp, new RegExp(`REVOKE ALL ON FUNCTION groundbnb\\.${functionName}\\(`));
+  }
+  assert.match(enrollmentUp, /operation_kind='verify'.*?status='rejected'/s);
+  assert.match(enrollmentUp, /'status','recorded'.*?'kind','verify'/s);
+  assert.match(enrollmentDown, /Rollback refused: factor or lifecycle history would be lost/);
+  assert.match(enrollmentDown, /FROM groundbnb\.factor_enrollment_operations\)/);
+  assert.match(enrollmentDown, /factor_enrollment_operations'::regclass/);
+  assert.match(enrollmentOperator, /BEGIN;[\s\S]*?SET TRANSACTION READ WRITE;/);
+  assert.match(enrollmentOperator, /M1_FACTOR_ENROLLMENT_CLOSED_PATHS_ROLLBACK_PENDING/);
+  assert.match(enrollmentOperator.trimEnd(), /ROLLBACK;$/);
+  assert.doesNotMatch(enrollmentOperator, /^\s*(?:COMMIT|GRANT|CREATE ROLE|ALTER ROLE)\b/im);
+  assert.doesNotMatch(enrollmentOperator, /s\.token|session_token|INSERT\s+INTO\s+neon_auth/i);
 });
 
 test('principal acceptance script is a rollback-only 0013 metadata check and preserves ordinary app baseline', () => {
@@ -185,5 +217,15 @@ test('principal acceptance script is a rollback-only 0013 metadata check and pre
   assert.match(operatorCheck, /_factor_lock_identity/);
   assert.match(operatorCheck, /M1_FACTOR_SERVICE_PRINCIPAL_0013_ROLLBACK_PENDING/);
   assert.doesNotMatch(operatorCheck, /^\s*(?:SET ROLE|INSERT\s+INTO|UPDATE\s+groundbnb|DELETE\s+FROM|CREATE ROLE|GRANT EXECUTE|ALTER ROLE)\b/im);
+  assert.match(enrollmentOperator, /BEGIN;[\s\S]*?SET TRANSACTION READ WRITE;[\s\S]*?ROLLBACK;/);
+  assert.match(enrollmentOperator, /IS DISTINCT FROM 14/);
+  assert.match(enrollmentOperator, /'0014_factor_enrollment'/);
+  assert.match(enrollmentOperator, /fake_subject constant text:='10000000-0000-4000-8000-000000000001'/);
+  assert.match(enrollmentOperator, /fake_session constant text:='10000000-0000-4000-8000-000000000002'/);
+  assert.match(enrollmentOperator, /result->>'status' IS DISTINCT FROM 'rejected'.*Unmapped begin was not denied/s);
+  assert.match(enrollmentOperator, /result->>'status' IS DISTINCT FROM 'unknown'.*Unmapped attempt write was not denied/s);
+  assert.match(enrollmentOperator, /result->>'status' IS DISTINCT FROM 'unknown'.*Unmapped verification write was not denied/s);
+  assert.match(enrollmentOperator, /Unmapped closed-path probes changed factor history/);
+  assert.doesNotMatch(enrollmentOperator, /INSERT\s+INTO\s+neon_auth|UPDATE\s+neon_auth|DELETE\s+FROM\s+neon_auth/i);
   for (const sql of [up, down, operatorCheck]) assert.doesNotMatch(sql, /acldefault\s*\(\s*CASE\b/i);
 });

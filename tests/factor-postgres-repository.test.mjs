@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { encryptFactorSecret, createRecoveryCodeDigest } from '../lib/factor-storage.mjs';
 import { createFactorPostgresRepository } from '../lib/factor-postgres-repository.mjs';
+import { createFactorEnrollmentPostgresRepository } from '../lib/factor-enrollment-postgres-repository.mjs';
 import { createFactorServiceProtocol, PROPOSED_FACTOR_RATE_POLICY } from '../lib/factor-service-protocol.mjs';
 
 const ACCOUNT = '00000000-0000-4000-8000-000000000001';
@@ -162,6 +163,159 @@ test('only predeclared private groundbnb functions appear in SQL text', async ()
   assert.match(h.calls[0].statement, /^SELECT groundbnb\.record_factor_challenge_attempt\(/);
   assert.doesNotMatch(h.calls[0].statement, /\b(?:INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)\b/i);
   assert.equal(h.calls[0].values.some(value => String(value).includes(RECOVERY.salt)), false);
+
+  const ENROLLMENT_SUBJECT = '00000000-0000-4000-8000-000000000011';
+  const ENROLLMENT_SESSION = '00000000-0000-4000-8000-000000000012';
+  const BEGIN_OPERATION = '00000000-0000-4000-8000-000000000013';
+  const ATTEMPT_OPERATION = '00000000-0000-4000-8000-000000000014';
+  const VERIFY_OPERATION = '00000000-0000-4000-8000-000000000015';
+  const REJECTED_ATTEMPT_OPERATION = '00000000-0000-4000-8000-000000000017';
+  const BARE_ATTEMPT_OPERATION = '00000000-0000-4000-8000-000000000018';
+  const CANDIDATE_FACTOR = '00000000-0000-4000-8000-000000000016';
+  const FINGERPRINT = 'A'.repeat(43);
+  const ENROLLMENT_IDENTITY = Object.freeze({
+    issuer: 'https://ep-calm-sound-b8s8ckur.neonauth.c-14.us-east-1.aws.neon.tech/groundbnb/auth',
+    subject: ENROLLMENT_SUBJECT, sessionId: ENROLLMENT_SESSION, expiresAt: EXPIRY,
+  });
+  const ENROLLMENT_CONTEXT = { accountId: ACCOUNT, role: 'admin', accountStatus: 'active', securityEpoch: 4,
+    anyLiveFactor: false, rateLimited: false, factor: null };
+  const PENDING_FACTOR = { accountId: ACCOUNT, factorId: FACTOR, securityEpoch: 4, state: 'pending',
+    keyId: 'local-test-v1', envelope: ENVELOPE, lastAcceptedStep: null,
+    beginOperationId: BEGIN_OPERATION, requestFingerprint: FINGERPRINT };
+  const ACK = (operationId, kind, factorId, securityEpoch) => ({ status: 'committed', operationId,
+    kind, accountId: ACCOUNT, factorId, securityEpoch, requestFingerprint: FINGERPRINT });
+  const RECORD_ACK = { ...ACK(ATTEMPT_OPERATION, 'verify', FACTOR, 4), status: 'recorded' };
+  const REJECTED_RECORD_ACK = { ...ACK(REJECTED_ATTEMPT_OPERATION, 'verify', FACTOR, 4), status: 'rejected' };
+  const NOT_FOUND_RECEIPT = { status: 'not_found', operationId: BEGIN_OPERATION, kind: 'begin', accountId: ACCOUNT,
+    issuer: ENROLLMENT_IDENTITY.issuer, subject: ENROLLMENT_SUBJECT, sessionId: ENROLLMENT_SESSION,
+    factorId: null, securityEpoch: null, requestFingerprint: null };
+  const enrollmentCalls = [];
+  const enrollmentResponses = [ENROLLMENT_CONTEXT, PENDING_FACTOR,
+    ACK(BEGIN_OPERATION, 'begin', CANDIDATE_FACTOR, 5), RECORD_ACK, REJECTED_RECORD_ACK,
+    { status: 'recorded' },
+    ACK(VERIFY_OPERATION, 'verify', FACTOR, 4), NOT_FOUND_RECEIPT];
+  const enrollmentRepository = createFactorEnrollmentPostgresRepository('local', async (statement, values) => {
+    enrollmentCalls.push({ statement, values });
+    return enrollmentResponses.shift();
+  });
+  assert.deepEqual(Object.keys(enrollmentRepository).sort(), [
+    'beginEnrollment', 'readEnrollmentContext', 'readEnrollmentReceipt', 'readPendingFactor',
+    'recordEnrollmentAttempt', 'verifyEnrollment',
+  ]);
+  assert.deepEqual(await enrollmentRepository.readEnrollmentContext(ENROLLMENT_IDENTITY), ENROLLMENT_CONTEXT);
+  assert.deepEqual(await enrollmentRepository.readPendingFactor(ENROLLMENT_IDENTITY, {
+    expectedAccountId: ACCOUNT, expectedFactorId: FACTOR, expectedSecurityEpoch: 4,
+    expectedBeginOperationId: BEGIN_OPERATION,
+  }), PENDING_FACTOR);
+  assert.deepEqual(await enrollmentRepository.beginEnrollment(ENROLLMENT_IDENTITY, {
+    operationId: BEGIN_OPERATION, expectedAccountId: ACCOUNT, expectedCurrentEpoch: 4, targetEpoch: 5,
+    candidateFactorId: CANDIDATE_FACTOR, requestFingerprint: FINGERPRINT, envelopeKeyId: 'local-test-v1',
+    encryptedSecret: ENVELOPE,
+  }), ACK(BEGIN_OPERATION, 'begin', CANDIDATE_FACTOR, 5));
+  assert.deepEqual(await enrollmentRepository.recordEnrollmentAttempt(ENROLLMENT_IDENTITY, {
+    operationId: ATTEMPT_OPERATION, beginOperationId: BEGIN_OPERATION, expectedAccountId: ACCOUNT,
+    expectedFactorId: FACTOR, expectedSecurityEpoch: 4, requestFingerprint: FINGERPRINT, reason: 'invalid',
+  }), RECORD_ACK);
+  assert.deepEqual(await enrollmentRepository.recordEnrollmentAttempt(ENROLLMENT_IDENTITY, {
+    operationId: REJECTED_ATTEMPT_OPERATION, beginOperationId: BEGIN_OPERATION, expectedAccountId: ACCOUNT,
+    expectedFactorId: FACTOR, expectedSecurityEpoch: 4, requestFingerprint: FINGERPRINT, reason: 'invalid',
+  }), REJECTED_RECORD_ACK);
+  assert.deepEqual(await enrollmentRepository.recordEnrollmentAttempt(ENROLLMENT_IDENTITY, {
+    operationId: BARE_ATTEMPT_OPERATION, beginOperationId: BEGIN_OPERATION, expectedAccountId: ACCOUNT,
+    expectedFactorId: FACTOR, expectedSecurityEpoch: 4, requestFingerprint: FINGERPRINT, reason: 'invalid',
+  }), { status: 'unknown' });
+  assert.deepEqual(await enrollmentRepository.verifyEnrollment(ENROLLMENT_IDENTITY, {
+    operationId: VERIFY_OPERATION, beginOperationId: BEGIN_OPERATION, expectedAccountId: ACCOUNT,
+    expectedFactorId: FACTOR, expectedSecurityEpoch: 4, requestFingerprint: FINGERPRINT, matchedStep: 123,
+  }), ACK(VERIFY_OPERATION, 'verify', FACTOR, 4));
+  assert.deepEqual(await enrollmentRepository.readEnrollmentReceipt(ENROLLMENT_IDENTITY, {
+    operationId: BEGIN_OPERATION, kind: 'begin', expectedAccountId: ACCOUNT,
+    expectedFactorId: null, expectedSecurityEpoch: null,
+  }), NOT_FOUND_RECEIPT);
+  assert.deepEqual(enrollmentCalls.map(call => call.statement), [
+    'SELECT groundbnb.read_factor_enrollment_context($1,$2,$3,$4::timestamptz) AS result',
+    'SELECT groundbnb.read_pending_factor_for_enrollment($1,$2,$3,$4::timestamptz,$5::uuid,$6::uuid,$7::uuid,$8::bigint) AS result',
+    'SELECT groundbnb.begin_factor_enrollment($1,$2,$3,$4::timestamptz,$5::uuid,$6::bigint,$7::bigint,$8::uuid,$9::uuid,$10::bytea,$11,$12::jsonb) AS result',
+    'SELECT groundbnb.record_factor_enrollment_attempt($1,$2,$3,$4::timestamptz,$5::uuid,$6::uuid,$7::uuid,$8::uuid,$9::bigint,$10::bytea,$11) AS result',
+    'SELECT groundbnb.record_factor_enrollment_attempt($1,$2,$3,$4::timestamptz,$5::uuid,$6::uuid,$7::uuid,$8::uuid,$9::bigint,$10::bytea,$11) AS result',
+    'SELECT groundbnb.record_factor_enrollment_attempt($1,$2,$3,$4::timestamptz,$5::uuid,$6::uuid,$7::uuid,$8::uuid,$9::bigint,$10::bytea,$11) AS result',
+    'SELECT groundbnb.verify_factor_enrollment($1,$2,$3,$4::timestamptz,$5::uuid,$6::uuid,$7::uuid,$8::uuid,$9::bigint,$10::bytea,$11::bigint) AS result',
+    'SELECT groundbnb.read_factor_enrollment_receipt($1,$2,$3,$4::timestamptz,$5::uuid,$6,$7::uuid,$8::uuid,$9::bigint) AS result',
+  ]);
+  assert.equal(enrollmentCalls.every(call => !/\b(?:INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)\b/i.test(call.statement)), true);
+  const enrollmentPrefix = [ENROLLMENT_IDENTITY.issuer, ENROLLMENT_SUBJECT, ENROLLMENT_SESSION, EXPIRY];
+  assert.deepEqual(enrollmentCalls[0].values, enrollmentPrefix);
+  assert.deepEqual(enrollmentCalls[1].values, [...enrollmentPrefix, BEGIN_OPERATION, ACCOUNT, FACTOR, 4]);
+  assert.deepEqual(enrollmentCalls[2].values.slice(0, 9), [ENROLLMENT_IDENTITY.issuer, ENROLLMENT_SUBJECT,
+    ENROLLMENT_SESSION, EXPIRY, ACCOUNT, 4, 5, CANDIDATE_FACTOR, BEGIN_OPERATION]);
+  assert.equal(Buffer.isBuffer(enrollmentCalls[2].values[9]), true);
+  assert.equal(enrollmentCalls[2].values[9].length, 32);
+  assert.equal(enrollmentCalls[2].values[10], 'local-test-v1');
+  assert.deepEqual(JSON.parse(enrollmentCalls[2].values[11]), ENVELOPE);
+  assert.deepEqual(enrollmentCalls[3].values.slice(0, 9), [...enrollmentPrefix, BEGIN_OPERATION,
+    ATTEMPT_OPERATION, ACCOUNT, FACTOR, 4]);
+  assert.deepEqual(enrollmentCalls[3].values[9], Buffer.from(FINGERPRINT, 'base64url'));
+  assert.equal(enrollmentCalls[3].values[10], 'invalid');
+  assert.deepEqual(enrollmentCalls[4].values, [...enrollmentPrefix, BEGIN_OPERATION,
+    REJECTED_ATTEMPT_OPERATION, ACCOUNT, FACTOR, 4, Buffer.from(FINGERPRINT, 'base64url'), 'invalid']);
+  assert.deepEqual(enrollmentCalls[5].values, [...enrollmentPrefix, BEGIN_OPERATION,
+    BARE_ATTEMPT_OPERATION, ACCOUNT, FACTOR, 4, Buffer.from(FINGERPRINT, 'base64url'), 'invalid']);
+  assert.deepEqual(enrollmentCalls[6].values, [...enrollmentPrefix, BEGIN_OPERATION,
+    VERIFY_OPERATION, ACCOUNT, FACTOR, 4, Buffer.from(FINGERPRINT, 'base64url'), 123]);
+  assert.deepEqual(enrollmentCalls[7].values, [...enrollmentPrefix, BEGIN_OPERATION,
+    'begin', ACCOUNT, null, null]);
+  assert.equal(enrollmentCalls.some(call => call.values.some(value => String(value).includes(SECRET))), false);
+
+  const badIdentityCalls = [];
+  const strictIdentityRepository = createFactorEnrollmentPostgresRepository('local', async (...args) => {
+    badIdentityCalls.push(args);
+    return ENROLLMENT_CONTEXT;
+  });
+  await assert.rejects(strictIdentityRepository.readEnrollmentContext({ ...ENROLLMENT_IDENTITY,
+    expiresAt: `${EXPIRY}\n` }), { message: 'Factor enrollment repository operation failed.' });
+  await assert.rejects(strictIdentityRepository.readEnrollmentContext({ ...ENROLLMENT_IDENTITY,
+    subject: `${ENROLLMENT_SUBJECT}\n` }), { message: 'Factor enrollment repository operation failed.' });
+  assert.equal(badIdentityCalls.length, 0);
+
+  const inconsistentContextRepository = createFactorEnrollmentPostgresRepository('local', async () => ({
+    ...ENROLLMENT_CONTEXT, anyLiveFactor: false,
+    factor: { factorId: FACTOR, securityEpoch: 4, state: 'pending', lastAcceptedStep: null,
+      beginOperationId: BEGIN_OPERATION, requestFingerprint: FINGERPRINT, sessionAttested: false },
+  }));
+  await assert.rejects(inconsistentContextRepository.readEnrollmentContext(ENROLLMENT_IDENTITY),
+    { message: 'Factor enrollment repository operation failed.' });
+
+  const invalidKeyIdRepository = createFactorEnrollmentPostgresRepository('local', async (...args) => {
+    badIdentityCalls.push(args);
+    return ACK(BEGIN_OPERATION, 'begin', CANDIDATE_FACTOR, 5);
+  });
+  assert.deepEqual(await invalidKeyIdRepository.beginEnrollment(ENROLLMENT_IDENTITY, {
+    operationId: BEGIN_OPERATION, expectedAccountId: ACCOUNT, expectedCurrentEpoch: 4, targetEpoch: 5,
+    candidateFactorId: CANDIDATE_FACTOR, requestFingerprint: FINGERPRINT,
+    envelopeKeyId: 'local-test-v1\n', encryptedSecret: ENVELOPE,
+  }), { status: 'unknown' });
+  assert.equal(badIdentityCalls.length, 0);
+
+  let releaseBegin;
+  let capturedBegin;
+  const snapshotRepository = createFactorEnrollmentPostgresRepository('local', async (statement, values) => {
+    capturedBegin = { statement, values };
+    await new Promise(resolve => { releaseBegin = resolve; });
+    return ACK(BEGIN_OPERATION, 'begin', CANDIDATE_FACTOR, 5);
+  });
+  const mutableIdentity = { ...ENROLLMENT_IDENTITY };
+  const mutableEnvelope = structuredClone(ENVELOPE);
+  const pendingBegin = snapshotRepository.beginEnrollment(mutableIdentity, {
+    operationId: BEGIN_OPERATION, expectedAccountId: ACCOUNT, expectedCurrentEpoch: 4, targetEpoch: 5,
+    candidateFactorId: CANDIDATE_FACTOR, requestFingerprint: FINGERPRINT,
+    envelopeKeyId: 'local-test-v1', encryptedSecret: mutableEnvelope,
+  });
+  mutableIdentity.subject = '00000000-0000-4000-8000-000000000099';
+  mutableEnvelope.ciphertext = Buffer.alloc(32, 0x44).toString('base64url');
+  releaseBegin();
+  assert.deepEqual(await pendingBegin, ACK(BEGIN_OPERATION, 'begin', CANDIDATE_FACTOR, 5));
+  assert.equal(capturedBegin.values[1], ENROLLMENT_SUBJECT);
+  assert.deepEqual(JSON.parse(capturedBegin.values[11]), ENVELOPE);
 });
 
 test('repository and service protocol interoperate through an injected port with no open transaction', async () => {

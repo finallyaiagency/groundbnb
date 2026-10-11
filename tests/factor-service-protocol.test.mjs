@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { encryptFactorSecret, createRecoveryCodeDigest } from '../lib/factor-storage.mjs';
+import { createHmac } from 'node:crypto';
+import { encryptFactorSecret, decryptFactorSecret, createRecoveryCodeDigest } from '../lib/factor-storage.mjs';
+import { verifyFactorCandidate } from '../lib/factor-verifier.mjs';
 import { createFactorServiceProtocol, PROPOSED_FACTOR_RATE_POLICY } from '../lib/factor-service-protocol.mjs';
+import { createFactorEnrollmentProtocol } from '../lib/factor-enrollment-protocol.mjs';
 import { validateFactorEnrollmentAcknowledgment, validateFactorEnrollmentRequest } from '../lib/factor-enrollment-contract.mjs';
 
 const ACCOUNT = '00000000-0000-4000-8000-000000000001';
@@ -309,4 +312,151 @@ test('closed inputs and malformed session environment fail without provider or r
   assert.equal(getterCalled, false);
   const symbolInput = { operationId: enrollmentOperationId, [Symbol('extra')]: true };
   assert.equal(validateFactorEnrollmentRequest('begin', symbolInput).ok, false);
+
+  const realContext = { environment: 'local', accountId: ACCOUNT, factorId: FACTOR, securityEpoch: 5 };
+  const privateEncryptInput = { keyId: 'local-test-v1', context: realContext };
+  Object.defineProperties(privateEncryptInput, {
+    secret: { value: SECRET, enumerable: false }, key: { value: KEY, enumerable: false },
+  });
+  const realEnvelope = encryptFactorSecret(privateEncryptInput);
+  const privateDecryptInput = { envelope: realEnvelope, keyId: 'local-test-v1', context: realContext };
+  Object.defineProperty(privateDecryptInput, 'key', { value: KEY, enumerable: false });
+  assert.equal(decryptFactorSecret(privateDecryptInput), SECRET);
+  assert.deepEqual(await verifyFactorCandidate({ secret: SECRET, token: TOKEN,
+    epochSeconds: 59, lastAcceptedStep: null }), { valid: true, matchedStep: 1 });
+
+  const enrollmentIdentity = Object.freeze({ issuer:
+    'https://ep-calm-sound-b8s8ckur.neonauth.c-14.us-east-1.aws.neon.tech/groundbnb/auth',
+    subject: '00000000-0000-4000-8000-000000000010', sessionId: '00000000-0000-4000-8000-000000000011',
+    expiresAt: '2030-01-01T00:00:00Z' });
+  let resolvedIdentity = enrollmentIdentity;
+  const beginId = '00000000-0000-4000-8000-000000000012';
+  const verifyId = '00000000-0000-4000-8000-000000000013';
+  const enrollmentKey = Buffer.from(KEY);
+  const persisted = { epoch: 4, factor: null, envelope: null, rateLimited: false };
+  let throwAfterBeginCommit = false;
+  let beginAckOverride = null;
+  let verifyAckOverride = null;
+  const repositoryCalls = [];
+  const enrollmentRepository = {
+    async readEnrollmentContext() {
+      return { accountId: ACCOUNT, role: 'owner', accountStatus: 'active', securityEpoch: persisted.epoch,
+        anyLiveFactor: persisted.factor !== null, rateLimited: persisted.rateLimited, factor: persisted.factor };
+    },
+    async readPendingFactor(_identity, query) {
+      repositoryCalls.push(['pending', query]);
+      return { accountId: ACCOUNT, factorId: persisted.factor.factorId, securityEpoch: persisted.epoch,
+        state: 'pending', keyId: 'local-test-v1', envelope: persisted.envelope, lastAcceptedStep: null,
+        beginOperationId: persisted.factor.beginOperationId, requestFingerprint: persisted.factor.requestFingerprint };
+    },
+    async beginEnrollment(_identity, input) {
+      repositoryCalls.push(['begin', input]);
+      if (beginAckOverride) return beginAckOverride;
+      persisted.epoch = input.targetEpoch;
+      persisted.envelope = input.encryptedSecret;
+      persisted.factor = { factorId: input.candidateFactorId, securityEpoch: input.targetEpoch,
+        state: 'pending', lastAcceptedStep: null, beginOperationId: input.operationId,
+        requestFingerprint: input.requestFingerprint, sessionAttested: false };
+      if (throwAfterBeginCommit) throw new Error('opaque writer failure');
+      return { status: 'committed', operationId: input.operationId, kind: 'begin', accountId: ACCOUNT,
+        factorId: input.candidateFactorId, securityEpoch: input.targetEpoch,
+        requestFingerprint: input.requestFingerprint };
+    },
+    async recordEnrollmentAttempt(_identity, input) {
+      repositoryCalls.push(['attempt', input]);
+      return { status: 'recorded', operationId: input.operationId, kind: 'verify', accountId: ACCOUNT,
+        factorId: input.expectedFactorId, securityEpoch: input.expectedSecurityEpoch,
+        requestFingerprint: input.requestFingerprint };
+    },
+    async verifyEnrollment(_identity, input) {
+      repositoryCalls.push(['verify', input]);
+      if (verifyAckOverride) return verifyAckOverride;
+      persisted.factor = { ...persisted.factor, state: 'verified', lastAcceptedStep: input.matchedStep,
+        sessionAttested: true };
+      return { status: 'committed', operationId: input.operationId, kind: 'verify', accountId: ACCOUNT,
+        factorId: input.expectedFactorId, securityEpoch: input.expectedSecurityEpoch,
+        requestFingerprint: input.requestFingerprint };
+    },
+    async readEnrollmentReceipt(identity, query) {
+      repositoryCalls.push(['receipt', query]);
+      if (query.kind === 'begin' && persisted.factor?.beginOperationId === query.operationId) {
+        return { status: 'pending', operationId: query.operationId, kind: 'begin', accountId: ACCOUNT,
+          issuer: identity.issuer, subject: identity.subject, sessionId: identity.sessionId,
+          factorId: persisted.factor.factorId, securityEpoch: persisted.factor.securityEpoch,
+          requestFingerprint: persisted.factor.requestFingerprint };
+      }
+      return { status: 'not_found', operationId: query.operationId, kind: query.kind, accountId: ACCOUNT,
+        issuer: identity.issuer, subject: identity.subject, sessionId: identity.sessionId,
+        factorId: null, securityEpoch: null, requestFingerprint: null };
+    },
+  };
+  const enrollmentProtocol = createFactorEnrollmentProtocol({ environment: 'local',
+    resolveSession: async () => ({ ok: true, identity: resolvedIdentity }), repository: enrollmentRepository,
+    secretGenerator: { async generate() { return SECRET; } },
+    keyProvider: { async getKey() { return { keyId: 'local-test-v1', key: enrollmentKey }; } },
+    encryptor: { encrypt: encryptFactorSecret }, decryptor: { decrypt: decryptFactorSecret },
+    totpVerifier: { verifyCandidate: verifyFactorCandidate },
+    fingerprint: { async create(payload) {
+      return createHmac('sha256', Buffer.alloc(32, 0x6b)).update(JSON.stringify({ ...payload,
+        code: payload.code })).digest('base64url');
+    } }, clock: () => new Date(59_000),
+  });
+  resolvedIdentity = { ...enrollmentIdentity, issuer: `${enrollmentIdentity.issuer}/other` };
+  assert.equal((await enrollmentProtocol.begin({}, { operationId: beginId })).outcome, 'unavailable');
+  assert.equal(repositoryCalls.length, 0);
+  resolvedIdentity = enrollmentIdentity;
+  const provisioned = await enrollmentProtocol.begin({}, { operationId: beginId });
+  assert.deepEqual({ ok: provisioned.ok, operationId: provisioned.operationId, outcome: provisioned.outcome },
+    { ok: true, operationId: beginId, outcome: 'pending' });
+  assert.equal(Object.keys(provisioned).includes('provisioningSecret'), false);
+  assert.equal(provisioned.provisioningSecret, SECRET);
+  assert.equal(JSON.stringify(provisioned).includes(SECRET), false);
+  persisted.factor.requestFingerprint = `${persisted.factor.requestFingerprint}\n`;
+  const callsBeforeBadFingerprint = repositoryCalls.length;
+  assert.equal((await enrollmentProtocol.verify({}, { operationId: '00000000-0000-4000-8000-000000000016', code: TOKEN })).outcome,
+    'unavailable');
+  assert.equal(repositoryCalls.length, callsBeforeBadFingerprint);
+  persisted.factor.requestFingerprint = persisted.factor.requestFingerprint.slice(0, -1);
+  persisted.rateLimited = true;
+  const throttled = await enrollmentProtocol.verify({}, { operationId: '00000000-0000-4000-8000-000000000014', code: TOKEN });
+  assert.equal(throttled.outcome, 'rejected');
+  assert.equal(repositoryCalls.filter(([name]) => name === 'pending').length, 0);
+  assert.equal(repositoryCalls.find(([name]) => name === 'attempt')[1].reason, 'throttled');
+  persisted.rateLimited = false;
+  const verified = await enrollmentProtocol.verify({}, { operationId: verifyId, code: TOKEN });
+  assert.deepEqual(verified, { ok: true, operationId: verifyId, outcome: 'verified' });
+  assert.deepEqual(repositoryCalls.filter(([name]) => ['begin', 'verify'].includes(name)).map(([name]) => name),
+    ['begin', 'verify']);
+  assert.equal(repositoryCalls.some(([name, input]) => name === 'pending' && input.expectedBeginOperationId === beginId), true);
+
+  persisted.epoch = 4;
+  persisted.factor = null;
+  persisted.envelope = null;
+  const callsBeforeUncertainBegin = repositoryCalls.length;
+  throwAfterBeginCommit = true;
+  const uncertainBegin = await enrollmentProtocol.begin({}, { operationId: '00000000-0000-4000-8000-000000000015' });
+  throwAfterBeginCommit = false;
+  assert.deepEqual(uncertainBegin, { ok: true, operationId: '00000000-0000-4000-8000-000000000015', outcome: 'pending' });
+  assert.equal(Object.hasOwn(uncertainBegin, 'provisioningSecret'), false);
+  assert.equal(repositoryCalls.slice(callsBeforeUncertainBegin).filter(([name]) => name === 'begin').length, 1);
+  assert.equal(repositoryCalls.slice(callsBeforeUncertainBegin).filter(([name]) => name === 'receipt').length, 2);
+
+  const callsBeforeMalformedVerifyAck = repositoryCalls.length;
+  verifyAckOverride = { status: 'rejected', operationId: verifyId };
+  const malformedVerifyAck = await enrollmentProtocol.verify({}, { operationId: '00000000-0000-4000-8000-000000000017', code: TOKEN });
+  verifyAckOverride = null;
+  assert.equal(malformedVerifyAck.outcome, 'unknown');
+  assert.equal(repositoryCalls.slice(callsBeforeMalformedVerifyAck).filter(([name]) => name === 'verify').length, 1);
+  assert.equal(repositoryCalls.slice(callsBeforeMalformedVerifyAck).filter(([name]) => name === 'receipt').length, 2);
+
+  persisted.epoch = 4;
+  persisted.factor = null;
+  persisted.envelope = null;
+  const callsBeforeMalformedBeginAck = repositoryCalls.length;
+  beginAckOverride = { status: 'rejected' };
+  const malformedBeginAck = await enrollmentProtocol.begin({}, { operationId: '00000000-0000-4000-8000-000000000018' });
+  beginAckOverride = null;
+  assert.equal(malformedBeginAck.outcome, 'unknown');
+  assert.equal(repositoryCalls.slice(callsBeforeMalformedBeginAck).filter(([name]) => name === 'begin').length, 1);
+  assert.equal(repositoryCalls.slice(callsBeforeMalformedBeginAck).filter(([name]) => name === 'receipt').length, 2);
 });
