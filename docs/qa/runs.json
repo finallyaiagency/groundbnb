@@ -22,5 +22,21 @@
     "revision": "fd099080ae061a93b2908c3b286140cdf945492c",
     "evidence": "https://github.com/finallyaiagency/groundbnb/blob/bc0887b421c6e4f4762d1cbdc9e6f06162cfa4b1/docs/qa/2026-10-10-M1-01AB-browser-partial.md",
     "date": "2026-10-10"
+  },
+  {
+    "id": "M1-01AE-DB",
+    "category": "Dormant factor-enrollment schema (limited database acceptance)",
+    "result": "Partial",
+    "revision": "7e4d47468fa5b054eca4b19078d10e1d92b796ea",
+    "evidence": "https://github.com/finallyaiagency/groundbnb/blob/b5e5f38306365ff97ce91a8e4a9584f705d98a63/docs/qa/2026-10-10-M1-01AE-enrollment-migration.md",
+    "date": "2026-10-10"
+  },
+  {
+    "id": "M1-01AE-APP-BOUNDARY-14",
+    "category": "Restricted-app ACL/catalog checks (baseline 14)",
+    "result": "Passed",
+    "revision": "b5e5f38306365ff97ce91a8e4a9584f705d98a63",
+    "evidence": "https://github.com/finallyaiagency/groundbnb/blob/b5e5f38306365ff97ce91a8e4a9584f705d98a63/docs/qa/2026-10-10-M1-01AE-baseline14-app-checker.md",
+    "date": "2026-10-10"
   }
 ]
