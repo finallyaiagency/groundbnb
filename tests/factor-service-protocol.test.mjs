@@ -263,6 +263,10 @@ test('closed inputs and malformed session environment fail without provider or r
   const begin = validateFactorEnrollmentRequest('begin', { operationId: enrollmentOperationId });
   assert.deepEqual(begin, { ok: true, operationId: enrollmentOperationId });
   assert.equal(Object.isFrozen(begin), true);
+  const letterOperationId = 'abcdefab-cdef-4abc-8abc-abcdefabcdef';
+  const upperLetterOperationId = letterOperationId.toUpperCase();
+  assert.deepEqual(validateFactorEnrollmentRequest('begin', { operationId: upperLetterOperationId }),
+    { ok: true, operationId: letterOperationId });
   assert.equal(validateFactorEnrollmentRequest('begin', { operationId: enrollmentOperationId, role: 'owner' }).ok, false);
   assert.equal(validateFactorEnrollmentRequest('begin', { operationId: 'not-a-uuid' }).ok, false);
   assert.equal(validateFactorEnrollmentRequest('begin', { operationId: `${enrollmentOperationId}\n` }).ok, false);
@@ -275,6 +279,9 @@ test('closed inputs and malformed session environment fail without provider or r
   assert.equal(Object.isFrozen(verify), true);
   assert.deepEqual(Object.keys(verify), ['ok', 'operationId']);
   assert.equal(JSON.stringify(verify).includes(TOKEN), false);
+  const uppercaseVerify = validateFactorEnrollmentRequest('verify', { operationId: upperLetterOperationId, code: TOKEN });
+  assert.equal(uppercaseVerify.ok, true);
+  assert.equal(uppercaseVerify.operationId, letterOperationId);
   assert.equal(validateFactorEnrollmentRequest('verify', { operationId: enrollmentOperationId, code: '12x' }).ok, false);
   assert.equal(validateFactorEnrollmentRequest('verify', { operationId: enrollmentOperationId, code: `${TOKEN}\n` }).ok, false);
   assert.equal(validateFactorEnrollmentRequest('verify', { operationId: enrollmentOperationId, code: `${TOKEN}\r\n` }).ok, false);
@@ -284,6 +291,12 @@ test('closed inputs and malformed session environment fail without provider or r
   assert.deepEqual(validateFactorEnrollmentAcknowledgment('begin', enrollmentOperationId,
     { operationId: enrollmentOperationId, outcome: 'pending' }),
     { ok: true, operationId: enrollmentOperationId, outcome: 'pending' });
+  assert.deepEqual(validateFactorEnrollmentAcknowledgment('begin', upperLetterOperationId,
+    { operationId: letterOperationId, outcome: 'pending' }),
+    { ok: true, operationId: letterOperationId, outcome: 'pending' });
+  assert.deepEqual(validateFactorEnrollmentAcknowledgment('verify', letterOperationId,
+    { operationId: upperLetterOperationId, outcome: 'verified' }),
+    { ok: true, operationId: letterOperationId, outcome: 'verified' });
   assert.equal(validateFactorEnrollmentAcknowledgment('begin', enrollmentOperationId,
     { operationId: enrollmentOperationId, outcome: 'verified' }).ok, false);
   assert.equal(validateFactorEnrollmentAcknowledgment('verify', enrollmentOperationId,
