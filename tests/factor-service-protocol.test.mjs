@@ -346,21 +346,37 @@ test('closed inputs and malformed session environment fail without provider or r
   const beginId = '00000000-0000-4000-8000-000000000012';
   const verifyId = '00000000-0000-4000-8000-000000000013';
   const enrollmentKey = Buffer.from(KEY);
+  const mutableKeyRecord = { keyId: 'local-test-v1', key: Buffer.from(enrollmentKey) };
   const persisted = { epoch: 4, factor: null, envelope: null, rateLimited: false };
   let throwAfterBeginCommit = false;
   let beginAckOverride = null;
   let verifyAckOverride = null;
+  let beginBindingDrift = null;
+  let mutateSessionAtClock = false;
+  let clockMutation = null;
+  let mutateKeyRecord = true;
+  let keyMutation = null;
+  let envelopeMutation = null;
+  let beginAckMutation = null;
+  let pendingMutation = null;
+  let verifyAckMutation = null;
+  let receiptMutation = null;
   const repositoryCalls = [];
+  const observedSubjects = [];
   const enrollmentRepository = {
-    async readEnrollmentContext() {
-      return { accountId: ACCOUNT, role: 'owner', accountStatus: 'active', securityEpoch: persisted.epoch,
+    async readEnrollmentContext(identity) {
+      observedSubjects.push(identity.subject);
+      const value = { accountId: ACCOUNT, role: 'owner', accountStatus: 'active', securityEpoch: persisted.epoch,
         anyLiveFactor: persisted.factor !== null, rateLimited: persisted.rateLimited, factor: persisted.factor };
+      return value;
     },
     async readPendingFactor(_identity, query) {
       repositoryCalls.push(['pending', query]);
-      return { accountId: ACCOUNT, factorId: persisted.factor.factorId, securityEpoch: persisted.epoch,
-        state: 'pending', keyId: 'local-test-v1', envelope: persisted.envelope, lastAcceptedStep: null,
+      const value = { accountId: ACCOUNT, factorId: persisted.factor.factorId, securityEpoch: persisted.epoch,
+        state: 'pending', keyId: 'local-test-v1', envelope: { ...persisted.envelope }, lastAcceptedStep: null,
         beginOperationId: persisted.factor.beginOperationId, requestFingerprint: persisted.factor.requestFingerprint };
+      pendingMutation = () => { value.accountId = '99999999-9999-4999-8999-999999999999'; value.envelope.ciphertext = 'invalid'; };
+      return value;
     },
     async beginEnrollment(_identity, input) {
       repositoryCalls.push(['begin', input]);
@@ -370,10 +386,20 @@ test('closed inputs and malformed session environment fail without provider or r
       persisted.factor = { factorId: input.candidateFactorId, securityEpoch: input.targetEpoch,
         state: 'pending', lastAcceptedStep: null, beginOperationId: input.operationId,
         requestFingerprint: input.requestFingerprint, sessionAttested: false };
+      if (beginBindingDrift === 'operationId') {
+        persisted.factor.beginOperationId = '00000000-0000-4000-8000-000000000099';
+        beginBindingDrift = null;
+      } else if (beginBindingDrift === 'fingerprint') {
+        const fingerprint = persisted.factor.requestFingerprint;
+        persisted.factor.requestFingerprint = `${fingerprint[0] === 'A' ? 'B' : 'A'}${fingerprint.slice(1)}`;
+        beginBindingDrift = null;
+      }
       if (throwAfterBeginCommit) throw new Error('opaque writer failure');
-      return { status: 'committed', operationId: input.operationId, kind: 'begin', accountId: ACCOUNT,
+      const value = { status: 'committed', operationId: input.operationId, kind: 'begin', accountId: ACCOUNT,
         factorId: input.candidateFactorId, securityEpoch: input.targetEpoch,
         requestFingerprint: input.requestFingerprint };
+      beginAckMutation = () => { value.status = 'rejected'; };
+      return value;
     },
     async recordEnrollmentAttempt(_identity, input) {
       repositoryCalls.push(['attempt', input]);
@@ -386,17 +412,21 @@ test('closed inputs and malformed session environment fail without provider or r
       if (verifyAckOverride) return verifyAckOverride;
       persisted.factor = { ...persisted.factor, state: 'verified', lastAcceptedStep: input.matchedStep,
         sessionAttested: true };
-      return { status: 'committed', operationId: input.operationId, kind: 'verify', accountId: ACCOUNT,
+      const value = { status: 'committed', operationId: input.operationId, kind: 'verify', accountId: ACCOUNT,
         factorId: input.expectedFactorId, securityEpoch: input.expectedSecurityEpoch,
         requestFingerprint: input.requestFingerprint };
+      verifyAckMutation = () => { value.status = 'rejected'; };
+      return value;
     },
     async readEnrollmentReceipt(identity, query) {
       repositoryCalls.push(['receipt', query]);
       if (query.kind === 'begin' && persisted.factor?.beginOperationId === query.operationId) {
-        return { status: 'pending', operationId: query.operationId, kind: 'begin', accountId: ACCOUNT,
+        const value = { status: 'pending', operationId: query.operationId, kind: 'begin', accountId: ACCOUNT,
           issuer: identity.issuer, subject: identity.subject, sessionId: identity.sessionId,
           factorId: persisted.factor.factorId, securityEpoch: persisted.factor.securityEpoch,
           requestFingerprint: persisted.factor.requestFingerprint };
+        receiptMutation = () => { value.status = 'unknown'; value.factorId = '99999999-9999-4999-8999-999999999999'; };
+        return value;
       }
       return { status: 'not_found', operationId: query.operationId, kind: query.kind, accountId: ACCOUNT,
         issuer: identity.issuer, subject: identity.subject, sessionId: identity.sessionId,
@@ -404,26 +434,61 @@ test('closed inputs and malformed session environment fail without provider or r
     },
   };
   const enrollmentProtocol = createFactorEnrollmentProtocol({ environment: 'local',
-    resolveSession: async () => ({ ok: true, identity: resolvedIdentity }), repository: enrollmentRepository,
+    resolveSession: async () => {
+      for (const key of ['keyMutation', 'envelopeMutation', 'beginAckMutation',
+        'pendingMutation', 'verifyAckMutation', 'receiptMutation']) {
+        if (key === 'keyMutation' && keyMutation) { const mutate = keyMutation; keyMutation = null; mutate(); }
+        else if (key === 'envelopeMutation' && envelopeMutation) { const mutate = envelopeMutation; envelopeMutation = null; mutate(); }
+        else if (key === 'beginAckMutation' && beginAckMutation) { const mutate = beginAckMutation; beginAckMutation = null; mutate(); }
+        else if (key === 'pendingMutation' && pendingMutation) { const mutate = pendingMutation; pendingMutation = null; mutate(); }
+        else if (key === 'verifyAckMutation' && verifyAckMutation) { const mutate = verifyAckMutation; verifyAckMutation = null; mutate(); }
+        else if (key === 'receiptMutation' && receiptMutation) { const mutate = receiptMutation; receiptMutation = null; mutate(); }
+      }
+      const value = { ok: true, identity: { ...resolvedIdentity } };
+      if (mutateSessionAtClock) {
+        mutateSessionAtClock = false;
+        clockMutation = () => { value.identity.subject = '99999999-9999-4999-8999-999999999999'; };
+      }
+      return value;
+    }, repository: enrollmentRepository,
     secretGenerator: { async generate() { return SECRET; } },
-    keyProvider: { async getKey() { return { keyId: 'local-test-v1', key: enrollmentKey }; } },
-    encryptor: { encrypt: encryptFactorSecret }, decryptor: { decrypt: decryptFactorSecret },
+    keyProvider: { async getKey() {
+      if (mutateKeyRecord) {
+        mutateKeyRecord = false;
+        keyMutation = () => { mutableKeyRecord.keyId = 'invalid\n'; mutableKeyRecord.key.fill(0); };
+      }
+      return mutableKeyRecord;
+    } },
+    encryptor: { async encrypt(input) {
+      const value = { ...encryptFactorSecret(input) };
+      envelopeMutation = () => { value.ciphertext = 'invalid'; };
+      return value;
+    } }, decryptor: { decrypt: decryptFactorSecret },
     totpVerifier: { verifyCandidate: verifyFactorCandidate },
     fingerprint: { async create(payload) {
       return createHmac('sha256', Buffer.alloc(32, 0x6b)).update(JSON.stringify({ ...payload,
         code: payload.code })).digest('base64url');
-    } }, clock: () => new Date(59_000),
+    } }, clock: () => {
+      if (clockMutation) { const mutate = clockMutation; clockMutation = null; mutate(); }
+      return new Date(59_000);
+    },
   });
   resolvedIdentity = { ...enrollmentIdentity, issuer: `${enrollmentIdentity.issuer}/other` };
   assert.equal((await enrollmentProtocol.begin({}, { operationId: beginId })).outcome, 'unavailable');
   assert.equal(repositoryCalls.length, 0);
   resolvedIdentity = enrollmentIdentity;
+  mutateSessionAtClock = true;
   const provisioned = await enrollmentProtocol.begin({}, { operationId: beginId });
   assert.deepEqual({ ok: provisioned.ok, operationId: provisioned.operationId, outcome: provisioned.outcome },
     { ok: true, operationId: beginId, outcome: 'pending' });
   assert.equal(Object.keys(provisioned).includes('provisioningSecret'), false);
   assert.equal(provisioned.provisioningSecret, SECRET);
   assert.equal(JSON.stringify(provisioned).includes(SECRET), false);
+  assert.equal(observedSubjects.every(subject => subject === enrollmentIdentity.subject), true);
+  mutableKeyRecord.keyId = 'local-test-v1';
+  mutableKeyRecord.key = Buffer.from(enrollmentKey);
+  const receiptSnapshot = await enrollmentProtocol.begin({}, { operationId: beginId });
+  assert.deepEqual(receiptSnapshot, { ok: true, operationId: beginId, outcome: 'pending' });
   persisted.factor.requestFingerprint = `${persisted.factor.requestFingerprint}\n`;
   const callsBeforeBadFingerprint = repositoryCalls.length;
   assert.equal((await enrollmentProtocol.verify({}, { operationId: '00000000-0000-4000-8000-000000000016', code: TOKEN })).outcome,
@@ -438,6 +503,8 @@ test('closed inputs and malformed session environment fail without provider or r
   persisted.rateLimited = false;
   const verified = await enrollmentProtocol.verify({}, { operationId: verifyId, code: TOKEN });
   assert.deepEqual(verified, { ok: true, operationId: verifyId, outcome: 'verified' });
+  mutableKeyRecord.keyId = 'local-test-v1';
+  mutableKeyRecord.key = Buffer.from(enrollmentKey);
   assert.deepEqual(repositoryCalls.filter(([name]) => ['begin', 'verify'].includes(name)).map(([name]) => name),
     ['begin', 'verify']);
   assert.equal(repositoryCalls.some(([name, input]) => name === 'pending' && input.expectedBeginOperationId === beginId), true);
@@ -453,6 +520,21 @@ test('closed inputs and malformed session environment fail without provider or r
   assert.equal(Object.hasOwn(uncertainBegin, 'provisioningSecret'), false);
   assert.equal(repositoryCalls.slice(callsBeforeUncertainBegin).filter(([name]) => name === 'begin').length, 1);
   assert.equal(repositoryCalls.slice(callsBeforeUncertainBegin).filter(([name]) => name === 'receipt').length, 2);
+
+  for (const [drift, operationId] of [
+    ['operationId', '00000000-0000-4000-8000-000000000019'],
+    ['fingerprint', '00000000-0000-4000-8000-00000000001a'],
+  ]) {
+    persisted.epoch = 4;
+    persisted.factor = null;
+    persisted.envelope = null;
+    beginBindingDrift = drift;
+    const callsBeforeBindingDrift = repositoryCalls.length;
+    const driftedBegin = await enrollmentProtocol.begin({}, { operationId });
+    assert.equal(driftedBegin.outcome, 'unknown');
+    assert.equal(Object.hasOwn(driftedBegin, 'provisioningSecret'), false);
+    assert.equal(repositoryCalls.slice(callsBeforeBindingDrift).filter(([name]) => name === 'begin').length, 1);
+  }
 
   const callsBeforeMalformedVerifyAck = repositoryCalls.length;
   verifyAckOverride = { status: 'rejected', operationId: verifyId };
