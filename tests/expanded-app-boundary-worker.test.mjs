@@ -56,7 +56,7 @@ test('membership probe is parameterized to the exact pinned issuer and a fixed u
 test('PowerShell wrapper reuses only the pinned CurrentUser DPAPI bindings and prints sanitized results', () => {
   assert.match(wrapper, /\.env\.m1-profile-\$verifyKind\.dpapi/);
   assert.match(wrapper, /DataProtectionScope\]::CurrentUser/);
-  assert.match(wrapper, /\[ValidateSet\('12','13'\)\]/);
+  assert.match(wrapper, /\[ValidateSet\('12','13','14'\)\]/);
   assert.match(wrapper, /\[string\]\$Baseline = '12'/);
   assert.match(wrapper, /baseline=\$Baseline/);
   assert.match(wrapper, /nonmutating_app_acl_catalog_membership_probe/);
@@ -73,10 +73,12 @@ test('PowerShell wrapper reuses only the pinned CurrentUser DPAPI bindings and p
   assert.doesNotMatch(wrapper, /Write-Host[^\n]*(password|connectionText|rawError|exception\.Message)/i);
 });
 
-test('baseline 13 is explicit and checks only the dormant NOLOGIN factor principal ACL boundary', () => {
+test('baselines 13 and 14 are explicit and retain the dormant NOLOGIN factor principal ACL boundary', () => {
   assert.match(worker, /const RECEIPTS_12 = Object\.freeze\(/);
   assert.match(worker, /baseline === '13' \? \[\.\.\.RECEIPTS_12, '0013_factor_service_principal'\]/);
-  assert.match(worker, /baseline === '13' \? 13 : 12/);
+  assert.match(worker, /baseline === '14'[\s\S]*'0014_factor_enrollment'/);
+  assert.match(worker, /Number\(baseline\)/);
+  assert.match(worker, /baseline !== '12'/);
   assert.match(worker, /FACTOR_ROLES = Object\.freeze\(/);
   assert.match(worker, /groundbnb_local_factor_service/);
   assert.match(worker, /groundbnb_preview_factor_service/);
@@ -95,6 +97,7 @@ test('baseline 13 is explicit and checks only the dormant NOLOGIN factor princip
   assert.match(worker, /factor_receipt_count/);
   assert.match(worker, /checks\.every\(key => row\[key\] === true\)/);
   assert.match(wrapper, /factor_creator_membership_exact/);
+  assert.match(wrapper, /\[ValidateSet\('12','13','14'\)\]/);
   assert.match(wrapper, /\$verifyOutput\.baseline -eq \$Baseline/);
   assert.doesNotMatch(worker, /result\s*:=\s*groundbnb\./i);
 });

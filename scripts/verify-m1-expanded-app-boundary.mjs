@@ -45,9 +45,11 @@ try {
   const issuer = MEMBERSHIP_PROBE_ISSUERS[kind];
   const factorRole = FACTOR_ROLES[kind];
   if (!target || !issuer || !factorRole || typeof password !== 'string' || password.length < 1 ||
-      password.length > 2048 || !['12','13'].includes(baseline)) throw new Error();
+      password.length > 2048 || !['12','13','14'].includes(baseline)) throw new Error();
 
-  const expectedReceipts = baseline === '13' ? [...RECEIPTS_12, '0013_factor_service_principal'] : [...RECEIPTS_12];
+  const expectedReceipts = baseline === '14'
+    ? [...RECEIPTS_12, '0013_factor_service_principal', '0014_factor_enrollment']
+    : baseline === '13' ? [...RECEIPTS_12, '0013_factor_service_principal'] : [...RECEIPTS_12];
   const receiptArraySql = `ARRAY[${expectedReceipts.map(version => `'${version}'`).join(',')}]::text[]`;
   const url = new URL(`postgresql://${target.host}/groundbnb?sslmode=require&channel_binding=require`);
   url.username = target.role;
@@ -178,16 +180,16 @@ try {
   const row = rows?.[0];
   const targetMatches = row?.kind === kind && row?.branch_id === target.branch &&
     row?.database_name === 'groundbnb' && row?.role_name === target.role;
-  const expectedReceiptCount = baseline === '13' ? 13 : 12;
+  const expectedReceiptCount = Number(baseline);
   const exactReceipts = [row?.receipt_count, row?.known_receipt_count].every(value =>
     value === expectedReceiptCount || value === String(expectedReceiptCount));
   const commonChecks = ['attributes_safe','ordinary_app_creator_membership_exact','metadata_select_only','private_tables_denied','sequences_denied',
     'six_functions_allowed','no_extra_functions','create_denied','unmapped_subject_denied'];
-  const factorChecks = baseline === '13'
+  const factorChecks = baseline !== '12'
     ? ['factor_receipt','factor_principal_present','factor_principal_attributes','factor_creator_membership_exact','factor_five_functions',
       'factor_no_extra_functions','factor_no_data_privileges']
     : ['factor_principal_absent'];
-  const factorStateMatches = baseline === '13'
+  const factorStateMatches = baseline !== '12'
     ? row?.factor_receipt === true && (row?.factor_receipt_count === 1 || row?.factor_receipt_count === '1')
     : row?.factor_receipt === false && (row?.factor_receipt_count === 0 || row?.factor_receipt_count === '0');
   const checks = [...commonChecks, ...factorChecks];

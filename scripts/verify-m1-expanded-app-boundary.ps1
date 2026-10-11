@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-  [ValidateSet('12','13')]
+  [ValidateSet('12','13','14')]
   [string]$Baseline = '12'
 )
 $ErrorActionPreference = 'Stop'
