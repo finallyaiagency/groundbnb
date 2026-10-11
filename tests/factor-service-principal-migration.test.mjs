@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { factorCredentialCatalogQuery } from '../lib/factor-credential-catalog.mjs';
 
 const up = readFileSync(new URL('../db/migrations/0013_factor_service_principal.sql', import.meta.url), 'utf8');
 const down = readFileSync(new URL('../db/migrations/0013_factor_service_principal_down.sql', import.meta.url), 'utf8');
@@ -10,6 +11,10 @@ const operatorCheck = readFileSync(new URL('../db/operations/verify-m1-factor-pr
 const enrollmentUp = readFileSync(new URL('../db/migrations/0014_factor_enrollment.sql', import.meta.url), 'utf8');
 const enrollmentDown = readFileSync(new URL('../db/migrations/0014_factor_enrollment_down.sql', import.meta.url), 'utf8');
 const enrollmentOperator = readFileSync(new URL('../db/operations/verify-m1-factor-enrollment.sql', import.meta.url), 'utf8');
+
+const factorCredentialWorker = readFileSync(new URL('../scripts/verify-m1-factor-credential.mjs', import.meta.url), 'utf8');
+const factorCredentialWrapper = readFileSync(new URL('../scripts/verify-m1-factor-credentials.ps1', import.meta.url), 'utf8');
+const factorCatalogQuery = factorCredentialCatalogQuery(true);
 
 const factorFunctions = [
   ['read_factor_challenge_state', 'text,text,text,timestamptz'],
@@ -229,4 +234,37 @@ test('principal acceptance script is a rollback-only 0013 metadata check and pre
   assert.match(enrollmentOperator, /Unmapped closed-path probes changed factor history/);
   assert.doesNotMatch(enrollmentOperator, /INSERT\s+INTO\s+neon_auth|UPDATE\s+neon_auth|DELETE\s+FROM\s+neon_auth/i);
   for (const sql of [up, down, operatorCheck]) assert.doesNotMatch(sql, /acldefault\s*\(\s*CASE\b/i);
+  assert.equal(factorCredentialCatalogQuery('true'), null);
+  assert.match(factorCredentialCatalogQuery(false), /r\.rolcanlogin IS FALSE/);
+  assert.match(factorCredentialWorker, /groundbnb_local_factor_service/);
+  assert.match(factorCredentialWorker, /groundbnb_preview_factor_service/);
+  assert.match(factorCredentialWorker, /br-rough-flower-b8lerkcf/);
+  assert.match(factorCredentialWorker, /br-bitter-hall-b8ibnrfy/);
+  assert.match(factorCredentialWorker, /sslmode=require&channel_binding=require/);
+  assert.match(factorCredentialWorker, /typeof kind === 'string' && Object\.hasOwn\(FACTOR_TARGETS, kind\)/);
+  assert.match(factorCredentialWorker, /factorCredentialCatalogQuery\(true\)/);
+  assert.match(factorCatalogQuery, /current_database/);
+  assert.match(factorCatalogQuery, /connected_role/);
+  assert.match(factorCatalogQuery, /effective_function_set_exact/);
+  assert.match(factorCatalogQuery, /synthetic_seed_trigger_exact/);
+  assert.match(factorCatalogQuery, /UNION SELECT to_regprocedure\('groundbnb\.refuse_production_synthetic_seed\(\)'\)::oid AS function_oid/);
+  assert.match(factorCatalogQuery, /other\.oid<>p\.oid AND\s+has_function_privilege\(r\.oid,other\.oid,'EXECUTE'/);
+  for (const [name, args] of factorFunctions) assert.ok(factorCatalogQuery.includes('groundbnb.' + name + '(' + args + ')'), 'missing exact checker function signature ' + name);
+  assert.match(factorCatalogQuery, /function_acl_exact/);
+  assert.match(factorCatalogQuery, /no_direct_table_privileges/);
+  assert.match(factorCatalogQuery, /no_sequence_privileges/);
+  assert.match(factorCredentialWorker, /readOnly: true/);
+  assert.match(factorCredentialWorker, /AbortSignal\.timeout\(10000\)/);
+  assert.doesNotMatch(factorCredentialWorker, /groundbnb\.environment_identity|groundbnb\.schema_migrations|neon_auth\."user"/);
+  assert.doesNotMatch(factorCredentialWorker, /SELECT\s+groundbnb\.(?:read_factor_challenge_state|record_factor_challenge_attempt|consume_factor_totp_candidate|consume_factor_recovery_candidate|read_factor_operation_receipt)\s*\(/i);
+  assert.match(factorCredentialWrapper, /Read-Host[^\n]*-AsSecureString/);
+  assert.match(factorCredentialWrapper, /ZeroFreeBSTR/);
+  assert.match(factorCredentialWrapper, /RedirectStandardInput\s*=\s*\$true/);
+  assert.match(factorCredentialWrapper, /StandardInput\.Write\(\$factorPayload\)/);
+  assert.match(factorCredentialWrapper, /SavePrivateBinding/);
+  assert.match(factorCredentialWrapper, /OwnerMetadataConfirmed/);
+  assert.match(factorCredentialWrapper, /DataProtectionScope\]::CurrentUser/);
+  assert.match(factorCredentialWrapper, /FileMode\]::CreateNew/);
+  assert.match(factorCredentialWrapper, /factor_credential_catalog_boundary/);
+  assert.doesNotMatch(factorCredentialWrapper, /ALTER\s+ROLE|\bLOGIN\b|GROUND_FACTOR_ENVELOPE_KEY|vercel\s+env/i);
 });
