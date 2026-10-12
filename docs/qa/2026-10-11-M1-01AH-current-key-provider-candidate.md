@@ -20,15 +20,18 @@ The provider accepts only a canonical 32-byte base64url key and bounded immutabl
 - `pnpm state:check`: passed, 249 IDs.
 - `pnpm secrets:check`: passed, 399 source files.
 - Targeted ESLint for the provider, affected services, and three test files: passed.
+- Published checkpoint `97ea884646bf56835b64ca79f3c70fa2ca36c6e1`: exact Verify runs `38190295703` and `38190292601` both succeeded.
 
 SHA-256 for implementation files in the checked working tree:
 
 - `lib/factor-key-provider.mjs`: `BB78F962479676CDC847F6A7F1A04C46FC6CBA42B0C12D4CA903B3D446E1BC1E`
 - `lib/factor-service.mjs`: `324A6633C16E695A7449809AEBD774EF2A446CDB2660E40E0BFC0D961A74506A`
-- `lib/factor-service-protocol.mjs`: `E85DEAA5F84F3C65BDD9B04333FEF85D87FB7F8FA72EB60696279CF4CF8F460C`
+- `lib/factor-service-protocol.mjs`: `5A19D1E7993CFA9355ADC0E7AB17F7940619B1EEDA1CFDFFF3FA822A7D5AF3A4`
 - `tests/factor-storage.test.mjs`: `7A5F887FDEE227935AFD60B755BC7CC07174963DD0157B1ADC04A99A9A35DF5C`
 - `tests/factor-service.test.mjs`: `61AF6A6C5A557FC83263EFDE8A4D60AA96ADD4C63C0F9F3F40BC612E0D2C8230`
 - `tests/factor-service-protocol.test.mjs`: `924FE33A92005112F7E256F42D43AB09A524DC36D34558A78FC820BDAA4793BE`
+
+Correction recorded 2026-10-12: the initial candidate record used protocol-service hash `E85DEAA5F84F3C65BDD9B04333FEF85D87FB7F8FA72EB60696279CF4CF8F460C`. Before checkpoint `97ea884646bf56835b64ca79f3c70fa2ca36c6e1`, indentation in the newly added key-snapshot block was corrected; the published file hash is `5A19D1E7993CFA9355ADC0E7AB17F7940619B1EEDA1CFDFFF3FA822A7D5AF3A4`. This edit changed formatting only.
 
 The first sandboxed full test run and build were denied writes to temporary workspace paths (`.tmp` and `.next`). The same checks passed when rerun with approved workspace access; no application failure was observed.
 
