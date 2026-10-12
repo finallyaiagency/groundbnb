@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
-  [ValidateSet('12','13','14')]
-  [string]$Baseline = '12'
+  [ValidateSet('12','13','14','15')]
+  [string]$Baseline = '12',
+  [ValidateSet('verify','constraint_metadata')]
+  [string]$Mode = 'verify'
 )
 $ErrorActionPreference = 'Stop'
 $verifyRoot = Split-Path -Parent $PSScriptRoot
@@ -27,7 +29,9 @@ foreach ($verifyKind in @('local','preview')) {
   $verifyPass = $false
   $verifySafeSqlState = ''
   $verifySafeFailedChecks = ''
+  $verifySafeMetadataJson = ''
   try {
+    if ($Mode -eq 'constraint_metadata' -and $Baseline -notin @('14','15')) { throw 'Unsupported metadata baseline' }
     $verifyBindingPath = Join-Path $verifyRoot ".env.m1-profile-$verifyKind.dpapi"
     $verifyCipherBytes = [IO.File]::ReadAllBytes($verifyBindingPath)
     $verifyPlainBytes = [Security.Cryptography.ProtectedData]::Unprotect(
@@ -43,7 +47,7 @@ foreach ($verifyKind in @('local','preview')) {
     $verifyPassword = [Uri]::UnescapeDataString($verifyUserInfoParts[1])
     if (-not $verifyPassword -or $verifyPassword.Length -gt 2048) { throw 'Pinned binding check failed' }
 
-    $verifyPayload = @{ kind=$verifyKind; password=$verifyPassword; baseline=$Baseline } | ConvertTo-Json -Compress
+    $verifyPayload = @{ kind=$verifyKind; password=$verifyPassword; baseline=$Baseline; mode=$Mode } | ConvertTo-Json -Compress
     $verifyStart = [Diagnostics.ProcessStartInfo]::new()
     $verifyStart.FileName = $verifyNode
     $verifyStart.Arguments = '"' + $verifyWorker + '"'
@@ -77,18 +81,41 @@ foreach ($verifyKind in @('local','preview')) {
       ' SQLSTATE '+$verifyOutput.sqlState
     } else { '' }
     $verifySafeFailedChecks = @($verifyOutput.failedChecks | Where-Object {
-      $_ -in @('target_pin','receipt_count','attributes_safe','metadata_select_only','private_tables_denied',
+      $_ -in @('target_pin','receipt_count','factor_catalog','attributes_safe','metadata_select_only','private_tables_denied',
         'sequences_denied','six_functions_allowed','no_extra_functions','create_denied','unmapped_subject_denied',
+        'synthetic_seed_trigger_exact','enrollment_base_constraints','enrollment_functions_private','enrollment_resume_constraints',
         'factor_receipt','factor_principal_present','factor_principal_absent','factor_principal_attributes',
         'ordinary_app_creator_membership_exact','factor_creator_membership_exact','factor_five_functions',
         'factor_no_extra_functions','factor_no_data_privileges')
     }) -join ','
+    $verifyExpectedChecks = if ($Mode -eq 'constraint_metadata') { 'constraint_catalog_metadata_only' } else { 'nonmutating_app_acl_catalog_membership_probe' }
     $verifyPass = $verifyChild.ExitCode -eq 0 -and $verifyOutput.ok -eq $true -and
       $verifyOutput.kind -eq $verifyKind -and $verifyOutput.branchId -eq $verifyExpected.branch -and
       $verifyOutput.role -eq $verifyExpected.role -and $verifyOutput.baseline -eq $Baseline -and
-      $verifyOutput.checks -eq 'nonmutating_app_acl_catalog_membership_probe'
+      $verifyOutput.mode -eq $Mode -and $verifyOutput.checks -eq $verifyExpectedChecks
+    if ($Mode -eq 'constraint_metadata' -and $verifyPass) {
+      $verifySafeMetadata = @($verifyOutput.definitions | Where-Object {
+        $_.table -notin @('groundbnb.factor_enrollment_operations','groundbnb.privileged_factor_audit') -or
+        $_.name -notmatch '^factor_enrollment_operations_[a-z0-9_]+$|^privileged_factor_audit_[a-z0-9_]+$' -or
+        $_.definition -notmatch '^[a-zA-Z0-9_ ()<>=,''\[\]:]+$'
+      }).Count -eq 0
+      $verifyPass = $verifySafeMetadata -and @($verifyOutput.definitions).Count -gt 0 -and
+        $verifyOutput.metadataReadOnly -eq $true -and $verifyOutput.database -eq 'groundbnb' -and
+        $verifyOutput.metadataObservationOnly -eq $true -and
+        $verifyOutput.factorCatalog.roleName -eq ('groundbnb_'+$verifyKind+'_factor_service') -and
+        $verifyOutput.factorCatalog.connectedRole -eq $verifyExpected.role -and
+        $verifyOutput.factorCatalog.roleAttributesSafe -eq $true -and
+        $verifyOutput.factorCatalog.creatorMembershipExact -eq $true -and
+        $verifyOutput.factorCatalog.databaseSchemaBoundary -eq $true -and
+        $verifyOutput.factorCatalog.effectiveFunctionSetExact -eq $true -and
+        $verifyOutput.factorCatalog.functionAclExact -eq $true -and
+        $verifyOutput.factorCatalog.syntheticSeedTriggerExact -eq $true -and
+        $verifyOutput.factorCatalog.noDirectTablePrivileges -eq $true -and
+        $verifyOutput.factorCatalog.noSequencePrivileges -eq $true
+      if ($verifyPass) { $verifySafeMetadataJson = ConvertTo-Json -InputObject @($verifyOutput.definitions) -Compress -Depth 4 }
+    }
     if (-not $verifyPass) {
-      $verifyPhase = if ($verifyOutput.phase -in @('input','connection','catalog')) { $verifyOutput.phase } else { 'worker_response' }
+      $verifyPhase = if ($verifyOutput.phase -in @('input','connection','catalog','schema_metadata','factor_catalog')) { $verifyOutput.phase } else { 'worker_response' }
       $verifyCategory = if ($verifyOutput.category -in @('auth','permission','timeout','network','query','boundary','input','unknown')) {
         $verifyOutput.category
       } else { 'unknown' }
@@ -112,7 +139,17 @@ foreach ($verifyKind in @('local','preview')) {
   $verifyResults += [pscustomobject]@{ kind=$verifyKind; branch=$verifyTargets[$verifyKind].branch;
     ok=[bool]$verifyPass; phase=$(if ($verifyPass) { 'complete' } else { $verifyPhase });
     category=$(if ($verifyPass) { 'none' } else { $verifyCategory }) }
-  Write-Host ($verifyKind + ' baseline ' + $Baseline + ': ' + $(if ($verifyPass) { 'PASS' } else { 'FAIL ('+$verifyPhase+'/'+$verifyCategory+')'+$verifySafeSqlState+' '+$verifySafeFailedChecks }))
+  if ($Mode -eq 'constraint_metadata') {
+    if ($verifyPass) {
+      Write-Host ($verifyKind + ' baseline ' + $Baseline + ': READ-ONLY CONSTRAINT METADATA (not a boundary verification)')
+      Write-Host $verifySafeMetadataJson
+    } else {
+      Write-Host ($verifyKind + ' baseline ' + $Baseline + ': FAIL ('+$verifyPhase+'/'+$verifyCategory+')'+$verifySafeSqlState)
+      Write-Host 'Constraint metadata withheld because pinned catalog checks did not pass.'
+    }
+  } else {
+    Write-Host ($verifyKind + ' baseline ' + $Baseline + ': ' + $(if ($verifyPass) { 'PASS' } else { 'FAIL ('+$verifyPhase+'/'+$verifyCategory+')'+$verifySafeSqlState+' '+$verifySafeFailedChecks }))
+  }
 }
 
 if (@($verifyResults | Where-Object { -not $_.ok }).Count -gt 0) { exit 1 }
