@@ -28,3 +28,7 @@ A subsequent checker invocation failed with SQLSTATE 42601 while parsing the gen
 - `npm run secrets:check` — passed (392 source files).
 
 No Codex usage measurement was available for this bounded check.
+
+## Exact-checkpoint rerun
+
+The root reran the checker against exact source revision `ff72a37189db6b64007007dc1690997871c2b97d`. The run started `2026-10-11T20:23:16.9362623-04:00`, completed in 5.888 seconds with exit 0, and reported local and preview baseline-14 PASS. The three guarded artifact SHA-256 values above were unchanged. This confirms the restricted app-boundary result at the published checkpoint only.
