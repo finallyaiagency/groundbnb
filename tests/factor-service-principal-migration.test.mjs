@@ -11,6 +11,9 @@ const operatorCheck = readFileSync(new URL('../db/operations/verify-m1-factor-pr
 const enrollmentUp = readFileSync(new URL('../db/migrations/0014_factor_enrollment.sql', import.meta.url), 'utf8');
 const enrollmentDown = readFileSync(new URL('../db/migrations/0014_factor_enrollment_down.sql', import.meta.url), 'utf8');
 const enrollmentOperator = readFileSync(new URL('../db/operations/verify-m1-factor-enrollment.sql', import.meta.url), 'utf8');
+const resumeUp = readFileSync(new URL('../db/migrations/0015_factor_enrollment_resume.sql', import.meta.url), 'utf8');
+const resumeDown = readFileSync(new URL('../db/migrations/0015_factor_enrollment_resume_down.sql', import.meta.url), 'utf8');
+const resumeOperator = readFileSync(new URL('../db/operations/verify-m1-factor-enrollment-resume.sql', import.meta.url), 'utf8');
 
 const factorCredentialWorker = readFileSync(new URL('../scripts/verify-m1-factor-credential.mjs', import.meta.url), 'utf8');
 const factorCredentialWrapper = readFileSync(new URL('../scripts/verify-m1-factor-credentials.ps1', import.meta.url), 'utf8');
@@ -197,6 +200,54 @@ test('static artifacts prepare no credential, login, route, or live execution', 
   assert.match(enrollmentOperator.trimEnd(), /ROLLBACK;$/);
   assert.doesNotMatch(enrollmentOperator, /^\s*(?:COMMIT|GRANT|CREATE ROLE|ALTER ROLE)\b/im);
   assert.doesNotMatch(enrollmentOperator, /s\.token|session_token|INSERT\s+INTO\s+neon_auth/i);
+  assert.match(resumeUp, /receipt_count IS DISTINCT FROM 14/);
+  assert.match(resumeUp, /VALUES\('0015_factor_enrollment_resume'\)/);
+  assert.match(resumeUp, /DROP CONSTRAINT factor_enrollment_operations_check1/);
+  assert.doesNotMatch(resumeUp, /DROP CONSTRAINT factor_enrollment_operations_check,/);
+  assert.match(resumeUp, /factor_enrollment_operations_check[\s\S]*?isfinite\(created_at\)[\s\S]*?completed_at>=created_at\)\)\)/);
+  assert.ok(resumeUp.includes("'check((isfinite(created_at)andisfinite(completed_at)and(completed_at>=created_at)))'"));
+  assert.ok(resumeUp.includes("'check((((operation_kind=''begin''::text)and(status=''pending''::text))or((operation_kind=''verify''::text)and(status=any(array[''rejected''::text,''verified''::text])))))'"));
+  assert.match(resumeUp, /factor_enrollment_operations_operation_kind_check[\s\S]*?factor_enrollment_operations_status_check[\s\S]*?factor_enrollment_operations_check1[\s\S]*?regexp_replace\(lower\(pg_get_constraintdef\(c\.oid\)\)/);
+  assert.match(resumeUp, /operation_kind IN \('begin','verify','resume'\)/);
+  assert.match(resumeUp, /status IN \('pending','rejected','verified','released'\)/);
+  assert.match(resumeUp, /begin_operation_id uuid/);
+  assert.match(resumeUp, /enrollment_material_released/);
+  assert.match(resumeUp, /newly_committed boolean:=false/);
+  assert.match(resumeUp, /'newlyCommitted',newly_committed/);
+  assert.match(resumeUp, /'newlyCommitted',false/);
+  assert.match(resumeUp, /record_factor_enrollment_material_release\(text,text,text,timestamptz,uuid,uuid,uuid,uuid,bigint,text,bytea\)/);
+  assert.match(resumeUp, /read_factor_enrollment_material_receipt\(text,text,text,timestamptz,uuid,uuid,uuid,bigint,uuid\)/);
+  assert.match(resumeUp, /REVOKE ALL ON FUNCTION groundbnb\.record_factor_enrollment_material_release/);
+  assert.match(resumeUp, /REVOKE ALL ON FUNCTION groundbnb\.read_factor_enrollment_material_receipt/);
+  assert.match(resumeUp, /p\.prosecdef IS DISTINCT FROM true/);
+  assert.match(resumeUp, /p\.proconfig IS DISTINCT FROM ARRAY\['search_path=pg_catalog, pg_temp'\]::text\[\]/);
+  assert.match(resumeUp, /'status',prior\.status[\s\S]*?'newlyCommitted',false/);
+  for (const sql of [resumeUp, resumeDown, resumeOperator]) {
+    assert.match(sql, /refuse_production_synthetic_seed\(\)/);
+    assert.match(sql, /p\.proconfig IS NULL AND l\.lanname='plpgsql' AND p\.proacl IS NULL/);
+    assert.match(sql, /acl\.grantee=0 AND acl\.privilege_type='EXECUTE' AND NOT acl\.is_grantable/);
+    assert.match(sql, /p\.oid<>to_regprocedure\('groundbnb\.refuse_production_synthetic_seed\(\)'\)[\s\S]*?acl\.grantee=0 AND acl\.privilege_type='EXECUTE'/);
+    assert.doesNotMatch(sql, /has_function_privilege\('public'/i);
+  }
+  assert.match(resumeUp, /prior\.begin_operation_id=p_begin_operation_id[\s\S]*?prior\.request_fingerprint=p_request_fingerprint/);
+  assert.doesNotMatch(resumeUp, /^\s*(?:GRANT|ALTER ROLE|CREATE ROLE|DROP ROLE)\b/im);
+  assert.doesNotMatch(resumeUp, /ALTER\s+ROLE[\s\S]*LOGIN|\bPASSWORD\s+|\bCREATE\s+USER\b|DROP\s+.+\s+CASCADE/i);
+  assert.match(resumeDown, /Rollback refused: pending-material resume history would be lost/);
+  assert.match(resumeDown, /completed_at>=created_at/);
+  assert.match(resumeDown, /factor_enrollment_operations_resume_begin_check[\s\S]*?factor_enrollment_operations_resume_check/);
+  assert.match(resumeDown, /WHERE operation_kind='resume'/);
+  assert.match(resumeDown, /WHERE outcome='enrollment_material_released'/);
+  assert.match(resumeDown, /DROP COLUMN begin_operation_id/);
+  assert.match(resumeDown, /ADD CONSTRAINT factor_enrollment_operations_check1/);
+  assert.match(resumeDown, /DELETE FROM groundbnb\.schema_migrations WHERE version='0015_factor_enrollment_resume'/);
+  assert.doesNotMatch(resumeDown, /DROP TABLE groundbnb\.factor_enrollment_operations|DELETE FROM groundbnb\.schema_migrations WHERE version='0014_factor_enrollment'/);
+  assert.match(resumeOperator, /0001-0015 receipt baseline/);
+  assert.match(resumeOperator, /M1_FACTOR_ENROLLMENT_RESUME_CLOSED_PATHS_ROLLBACK_PENDING/);
+  assert.match(resumeOperator, /factor_enrollment_operations_resume_begin_check[\s\S]*?factor_enrollment_operations_resume_check/);
+  assert.match(resumeOperator, /newlyCommitted/);
+  assert.match(resumeOperator.trimEnd(), /ROLLBACK;$/);
+  assert.doesNotMatch(resumeOperator, /^\s*(?:COMMIT|GRANT|CREATE ROLE|ALTER ROLE)\b/im);
+  assert.doesNotMatch(resumeOperator, /INSERT\s+INTO\s+neon_auth|s\.token|session_token/i);
 });
 
 test('principal acceptance script is a rollback-only 0013 metadata check and preserves ordinary app baseline', () => {
