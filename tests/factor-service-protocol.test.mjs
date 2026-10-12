@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHmac } from 'node:crypto';
 import { encryptFactorSecret, decryptFactorSecret, createRecoveryCodeDigest } from '../lib/factor-storage.mjs';
+import { createFactorKeyProvider } from '../lib/factor-key-provider.mjs';
 import { verifyFactorCandidate } from '../lib/factor-verifier.mjs';
 import { createFactorServiceProtocol, PROPOSED_FACTOR_RATE_POLICY } from '../lib/factor-service-protocol.mjs';
 import { createFactorEnrollmentProtocol } from '../lib/factor-enrollment-protocol.mjs';
@@ -73,7 +74,9 @@ function harness({ state = challengeState(), clock = () => new Date(59_000),
 }
 
 test('two-phase TOTP reads state, verifies outside a transaction, then makes one atomic consume call', async () => {
-  const h = harness();
+  const h = harness({ keyProvider: createFactorKeyProvider({ environment: 'local', env: {
+    GROUND_FACTOR_ENVELOPE_KEY: KEY.toString('base64url'), GROUND_FACTOR_KEY_ID: 'local-test-v1',
+  } }) });
   const result = await h.service.challengeTOTP({ requestContext: {}, token: TOKEN });
   assert.deepEqual(result, { ok: true, outcome: 'accepted' });
   assert.deepEqual(h.calls.map(([name]) => name), ['read', 'totp', 'read']);

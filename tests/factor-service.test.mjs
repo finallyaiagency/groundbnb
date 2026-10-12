@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { encryptFactorSecret, createRecoveryCodeDigest } from '../lib/factor-storage.mjs';
+import { createFactorKeyProvider } from '../lib/factor-key-provider.mjs';
 import { createFactorService } from '../lib/factor-service.mjs';
 
 const ACCOUNT = '00000000-0000-4000-8000-000000000001';
@@ -103,7 +104,11 @@ function createHarness({ repository, clock = () => new Date(59_000), resolveSess
 
 test('TOTP succeeds only after transaction commit; response and audit omit submitted code and secret', async () => {
   const mock = makeRepository();
-  const service = createHarness({ repository: mock.repository });
+  const service = createHarness({ repository: mock.repository, keyProvider: createFactorKeyProvider({
+    environment: 'local', env: {
+      GROUND_FACTOR_ENVELOPE_KEY: KEY.toString('base64url'), GROUND_FACTOR_KEY_ID: 'local-test-v1',
+    },
+  }) });
   const result = await service.challengeTOTP({ requestContext: {}, token: TOKEN });
   assert.deepEqual(result, { ok: true, outcome: 'accepted' });
   assert.deepEqual(mock.committed.map(row => [row.method, row.step]), [['totp', 1]]);
