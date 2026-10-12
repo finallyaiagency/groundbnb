@@ -1,0 +1,11 @@
+# M1-01P — Durable privileged factor records preparation
+
+Read STATE, M1-01I/L/N, named views 00/07/12/15 and frozen privileged lifecycle in Section 11.22. Prepare dormant pinned synthetic-only migration 0009 after 0001–0008. No live SQL, role/factor activation, enrollment/reset, new principal or generated key/secret.
+
+Persist account security epochs, encrypted factor enrollment records, hashed one-use recovery-code rows, exact managed session/issuer/subject-bound privileged factor attestations, factor-attempt throttling and append-only outcome audits. No plaintext factor secret, submitted code, enrollment URI, raw session token or recovery code is persisted. Current external key ID/ciphertext provenance is explicit; validate the closed v1 envelope and known bounded metadata. Roles/account status stay independent of enrollment; an enrolled factor does not create a role.
+
+Unknown verified factor state denies; pending enrollment cannot be used as verified. Reset/revocation increments the account security epoch and invalidates all older attestation/recovery state. Strict finite timestamps, nonnegative epochs/steps and owner-scoped foreign keys prevent cross-account reuse. Unique accepted factor time step and recovery-row consumption must support one successful transaction only. Preserve enrollment/revocation/audit history; an elapsed time cannot restore an old credential or factor. Schema alone proves no verifier, rate-limit enforcement or admin gate.
+
+Revoke PUBLIC and direct app table/helper access; ENABLE RLS without assuming an operator BYPASSRLS permission. Do not grant a writer or expose encrypted secrets through a client endpoint. The forthcoming authenticated factor service must call the maintained verifier/standard crypto primitives, lock current account/factor/epoch/rate state, atomically consume a step/code and persist outcome before attestation. Sensitive changes additionally need five-minute step-up; owner recovery cannot bypass MFA.
+
+Up/down exact branch, prior-migration and sole-verified-fixture guards follow existing migrations. Down refuses any security/factor/recovery/attestation/rate/audit row, preserving all history. Static tests prove preparation only; real enrollment/challenge/replay/rate/reset/session-expiry/owner transfer/recovery acceptance remains open. No whole requirement Verified from schema.

@@ -1,0 +1,14 @@
+{
+  "id": "D-002",
+  "questionId": "Q-002",
+  "source": "Client",
+  "decision": "Keep the Groundbnb Neon project on the Free plan and work within its current six-hour instant-restore limit; do not buy an upgrade.",
+  "rationale": "Client chose 'keep free with the limits' on 2026-10-03.",
+  "alternatives": ["Paid Neon retention setting", "Independent backup system with a verified seven-day recovery window"],
+  "impact": "No paid upgrade is authorized. The frozen Section 11.16 seven-day launch recovery requirement remains unmet; this decision is an interim operating choice, not evidence of a passing launch gate.",
+  "requirementIds": ["SYS-11", "LEG-10", "LEG-12"],
+  "taskId": "M0-01",
+  "date": "2026-10-03",
+  "implementationStatus": "Free plan retained; no billing change. Six-hour retention observed in Neon console and official Free-plan documentation.",
+  "supersedes": null
+}

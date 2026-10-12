@@ -1,12 +1,14 @@
 <!-- Generated from docs/source/Groundbnb_Route_Planner_Agency_Spec_v3.0.md; SHA-256 E1EA8F9B85E294F81960646DF3DE73F0CD7C4C5A8105781909984DE6D19F775F; 2026-09-29. Do not edit directly. -->
 
+<!-- Approved client amendments: A-001 SHA-256 CA6FFF8A87C67CCFC3D4695D761EC1A9C7D47E5D0E239C74A076A0908162B07D. Frozen source preserved; records in docs/changes. -->
+
 ### 11.16 Fresh database
 
 The application owns the complete `groundbnb` schema in a new Neon project/database. Production branch is `main`; preview/local branches follow SYS-11 and Section 11.22. No direct legacy-table reads, writes, backfills, or coexistence are required or allowed. Existing users register afresh and explicitly transfer permitted files through the new application. This is a new application identity even when the same Google account is used; passwords, sessions, roles, grants, and provider consents never transfer from a file.
 
 Use versioned SQL migrations checked into the repository. The fixture seed script must refuse to run against production. Keep normalized records from Section 11.3 rather than carrying forward legacy `groundbnb_profiles` or `groundbnb_trips` document shapes; native import/export may still preserve its specified `extensions` object.
 
-Enable Neon point-in-time recovery or its current supported equivalent. Set a production recovery window of at least seven days and an operational recovery-time target of four hours for this launch. Document the available recovery-point granularity and last recoverable time without promising zero data loss. Run the non-production restore drill before launch, including LEG-12 deletion/revocation replay, using synthetic accounts. A direct legacy database importer is outside scope; user-controlled portable transfer is required by FILE-10.
+Enable Neon point-in-time recovery or its current supported equivalent. Set a production recovery window of at least six hours and an operational recovery-time target of four hours for this launch. Document the available recovery-point granularity and last recoverable time without promising zero data loss. Run the non-production restore drill before launch, including LEG-12 deletion/revocation replay, using synthetic accounts. A direct legacy database importer is outside scope; user-controlled portable transfer is required by FILE-10.
 
 ---
 

@@ -1,0 +1,19 @@
+{
+  "id": "D-014",
+  "questionId": "Q-010",
+  "source": "Client",
+  "decision": "Proceed with queued migrations 0010\u00e2\u20ac\u201c0011 on the pinned Groundbnb local and preview databases; use standing approval for future requests wherever applicable.",
+  "rationale": "Client replied 'I approve all future approval requests' immediately after the queued 0010\u00e2\u20ac\u201c0011 request. This authorizes that concrete pending step and continued work; it does not waive mandatory action-time confirmation or handoff policies.",
+  "impact": "Only groundbnb on local br-rough-flower-b8lerkcf and preview br-bitter-hall-b8ibnrfy. No app grants, new principals, authentication/key/factor enrollment, paid dispatch, production or recovery changes.",
+  "requirementIds": [
+    "ACC-08",
+    "MEM-01",
+    "MEM-02",
+    "SYS-07",
+    "SYS-11"
+  ],
+  "taskId": "M1-01S/U",
+  "date": "2026-10-09",
+  "implementationStatus": "0010/0011 COMMIT both; recovery/activity and membership acceptance ROLLBACK both. Private reader42702 repaired preserving owner/ACL. Exact11 restricted app checks and final metadata PASS both. M1 open.",
+  "continuation": "Standing authorization used for reviewed private0012 on same pinned local/preview, no app access. Exact artifact7153DE1F058FC51DACA8C76B470B0F40FE219822F556E701FA8A6A721381D33F COMMIT both; corrected closed-path acceptance and exact12 app ACL PASS both. Mandatory confirmation still required for new app permissions."
+}

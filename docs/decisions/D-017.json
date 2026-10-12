@@ -1,0 +1,23 @@
+{
+  "id": "D-017",
+  "questionId": "Q-012",
+  "source": "Client",
+  "decision": "Apply db/migrations/0013_factor_service_principal.sql at SHA-256 85F614B7D5DEBD1792E72B00079FE7798EFF5AE3A4F7DD32EDCC5FB2380B04D5 to only the pinned local and preview Groundbnb databases.",
+  "rationale": "The client explicitly approved the corrected exact hash for Q-012 on 2026-10-10 after reviewing the creator/admin-edge guard correction.",
+  "alternatives": [
+    "Keep migration 0013 unapplied until both guarded transactions and readbacks succeed."
+  ],
+  "impact": "Only local br-rough-flower-b8lerkcf and preview br-bitter-hall-b8ibnrfy. The migration creates each matching factor-service principal as NOLOGIN with only CONNECT, groundbnb schema USAGE, and EXECUTE on the five exact factor functions, and extends only the exact caller helper. No LOGIN activation, credential, key, enrollment, admin/bootstrap assignment, production or recovery access is authorized.",
+  "requirementIds": [
+    "ACC-08",
+    "ACC-09",
+    "ADM-01",
+    "ADM-06",
+    "SYS-07",
+    "SYS-11",
+    "LEG-12"
+  ],
+  "taskId": "M1-01AA",
+  "date": "2026-10-10",
+  "implementationStatus": "The exact approved corrected SHA-256 was applied with guarded BEGIN/DO/one-receipt/COMMIT on both pinned branches. Direct application boundary checks at baseline 13 pass on both. Read-only aggregates report 13 receipts, one 0013 receipt, one NOLOGIN factor principal with connection limit 2 and only the exact platform creator/admin membership edge, and one synthetic Auth user per branch; all ten factor/lifecycle history counts are zero. The rollback-only verifier passed its guarded checks on both branches, returned its pending-principal marker, and explicitly rolled back; it created no durable application state. M1 factor lifecycle/runtime remains inactive and open."
+}

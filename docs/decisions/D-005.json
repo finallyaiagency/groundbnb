@@ -1,0 +1,13 @@
+{
+  "id": "D-005",
+  "questionId": "Q-004",
+  "source": "Client",
+  "decision": "Approve GRANT CREATE ON DATABASE groundbnb TO neon_service on the synthetic preview and local branches only, excluding production.",
+  "rationale": "Client replied I approve after the exact grant and scope were presented following automatic approval rejection.",
+  "alternatives": ["Leave managed Neon Auth uninitialized on preview/local"],
+  "impact": "The provider-managed role can initialize its auth schema in those two databases. No application role, credential, production permission, paid plan, or metered dispatch is authorized by this decision. SYS-11 remains unverified until real app isolation checks pass.",
+  "requirementIds": ["SYS-11"],
+  "taskId": "M0-01",
+  "date": "2026-10-04",
+  "implementationStatus": "Both guarded grants committed; managed Auth enabled with empty users. The original NOLOGIN assumption was disproven by a read-only preflight; the guard now pins exact branch identities and requires the existing non-superuser role without changing its attributes."
+}

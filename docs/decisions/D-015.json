@@ -1,0 +1,13 @@
+{
+  "id": "D-015",
+  "questionId": "Q-011",
+  "source": "Client",
+  "decision": "Grant EXECUTE on groundbnb.read_membership(text,text) to the existing groundbnb_local_app and groundbnb_preview_app roles on the pinned Groundbnb local and preview databases.",
+  "rationale": "Client replied 'I approve' to the action-time Q-011 request for this exact reader-only permission on the two named synthetic branches.",
+  "alternatives": ["Keep the membership reader unavailable to application roles"],
+  "impact": "Only groundbnb on local br-rough-flower-b8lerkcf and preview br-bitter-hall-b8ibnrfy. The resulting app function allowlist contains the existing five profile functions and read_membership(text,text). No table, helper, factor-service, create, role, password, production, or recovery grants are included.",
+  "requirementIds": ["MEM-01", "MEM-02", "MEM-05", "MEM-06"],
+  "taskId": "M1-01U/Y",
+  "date": "2026-10-09",
+  "implementationStatus": "db/operations/grant-m1-membership-reader.sql SHA-256 2F93A96ECB9BD83DF9E7D0CAD88A54FAC2E286D4BA8728FAABB8CBA7C9DFC26D completed BEGIN/DO/SELECT/COMMIT on both pinned branches. Direct app-boundary worker passed local and preview with exactly twelve migration receipts, six ordinary functions, persistent default_transaction_read_only=on, and closed unmapped-subject auth denial. See docs/qa/2026-10-09-M1-membership-app-boundary.md."
+}

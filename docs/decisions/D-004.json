@@ -1,0 +1,14 @@
+{
+  "id": "D-004",
+  "questionId": "Q-002",
+  "source": "Client",
+  "decision": "Approve amendment A-001: change the launch production recovery-history minimum from seven days to six hours and keep Neon Free.",
+  "rationale": "Client explicitly requested the six-hour launch requirement on 2026-10-03. For this Free-plan launch, the reduced protection against errors discovered late is accepted.",
+  "alternatives": ["Keep seven days with an independently verified backup system", "Purchase a paid retention upgrade"],
+  "impact": "Supersedes D-002's interim interpretation. A-001 is the auditable overlay on frozen Section 11.16 and LEG-10; source bytes remain unchanged. The four-hour recovery-time target, actual horizon verification, privacy disclosure, and LEG-12 replay drill remain required. No launch requirement is Verified by this decision.",
+  "requirementIds": ["LEG-10", "LEG-12", "SYS-11"],
+  "taskId": "M0-01",
+  "date": "2026-10-03",
+  "implementationStatus": "Approved amendment recorded; generated launch view, runbook, task packet, ledger, and state updated. Live recovery evidence remains pending.",
+  "supersedes": "D-002"
+}
