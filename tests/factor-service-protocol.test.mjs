@@ -5,6 +5,7 @@ import { encryptFactorSecret, decryptFactorSecret, createRecoveryCodeDigest } fr
 import { verifyFactorCandidate } from '../lib/factor-verifier.mjs';
 import { createFactorServiceProtocol, PROPOSED_FACTOR_RATE_POLICY } from '../lib/factor-service-protocol.mjs';
 import { createFactorEnrollmentProtocol } from '../lib/factor-enrollment-protocol.mjs';
+import { createFactorEnrollmentResumeProtocol } from '../lib/factor-enrollment-resume-protocol.mjs';
 import { validateFactorEnrollmentAcknowledgment, validateFactorEnrollmentRequest } from '../lib/factor-enrollment-contract.mjs';
 
 const ACCOUNT = '00000000-0000-4000-8000-000000000001';
@@ -554,4 +555,217 @@ test('closed inputs and malformed session environment fail without provider or r
   assert.equal(malformedBeginAck.outcome, 'unknown');
   assert.equal(repositoryCalls.slice(callsBeforeMalformedBeginAck).filter(([name]) => name === 'begin').length, 1);
   assert.equal(repositoryCalls.slice(callsBeforeMalformedBeginAck).filter(([name]) => name === 'receipt').length, 2);
+
+  const resumeId = '00000000-0000-4000-8000-000000000020';
+  const resumeBeginId = beginId;
+  const beginFingerprint = createHmac('sha256', Buffer.alloc(32, 0x6b))
+    .update('resume-test-begin').digest('base64url');
+  const makeResumeHarness = ({ materialStatuses = ['not_found'], writerThrows = false,
+    afterWriter = null, afterDecrypt = null, materialFingerprintMismatch = false,
+    mutateReceiptAfterRead = false, ackStatus = 'released', newlyCommitted = true,
+    decryptor = { async decrypt(input) { return decryptFactorSecret(input); } },
+    resolveSession = async () => ({ ok: true, identity: { ...enrollmentIdentity } }) } = {}) => {
+    const calls = [];
+    const state = { epoch: 5, role: 'owner', sessionValid: true, factorState: 'pending',
+      materialStatuses: [...materialStatuses], requestFingerprint: null };
+    let materialReads = 0;
+    let lastMaterialReceipt = null;
+    let mutateReceiptOnResolve = false;
+    const materialReceipt = (status, identity, input) => ({ status, operationId: input.operationId, kind: 'resume',
+      accountId: ACCOUNT, issuer: identity.issuer, subject: identity.subject, sessionId: identity.sessionId,
+      factorId: status === 'not_found' ? null : FACTOR,
+      securityEpoch: status === 'not_found' ? null : 5, beginOperationId: resumeBeginId,
+      requestFingerprint: status === 'not_found' ? null : state.requestFingerprint });
+    const repository = {
+      async readEnrollmentContext(identity) {
+        calls.push(['context', identity.sessionId]);
+        return { accountId: ACCOUNT, role: state.role, accountStatus: 'active', securityEpoch: state.epoch,
+          anyLiveFactor: true, rateLimited: false, factor: { factorId: FACTOR, securityEpoch: 5,
+            state: state.factorState, lastAcceptedStep: null, beginOperationId: resumeBeginId,
+            requestFingerprint: beginFingerprint, sessionAttested: false } };
+      },
+      async readEnrollmentReceipt(identity, input) {
+        calls.push(['begin-receipt', input]);
+        assert.equal(input.operationId, resumeBeginId);
+        assert.equal(input.expectedAccountId, ACCOUNT);
+        assert.equal(input.expectedFactorId, null);
+        assert.equal(input.expectedSecurityEpoch, null);
+        return { status: 'pending', operationId: resumeBeginId, kind: 'begin', accountId: ACCOUNT,
+          issuer: identity.issuer, subject: identity.subject, sessionId: identity.sessionId,
+          factorId: FACTOR, securityEpoch: 5, requestFingerprint: beginFingerprint };
+      },
+      async readMaterialReceipt(identity, input) {
+        calls.push(['material-receipt', input]);
+        materialReads++;
+        const status = state.materialStatuses.shift() ?? 'not_found';
+        lastMaterialReceipt = materialReceipt(status, identity, input);
+        if (materialFingerprintMismatch && materialReads > 1 && status !== 'not_found') {
+          lastMaterialReceipt.requestFingerprint = createHmac('sha256', Buffer.alloc(32, 0x6b))
+            .update('wrong-resume-fingerprint').digest('base64url');
+        }
+        if (mutateReceiptAfterRead && status !== 'not_found') mutateReceiptOnResolve = true;
+        return lastMaterialReceipt;
+      },
+      async readPendingFactor(identity, input) {
+        calls.push(['pending', input]);
+        return { accountId: ACCOUNT, factorId: FACTOR, securityEpoch: 5, state: 'pending',
+          keyId: 'local-test-v1', envelope: { ...realEnvelope }, lastAcceptedStep: null,
+          beginOperationId: resumeBeginId, requestFingerprint: beginFingerprint };
+      },
+      async releaseMaterial(identity, input) {
+        calls.push(['release', input]);
+        state.requestFingerprint = input.requestFingerprint;
+        if (afterWriter) afterWriter(state);
+        if (writerThrows) throw new Error('opaque writer result');
+        return { status: ackStatus, operationId: input.operationId, kind: 'resume', accountId: ACCOUNT,
+          factorId: FACTOR, securityEpoch: 5, requestFingerprint: input.requestFingerprint,
+          beginOperationId: resumeBeginId, newlyCommitted };
+      },
+    };
+    const protocol = createFactorEnrollmentResumeProtocol({ environment: 'local', resolveSession: async (...args) => {
+      if (mutateReceiptOnResolve && lastMaterialReceipt) {
+        lastMaterialReceipt.status = 'not_found';
+        lastMaterialReceipt.factorId = null;
+        lastMaterialReceipt.securityEpoch = null;
+        lastMaterialReceipt.requestFingerprint = null;
+        mutateReceiptOnResolve = false;
+      }
+      return state.sessionValid ? resolveSession(...args) : { ok: false, identity: null };
+    },
+      repository, keyProvider: { async getKey(input) {
+        calls.push(['key', input]);
+        return { keyId: 'local-test-v1', key: Buffer.from(KEY) };
+      } }, decryptor: { async decrypt(input) {
+        calls.push(['decrypt']);
+        const value = await decryptor.decrypt(input);
+        if (afterDecrypt) afterDecrypt(state);
+        return value;
+      } },
+      fingerprint: { async create(payload) {
+        calls.push(['fingerprint', payload]);
+        return createHmac('sha256', Buffer.alloc(32, 0x6b)).update(JSON.stringify(payload)).digest('base64url');
+      } }, clock: () => new Date('2026-10-11T12:00:00.000Z') });
+    return { protocol, calls, state, repository };
+  };
+
+  const successfulResume = makeResumeHarness();
+  successfulResume.repository.readEnrollmentContext = async () => null;
+  const successfulRelease = await successfulResume.protocol.resume({}, {
+    operationId: resumeId, beginOperationId: resumeBeginId,
+  });
+  assert.equal(successfulRelease.ok, true, `${JSON.stringify(successfulRelease)} calls=${successfulResume.calls.map(([name]) => name).join(',')}`);
+  assert.equal(successfulRelease.outcome, 'released');
+  assert.equal(successfulRelease.pendingSetupSecret, SECRET);
+  assert.equal(Object.isFrozen(successfulRelease), true);
+  assert.equal(Object.keys(successfulRelease).includes('pendingSetupSecret'), false);
+  assert.equal(JSON.stringify(successfulRelease).includes(SECRET), false);
+  assert.equal(successfulResume.calls.filter(([name]) => name === 'release').length, 1);
+  assert.equal(successfulResume.calls.filter(([name]) => name === 'key').length, 1);
+  assert.equal(successfulResume.calls.filter(([name]) => name === 'decrypt').length, 1);
+  assert.equal(successfulResume.calls.findIndex(([name]) => name === 'release') <
+    successfulResume.calls.findIndex(([name]) => name === 'key'), true);
+
+  const closedResume = makeResumeHarness();
+  assert.equal((await closedResume.protocol.resume({}, { operationId: `${resumeId}\n`, beginOperationId: resumeBeginId })).outcome,
+    'rejected');
+  assert.equal((await closedResume.protocol.resume({}, { operationId: resumeId,
+    beginOperationId: resumeBeginId, accountId: ACCOUNT })).outcome, 'rejected');
+  assert.equal((await closedResume.protocol.resume({}, { operationId: resumeBeginId,
+    beginOperationId: resumeBeginId })).outcome, 'rejected');
+  assert.equal(closedResume.calls.length, 0);
+
+  const statusOnlyResume = makeResumeHarness({ materialStatuses: ['released'], mutateReceiptAfterRead: true });
+  statusOnlyResume.state.factorState = 'verified';
+  statusOnlyResume.state.epoch = 6;
+  statusOnlyResume.state.requestFingerprint = createHmac('sha256', Buffer.alloc(32, 0x6b))
+    .update('historical-resume').digest('base64url');
+  const statusOnly = await statusOnlyResume.protocol.resume({}, {
+    operationId: resumeId, beginOperationId: resumeBeginId,
+  });
+  assert.equal(statusOnly.outcome, 'released');
+  assert.equal(Object.hasOwn(statusOnly, 'pendingSetupSecret'), false);
+  assert.equal(statusOnlyResume.calls.some(([name]) => ['pending', 'release', 'key', 'decrypt'].includes(name)), false);
+
+  const lostAckFingerprint = makeResumeHarness({ materialStatuses: ['not_found', 'released'],
+    writerThrows: true, materialFingerprintMismatch: true });
+  const mismatchedReceipt = await lostAckFingerprint.protocol.resume({}, {
+    operationId: resumeId, beginOperationId: resumeBeginId,
+  });
+  assert.equal(mismatchedReceipt.outcome, 'unknown');
+  assert.equal(Object.hasOwn(mismatchedReceipt, 'pendingSetupSecret'), false);
+  assert.equal(lostAckFingerprint.calls.filter(([name]) => name === 'release').length, 1);
+  assert.equal(lostAckFingerprint.calls.filter(([name]) => name === 'material-receipt').length, 2);
+  assert.equal(lostAckFingerprint.calls.some(([name]) => ['key', 'decrypt'].includes(name)), false);
+
+  const uncertainResume = makeResumeHarness({ materialStatuses: ['not_found', 'released'], writerThrows: true });
+  const uncertainRelease = await uncertainResume.protocol.resume({}, {
+    operationId: resumeId, beginOperationId: resumeBeginId,
+  });
+  assert.equal(uncertainRelease.outcome, 'released');
+  assert.equal(Object.hasOwn(uncertainRelease, 'pendingSetupSecret'), false);
+  assert.equal(uncertainResume.calls.filter(([name]) => name === 'release').length, 1);
+  assert.equal(uncertainResume.calls.filter(([name]) => name === 'material-receipt').length, 2);
+  assert.equal(uncertainResume.calls.some(([name]) => ['key', 'decrypt'].includes(name)), false);
+
+  const driftedResume = makeResumeHarness({ afterWriter(state) {
+    state.factorState = 'verified';
+    state.epoch = 6;
+  } });
+  const driftedRelease = await driftedResume.protocol.resume({}, {
+    operationId: resumeId, beginOperationId: resumeBeginId,
+  });
+  assert.equal(driftedRelease.outcome, 'unknown');
+  assert.equal(Object.hasOwn(driftedRelease, 'pendingSetupSecret'), false);
+  assert.equal(driftedResume.calls.filter(([name]) => name === 'release').length, 1);
+  assert.equal(driftedResume.calls.some(([name]) => name === 'decrypt'), false);
+
+  const delayedDriftResume = makeResumeHarness({ afterDecrypt(state) {
+    state.factorState = 'verified';
+    state.epoch = 6;
+  } });
+  const delayedDrift = await delayedDriftResume.protocol.resume({}, {
+    operationId: resumeId, beginOperationId: resumeBeginId,
+  });
+  assert.equal(delayedDrift.outcome, 'unknown');
+  assert.equal(Object.hasOwn(delayedDrift, 'pendingSetupSecret'), false);
+  assert.equal(delayedDriftResume.calls.filter(([name]) => name === 'release').length, 1);
+  assert.equal(delayedDriftResume.calls.filter(([name]) => name === 'key').length, 1);
+  assert.equal(delayedDriftResume.calls.filter(([name]) => name === 'decrypt').length, 1);
+
+  const roleDriftResume = makeResumeHarness({ afterWriter(state) { state.role = 'admin'; } });
+  const roleDrift = await roleDriftResume.protocol.resume({}, {
+    operationId: resumeId, beginOperationId: resumeBeginId,
+  });
+  assert.equal(roleDrift.outcome, 'unknown');
+  assert.equal(Object.hasOwn(roleDrift, 'pendingSetupSecret'), false);
+  assert.equal(roleDriftResume.calls.some(([name]) => ['key', 'decrypt'].includes(name)), false);
+
+  const sessionLostReplay = makeResumeHarness({ ackStatus: 'released', newlyCommitted: false,
+    afterWriter(state) { state.sessionValid = false; } });
+  const withheldReplay = await sessionLostReplay.protocol.resume({}, {
+    operationId: resumeId, beginOperationId: resumeBeginId,
+  });
+  assert.equal(withheldReplay.outcome, 'unknown');
+  assert.equal(Object.hasOwn(withheldReplay, 'pendingSetupSecret'), false);
+
+  const sessionLostRejection = makeResumeHarness({ ackStatus: 'rejected', newlyCommitted: false,
+    afterWriter(state) { state.sessionValid = false; } });
+  const withheldRejection = await sessionLostRejection.protocol.resume({}, {
+    operationId: resumeId, beginOperationId: resumeBeginId,
+  });
+  assert.equal(withheldRejection.outcome, 'unknown');
+  assert.equal(Object.hasOwn(withheldRejection, 'pendingSetupSecret'), false);
+
+  let configGetterCalled = false;
+  const invalidConfig = {};
+  for (const [name, value] of Object.entries({ resolveSession: async () => ({}),
+    repository: {}, keyProvider: {}, decryptor: {}, fingerprint: {}, clock: () => new Date() })) {
+    Object.defineProperty(invalidConfig, name, { value, enumerable: true });
+  }
+  Object.defineProperty(invalidConfig, 'environment', { enumerable: true, get() {
+    configGetterCalled = true;
+    return 'local';
+  } });
+  assert.throws(() => createFactorEnrollmentResumeProtocol(invalidConfig), /Invalid factor enrollment resume configuration/);
+  assert.equal(configGetterCalled, false);
 });
