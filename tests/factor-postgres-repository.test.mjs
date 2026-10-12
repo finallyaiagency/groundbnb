@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { encryptFactorSecret, createRecoveryCodeDigest } from '../lib/factor-storage.mjs';
 import { createFactorPostgresRepository } from '../lib/factor-postgres-repository.mjs';
-import { createFactorEnrollmentPostgresRepository } from '../lib/factor-enrollment-postgres-repository.mjs';
+import { createFactorEnrollmentPostgresRepository, createFactorEnrollmentResumePostgresRepository } from '../lib/factor-enrollment-postgres-repository.mjs';
+import { createFactorEnrollmentResumeProtocol } from '../lib/factor-enrollment-resume-protocol.mjs';
 import { createFactorServiceProtocol, PROPOSED_FACTOR_RATE_POLICY } from '../lib/factor-service-protocol.mjs';
 
 const ACCOUNT = '00000000-0000-4000-8000-000000000001';
@@ -316,6 +317,149 @@ test('only predeclared private groundbnb functions appear in SQL text', async ()
   assert.deepEqual(await pendingBegin, ACK(BEGIN_OPERATION, 'begin', CANDIDATE_FACTOR, 5));
   assert.equal(capturedBegin.values[1], ENROLLMENT_SUBJECT);
   assert.deepEqual(JSON.parse(capturedBegin.values[11]), ENVELOPE);
+
+  const RESUME_OPERATION = '00000000-0000-4000-8000-000000000019';
+  const BEGIN_RECEIPT = { status: 'pending', operationId: BEGIN_OPERATION, kind: 'begin', accountId: ACCOUNT,
+    issuer: ENROLLMENT_IDENTITY.issuer, subject: ENROLLMENT_SUBJECT, sessionId: ENROLLMENT_SESSION,
+    factorId: FACTOR, securityEpoch: 4, requestFingerprint: FINGERPRINT };
+  const MATERIAL_NOT_FOUND = { status: 'not_found', operationId: RESUME_OPERATION, kind: 'resume', accountId: ACCOUNT,
+    issuer: ENROLLMENT_IDENTITY.issuer, subject: ENROLLMENT_SUBJECT, sessionId: ENROLLMENT_SESSION,
+    factorId: null, securityEpoch: null, beginOperationId: BEGIN_OPERATION, requestFingerprint: null };
+  const MATERIAL_RELEASED = { status: 'released', operationId: RESUME_OPERATION, kind: 'resume', accountId: ACCOUNT,
+    issuer: ENROLLMENT_IDENTITY.issuer, subject: ENROLLMENT_SUBJECT, sessionId: ENROLLMENT_SESSION,
+    factorId: FACTOR, securityEpoch: 4, beginOperationId: BEGIN_OPERATION, requestFingerprint: FINGERPRINT };
+  const RELEASE_ACK = { status: 'released', operationId: RESUME_OPERATION, kind: 'resume', accountId: ACCOUNT,
+    factorId: FACTOR, securityEpoch: 4, requestFingerprint: FINGERPRINT, beginOperationId: BEGIN_OPERATION,
+    newlyCommitted: true };
+  const resumeCalls = [];
+  const resumeResponses = [ENROLLMENT_CONTEXT, BEGIN_RECEIPT, PENDING_FACTOR, MATERIAL_NOT_FOUND, RELEASE_ACK];
+  const resumeRepository = createFactorEnrollmentResumePostgresRepository('local', async (statement, values) => {
+    resumeCalls.push({ statement, values });
+    return resumeResponses.shift();
+  });
+  assert.deepEqual(Object.keys(resumeRepository).sort(), [
+    'readEnrollmentContext', 'readEnrollmentReceipt', 'readMaterialReceipt', 'readPendingFactor', 'releaseMaterial',
+  ]);
+  assert.deepEqual(await resumeRepository.readEnrollmentContext(ENROLLMENT_IDENTITY), ENROLLMENT_CONTEXT);
+  assert.deepEqual(await resumeRepository.readEnrollmentReceipt(ENROLLMENT_IDENTITY, {
+    operationId: BEGIN_OPERATION, kind: 'begin', expectedAccountId: ACCOUNT,
+    expectedFactorId: null, expectedSecurityEpoch: null,
+  }), BEGIN_RECEIPT);
+  assert.deepEqual(await resumeRepository.readPendingFactor(ENROLLMENT_IDENTITY, {
+    expectedAccountId: ACCOUNT, expectedFactorId: FACTOR, expectedSecurityEpoch: 4,
+    expectedBeginOperationId: BEGIN_OPERATION,
+  }), PENDING_FACTOR);
+  assert.deepEqual(await resumeRepository.readMaterialReceipt(ENROLLMENT_IDENTITY, {
+    operationId: RESUME_OPERATION, expectedAccountId: ACCOUNT, expectedFactorId: FACTOR,
+    expectedSecurityEpoch: 4, expectedBeginOperationId: BEGIN_OPERATION,
+  }), MATERIAL_NOT_FOUND);
+  assert.deepEqual(await resumeRepository.releaseMaterial(ENROLLMENT_IDENTITY, {
+    operationId: RESUME_OPERATION, beginOperationId: BEGIN_OPERATION, expectedAccountId: ACCOUNT,
+    expectedFactorId: FACTOR, expectedSecurityEpoch: 4, expectedEnvelopeKeyId: 'local-test-v1',
+    requestFingerprint: FINGERPRINT,
+  }), RELEASE_ACK);
+  assert.deepEqual(resumeCalls.map(call => call.statement), [
+    'SELECT groundbnb.read_factor_enrollment_context($1,$2,$3,$4::timestamptz) AS result',
+    'SELECT groundbnb.read_factor_enrollment_receipt($1,$2,$3,$4::timestamptz,$5::uuid,$6,$7::uuid,$8::uuid,$9::bigint) AS result',
+    'SELECT groundbnb.read_pending_factor_for_enrollment($1,$2,$3,$4::timestamptz,$5::uuid,$6::uuid,$7::uuid,$8::bigint) AS result',
+    'SELECT groundbnb.read_factor_enrollment_material_receipt($1,$2,$3,$4::timestamptz,$5::uuid,$6::uuid,$7::uuid,$8::bigint,$9::uuid) AS result',
+    'SELECT groundbnb.record_factor_enrollment_material_release($1,$2,$3,$4::timestamptz,$5::uuid,$6::uuid,$7::uuid,$8::uuid,$9::bigint,$10,$11::bytea) AS result',
+  ]);
+  const resumePrefix = [ENROLLMENT_IDENTITY.issuer, ENROLLMENT_SUBJECT, ENROLLMENT_SESSION, EXPIRY];
+  assert.deepEqual(resumeCalls[1].values, [...resumePrefix, BEGIN_OPERATION, 'begin', ACCOUNT, null, null]);
+  assert.deepEqual(resumeCalls[2].values, [...resumePrefix, BEGIN_OPERATION, ACCOUNT, FACTOR, 4]);
+  assert.deepEqual(resumeCalls[3].values, [...resumePrefix, RESUME_OPERATION, ACCOUNT, FACTOR, 4, BEGIN_OPERATION]);
+  assert.deepEqual(resumeCalls[4].values.slice(0, 10), [...resumePrefix, BEGIN_OPERATION, RESUME_OPERATION,
+    ACCOUNT, FACTOR, 4, 'local-test-v1']);
+  assert.deepEqual(resumeCalls[4].values[10], Buffer.from(FINGERPRINT, 'base64url'));
+  assert.equal(resumeCalls.every(call => !/\b(?:INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)\b/i.test(call.statement)), true);
+  let environmentCoercions = 0;
+  const hostileEnvironment = { [Symbol.toPrimitive]() { environmentCoercions += 1; return 'local'; } };
+  assert.throws(() => createFactorEnrollmentPostgresRepository(hostileEnvironment, async () => null), TypeError);
+  assert.throws(() => createFactorEnrollmentResumePostgresRepository(hostileEnvironment, async () => null), TypeError);
+  assert.equal(environmentCoercions, 0);
+
+  const malformedAckRepository = createFactorEnrollmentResumePostgresRepository('local', async () => ({
+    ...RELEASE_ACK, unexpected: 'not exposed',
+  }));
+  assert.deepEqual(await malformedAckRepository.releaseMaterial(ENROLLMENT_IDENTITY, {
+    operationId: RESUME_OPERATION, beginOperationId: BEGIN_OPERATION, expectedAccountId: ACCOUNT,
+    expectedFactorId: FACTOR, expectedSecurityEpoch: 4, expectedEnvelopeKeyId: 'local-test-v1',
+    requestFingerprint: FINGERPRINT,
+  }), { status: 'unknown', operationId: RESUME_OPERATION, kind: 'resume', accountId: ACCOUNT,
+    factorId: FACTOR, securityEpoch: 4, requestFingerprint: FINGERPRINT, beginOperationId: BEGIN_OPERATION,
+    newlyCommitted: false });
+  const malformedReceiptRepository = createFactorEnrollmentResumePostgresRepository('local', async () => ({
+    ...MATERIAL_NOT_FOUND, requestFingerprint: 'unexpected',
+  }));
+  await assert.rejects(malformedReceiptRepository.readMaterialReceipt(ENROLLMENT_IDENTITY, {
+    operationId: RESUME_OPERATION, expectedAccountId: ACCOUNT, expectedFactorId: FACTOR,
+    expectedSecurityEpoch: 4, expectedBeginOperationId: BEGIN_OPERATION,
+  }), { message: 'Factor enrollment repository operation failed.' });
+
+  let forbiddenGetterReads = 0;
+  let forbiddenToJsonCalls = 0;
+  const getterEnvelope = { ...ENVELOPE };
+  Object.defineProperty(getterEnvelope, 'ciphertext', { enumerable: true, configurable: true, get() {
+    forbiddenGetterReads += 1;
+    return ENVELOPE.ciphertext;
+  } });
+  Object.defineProperty(getterEnvelope, 'toJSON', { enumerable: true, value() {
+    forbiddenToJsonCalls += 1;
+    return ENVELOPE;
+  } });
+  let hostileCallCount = 0;
+  const hostileRepository = createFactorEnrollmentPostgresRepository('local', async () => {
+    hostileCallCount += 1;
+    return ACK(BEGIN_OPERATION, 'begin', CANDIDATE_FACTOR, 5);
+  });
+  const hostileAck = await hostileRepository.beginEnrollment(ENROLLMENT_IDENTITY, {
+    operationId: BEGIN_OPERATION, expectedAccountId: ACCOUNT, expectedCurrentEpoch: 4, targetEpoch: 5,
+    candidateFactorId: CANDIDATE_FACTOR, requestFingerprint: FINGERPRINT, envelopeKeyId: 'local-test-v1',
+    encryptedSecret: getterEnvelope,
+  });
+  assert.deepEqual(hostileAck, { status: 'unknown' });
+  assert.equal(forbiddenGetterReads, 0);
+  assert.equal(forbiddenToJsonCalls, 0);
+  assert.equal(hostileCallCount, 0);
+  assert.deepEqual(await hostileRepository.beginEnrollment(ENROLLMENT_IDENTITY, {
+    operationId: BEGIN_OPERATION, expectedAccountId: ACCOUNT, expectedCurrentEpoch: 4, targetEpoch: 5,
+    candidateFactorId: CANDIDATE_FACTOR, requestFingerprint: FINGERPRINT, envelopeKeyId: 'local-test-v1',
+    encryptedSecret: { ...ENVELOPE, ciphertext: Number.NaN },
+  }), { status: 'unknown' });
+  assert.equal(hostileCallCount, 0);
+
+  const interopCalls = [];
+  let materialReadCount = 0;
+  const resumeContext = { ...ENROLLMENT_CONTEXT, anyLiveFactor: true, factor: {
+    factorId: FACTOR, securityEpoch: 4, state: 'pending', lastAcceptedStep: null,
+    beginOperationId: BEGIN_OPERATION, requestFingerprint: FINGERPRINT, sessionAttested: false,
+  } };
+  const interopRepository = createFactorEnrollmentResumePostgresRepository('local', async (statement, values) => {
+    interopCalls.push({ statement, values });
+    if (statement.includes('read_factor_enrollment_context')) return resumeContext;
+    if (statement.includes('read_factor_enrollment_receipt')) return BEGIN_RECEIPT;
+    if (statement.includes('read_pending_factor_for_enrollment')) return PENDING_FACTOR;
+    if (statement.includes('read_factor_enrollment_material_receipt')) {
+      materialReadCount += 1;
+      return materialReadCount === 1 ? MATERIAL_NOT_FOUND : { ...MATERIAL_RELEASED,
+        requestFingerprint: values[0] === ENROLLMENT_IDENTITY.issuer ? FINGERPRINT : 'invalid' };
+    }
+    if (statement.includes('record_factor_enrollment_material_release')) throw new Error('simulated lost response');
+    throw new Error('Unexpected fixed statement.');
+  });
+  const resumeProtocol = createFactorEnrollmentResumeProtocol({
+    environment: 'local', resolveSession: async () => ({ ok: true, identity: ENROLLMENT_IDENTITY }),
+    repository: interopRepository, keyProvider: { async getKey() { throw new Error('must not retrieve key after uncertain ACK'); } },
+    decryptor: { async decrypt() { throw new Error('must not decrypt after uncertain ACK'); } },
+    fingerprint: { async create() { return FINGERPRINT; } }, clock: () => new Date('2026-10-11T12:00:00.000Z'),
+  });
+  const reconciledResume = await resumeProtocol.resume({}, { operationId: RESUME_OPERATION, beginOperationId: BEGIN_OPERATION });
+  assert.equal(reconciledResume.ok, true);
+  assert.equal(reconciledResume.outcome, 'released');
+  assert.equal(Object.hasOwn(reconciledResume, 'pendingSetupSecret'), false);
+  assert.equal(interopCalls.filter(call => call.statement.includes('record_factor_enrollment_material_release')).length, 1);
+  assert.equal(interopCalls.filter(call => call.statement.includes('read_factor_enrollment_material_receipt')).length, 2);
 });
 
 test('repository and service protocol interoperate through an injected port with no open transaction', async () => {
