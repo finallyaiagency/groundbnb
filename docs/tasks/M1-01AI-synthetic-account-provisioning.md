@@ -1,6 +1,6 @@
 # M1-01AI — Synthetic ordinary-account provisioning prerequisite
 
-Status: provisioning remains design only. A private offline session-resolver candidate now provides a same-response verified synthetic identity context in `lib/session-identity.mjs`; its focused tests are in `tests/session-identity.test.mjs`. No provisioning operation, SQL, route, provider request, credential handling, fixture creation, grant, or requirement-status change was implemented. The frozen source remains authoritative.
+Status: durable account provisioning remains design only, with an offline service/protocol candidate prepared in `lib/synthetic-member-provisioning-protocol.mjs`. It consumes the private same-response verified synthetic identity from `lib/session-identity.mjs`; existing-case coverage is in `tests/admin-bootstrap.test.mjs`. No SQL adapter, route, provider request, credential handling, fixture creation, grant, or requirement-status change was implemented. The frozen source remains authoritative.
 
 ## Authority and purpose
 

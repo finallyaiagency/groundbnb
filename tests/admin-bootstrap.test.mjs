@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { evaluateAdminBootstrapCandidate } from '../lib/admin-bootstrap.mjs';
 import { createAdminBootstrapProtocol } from '../lib/admin-bootstrap-protocol.mjs';
+import { createSyntheticMemberProvisioningProtocol } from '../lib/synthetic-member-provisioning-protocol.mjs';
 
 const issuer = 'https://auth.synthetic.example/groundbnb';
 const identities = [
@@ -57,7 +58,7 @@ test('only the trusted production issuer and exact verified email may map', () =
   })).reason, 'not_seed_identity');
 });
 
-test('identity must bind to the existing active member account; no account is provisioned', () => {
+test('AF requires an existing member binding while AI provisions ordinary members separately', async () => {
   const changedSubject = fixture();
   changedSubject.account.subject = 'different-immutable-subject';
   assert.equal(evaluateAdminBootstrapCandidate(changedSubject).reason, 'account_identity_mismatch');
@@ -70,6 +71,171 @@ test('identity must bind to the existing active member account; no account is pr
   const noAccount = fixture();
   noAccount.account.accountId = null;
   assert.equal(evaluateAdminBootstrapCandidate(noAccount).ok, false);
+
+  const memberIdentity = Object.freeze({ issuer: 'https://ep-calm-sound-b8s8ckur.neonauth.c-14.us-east-1.aws.neon.tech/groundbnb/auth',
+    subject: '00000000-0000-4000-8000-000000000031', sessionId: '00000000-0000-4000-8000-000000000032',
+    expiresAt: '2026-10-02T00:00:00Z', email: 'local-seed-owner@example.test', emailVerified: true });
+  const operationId = '00000000-0000-4000-8000-000000000033';
+  function memberProtocol({ existingMember = false, lostAck = false, lostAckWithoutReceipt = false,
+    replaceExistingAccount = false, revokeAfterWrite = false, mismatchSessionAfterWrite = false,
+    wrongReceiptAccount = false, resolveIdentity, clock, mutableIdentity, rollingExpiry = false } = {}) {
+    const state = { created: false, existingMember, receiptExists: false, writerCalled: false };
+    const calls = { writer: 0, receipt: 0, resolve: 0, lastReceipt: null, fingerprintPayload: null };
+    const accountId = '00000000-0000-4000-8000-000000000034';
+    const replacedAccountId = '00000000-0000-4000-8000-000000000035';
+    let activeAccountId = accountId;
+    const common = { environment: 'local', issuer: memberIdentity.issuer, subject: memberIdentity.subject,
+      sessionId: memberIdentity.sessionId, seedAlias: memberIdentity.email };
+    const context = () => state.created || state.existingMember
+      ? { status: 'already_member', ...common, accountId: activeAccountId, accountStatus: 'active', accountRole: 'member', bindingState: 'active' }
+      : { status: 'eligible', ...common, accountId: null, accountStatus: null, accountRole: null, bindingState: 'unbound' };
+    const receipt = (requestFingerprint) => state.receiptExists
+      ? { status: state.created ? 'created' : 'already_member', kind: 'member_provision', operationId,
+        requestFingerprint, ...common, accountId: activeAccountId, accountStatus: 'active', accountRole: 'member',
+        bindingState: 'active', created: state.created, completedAt: '2026-10-01T12:00:00Z' }
+      : { status: 'not_found', kind: 'member_provision', operationId, requestFingerprint, ...common,
+        accountId: null, accountStatus: null, accountRole: null, bindingState: null, created: null, completedAt: null };
+    const identity = mutableIdentity ?? memberIdentity;
+    const protocol = createSyntheticMemberProvisioningProtocol({
+      environment: 'local', resolveIdentity: async () => {
+        calls.resolve += 1;
+        if (revokeAfterWrite && state.writerCalled) return { ok: false, category: 'auth' };
+        if (mismatchSessionAfterWrite && state.writerCalled) {
+          return { ok: true, identity: { ...identity, sessionId: '00000000-0000-4000-8000-000000000036' } };
+        }
+        if (resolveIdentity) return resolveIdentity();
+        if (rollingExpiry) {
+          return { ok: true, identity: { ...identity, expiresAt: calls.resolve % 2 === 0
+            ? '2026-10-02T00:00:00Z' : '2026-10-03T00:00:00Z' } };
+        }
+        return { ok: true, identity };
+      },
+      clock: clock ?? (() => new Date('2026-10-01T11:00:00Z')),
+      fingerprint: { async create(payload) { calls.fingerprintPayload = payload; return 'A'.repeat(43); } },
+      repository: {
+        async readMemberProvisionContext() { return context(); },
+        async createMemberAccount(identity, query) {
+          calls.writer += 1;
+          state.writerCalled = true;
+          if (lostAck) {
+            if (!lostAckWithoutReceipt) {
+              if (!existingMember) state.created = true;
+              state.receiptExists = true;
+            }
+            return { status: 'unknown', kind: 'member_provision', operationId: query.operationId,
+              requestFingerprint: query.requestFingerprint, environment: identity.environment, issuer: identity.issuer,
+              subject: identity.subject, sessionId: identity.sessionId, seedAlias: identity.seedAlias,
+              accountId: null, accountStatus: null, accountRole: null, bindingState: null, created: null };
+          }
+          if (!existingMember) state.created = true;
+          if (replaceExistingAccount && existingMember) activeAccountId = replacedAccountId;
+          state.receiptExists = true;
+          return { status: 'committed', kind: 'member_provision', operationId: query.operationId,
+            requestFingerprint: query.requestFingerprint, environment: identity.environment, issuer: identity.issuer,
+            subject: identity.subject, sessionId: identity.sessionId, seedAlias: identity.seedAlias,
+            accountId: activeAccountId, accountStatus: 'active', accountRole: 'member', bindingState: 'active', created: !existingMember };
+        },
+        async readMemberProvisionReceipt(identity, query) {
+          calls.receipt += 1;
+          const value = receipt(query.requestFingerprint);
+          calls.lastReceipt = value;
+          return wrongReceiptAccount && value.status === 'created'
+            ? { ...value, accountId: replacedAccountId } : value;
+        },
+      },
+    });
+    return { protocol, calls };
+  }
+
+  const uncertainCreate = memberProtocol({ lostAck: true });
+  assert.deepEqual(await uncertainCreate.protocol.provision({}, { operationId }),
+    { ok: true, outcome: 'provisioned', operationId });
+  assert.equal(uncertainCreate.calls.writer, 1);
+
+  const uncertainWithoutReceipt = memberProtocol({ lostAck: true, lostAckWithoutReceipt: true });
+  assert.deepEqual(await uncertainWithoutReceipt.protocol.provision({}, { operationId }),
+    { ok: false, outcome: 'unknown', operationId });
+  assert.equal(uncertainWithoutReceipt.calls.writer, 1);
+  assert.equal(uncertainWithoutReceipt.calls.receipt, 2);
+  assert.deepEqual(await uncertainWithoutReceipt.protocol.status({}, { operationId }),
+    { ok: false, outcome: 'unknown', operationId });
+  assert.equal(uncertainWithoutReceipt.calls.writer, 1);
+
+  const noReceiptYet = memberProtocol();
+  assert.deepEqual(await noReceiptYet.protocol.status({}, { operationId }),
+    { ok: false, outcome: 'unknown', operationId });
+  assert.equal(noReceiptYet.calls.writer, 0);
+  assert.equal(uncertainCreate.calls.receipt, 2);
+  const recoveredStatus = await uncertainCreate.protocol.status({}, { operationId });
+  assert.deepEqual(recoveredStatus, { ok: true, outcome: 'provisioned', operationId });
+  assert.equal(uncertainCreate.calls.writer, 1);
+
+  const existingMember = memberProtocol({ existingMember: true });
+  assert.deepEqual(await existingMember.protocol.provision({}, { operationId }),
+    { ok: true, outcome: 'provisioned', operationId });
+  assert.equal(existingMember.calls.writer, 1);
+  assert.equal(existingMember.calls.receipt, 1);
+  assert.deepEqual(await existingMember.protocol.status({}, { operationId }),
+    { ok: true, outcome: 'provisioned', operationId });
+  assert.equal(existingMember.calls.lastReceipt.status, 'already_member');
+  assert.equal(existingMember.calls.lastReceipt.created, false);
+  assert.deepEqual(await existingMember.protocol.provision({}, { operationId, accountId: 'attacker-selected' }),
+    { ok: false, outcome: 'refused', operationId: null });
+  assert.equal(existingMember.calls.writer, 1);
+
+  const changedExistingBinding = memberProtocol({ existingMember: true, replaceExistingAccount: true });
+  assert.deepEqual(await changedExistingBinding.protocol.provision({}, { operationId }),
+    { ok: false, outcome: 'unknown', operationId });
+  assert.equal(changedExistingBinding.calls.writer, 1);
+
+  const revokedAfterCommit = memberProtocol({ revokeAfterWrite: true });
+  assert.deepEqual(await revokedAfterCommit.protocol.provision({}, { operationId }),
+    { ok: false, outcome: 'unknown', operationId });
+  assert.equal(revokedAfterCommit.calls.writer, 1);
+
+  const sessionChangedAfterCommit = memberProtocol({ mismatchSessionAfterWrite: true });
+  assert.deepEqual(await sessionChangedAfterCommit.protocol.provision({}, { operationId }),
+    { ok: false, outcome: 'unknown', operationId });
+  assert.equal(sessionChangedAfterCommit.calls.writer, 1);
+
+  const wrongReceiptAccount = memberProtocol({ lostAck: true, wrongReceiptAccount: true });
+  assert.deepEqual(await wrongReceiptAccount.protocol.provision({}, { operationId }),
+    { ok: false, outcome: 'unknown', operationId });
+  assert.equal(wrongReceiptAccount.calls.writer, 1);
+  assert.equal(wrongReceiptAccount.calls.receipt, 2);
+
+  let getterCalls = 0;
+  const getterIdentity = { ok: true };
+  Object.defineProperty(getterIdentity, 'identity', { enumerable: true, get() {
+    getterCalls += 1;
+    return memberIdentity;
+  } });
+  const accessorResolver = memberProtocol({ resolveIdentity: () => getterIdentity });
+  assert.deepEqual(await accessorResolver.protocol.provision({}, { operationId }),
+    { ok: false, outcome: 'refused', operationId });
+  assert.equal(getterCalls, 0);
+  assert.equal(accessorResolver.calls.writer, 0);
+
+  const mutableIdentity = { ...memberIdentity };
+  let firstClockCall = true;
+  const mutatingClock = () => {
+    if (firstClockCall) {
+      firstClockCall = false;
+      mutableIdentity.email = 'other@example.test';
+    }
+    return new Date('2026-10-01T11:00:00Z');
+  };
+  const mutatedAfterSnapshot = memberProtocol({ mutableIdentity, clock: mutatingClock });
+  assert.deepEqual(await mutatedAfterSnapshot.protocol.provision({}, { operationId }),
+    { ok: false, outcome: 'unknown', operationId });
+  assert.equal(mutatedAfterSnapshot.calls.writer, 0);
+
+  const rollingSessionExpiry = memberProtocol({ rollingExpiry: true });
+  assert.deepEqual(await rollingSessionExpiry.protocol.provision({}, { operationId }),
+    { ok: true, outcome: 'provisioned', operationId });
+  assert.equal(Object.hasOwn(rollingSessionExpiry.calls.fingerprintPayload, 'expiresAt'), false);
+  assert.equal(rollingSessionExpiry.calls.fingerprintPayload.environment, 'local');
+  assert.equal(rollingSessionExpiry.calls.writer, 1);
 });
 
 test('prior binding replay and same-email subject replacement refuse for controlled resolution', async () => {
